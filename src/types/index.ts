@@ -1,5 +1,12 @@
+// ==========================================
+// TEMEL TİPLER
+// ==========================================
+
 // Kelime türleri
 export type PartOfSpeech = 'n' | 'v' | 'adj' | 'adv' | 'prep' | 'conj' | 'pron' | 'interj' | 'det' | 'phr' | '';
+
+// CEFR Dil Seviyeleri
+export type CEFRLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
 
 // Kelime çifti - Excel'den gelen veri yapısı
 export interface Word {
@@ -11,6 +18,149 @@ export interface Word {
   correctCount: number;
   incorrectCount: number;
   lastPracticed?: Date;
+  
+  // SM-2 için ek alanlar
+  difficultyLevel?: CEFRLevel; // Kelimenin zorluğu (A1-C2)
+  frequencyRank?: number; // Corpus frekans sıralaması
+  tags?: string[]; // Etiketler: "Business", "IT", "Academic" vb.
+}
+
+// ==========================================
+// SENSE (Anlam) - Gelecekte çoklu anlam desteği için
+// ==========================================
+export interface Sense {
+  id: string;
+  wordId: string;
+  definition: string; // İngilizce tanım
+  translation: string; // Türkçe karşılık
+  usageNotes?: string; // Kullanım notları
+  exampleSentences?: string[]; // Örnek cümleler
+}
+
+// ==========================================
+// CARD (Öğrenme Kartı) - SM-2 Temel Birimi
+// ==========================================
+export type CardFrontType = 'word' | 'definition' | 'example_gap' | 'translation' | 'audio';
+export type CardBackType = 'translation' | 'word' | 'definition' | 'example';
+
+export interface Card {
+  id: string;
+  wordId: string;
+  senseId?: string; // Opsiyonel: belirli bir anlam için
+  
+  frontType: CardFrontType;
+  backType: CardBackType;
+  frontContent: string;
+  backContent: string;
+  
+  createdAt: Date;
+}
+
+// ==========================================
+// USER CARD STATE - Kullanıcıya Özel Öğrenme Durumu
+// ==========================================
+export interface UserCardState {
+  userId: string;
+  cardId: string;
+  
+  // SM-2 Temel Parametreleri
+  easinessFactor: number; // EF: 1.3 - 2.5 arası, başlangıç 2.5
+  interval: number; // Gün cinsinden tekrar aralığı
+  repetitionCount: number; // Başarılı tekrar sayısı
+  
+  // Tarih Bilgileri
+  lastReviewDate: Date | null;
+  nextReviewDate: Date; // Bir sonraki tekrar tarihi
+  
+  // İstatistikler
+  lapses: number; // Unutma sayısı (yanlış cevaplar)
+  totalReviews: number; // Toplam review sayısı
+  
+  // Zorluk Skoru (0-1 arası, 1 = çok zor)
+  difficultyScore: number;
+  
+  // Mastery Level (0-5 seviyeleri)
+  masteryLevel: MasteryLevel;
+  
+  // Son N cevabın geçmişi (difficulty hesaplama için)
+  recentResponses: ResponseRecord[];
+}
+
+// Mastery seviyeleri
+export type MasteryLevel = 0 | 1 | 2 | 3 | 4 | 5;
+// 0: Yeni (hiç görülmedi)
+// 1: Öğreniliyor (1-2 doğru)
+// 2: Tanıdık (3-4 doğru)
+// 3: Biliniyor (5-6 doğru, EF >= 2.0)
+// 4: İyi Biliniyor (7+ doğru, EF >= 2.3)
+// 5: Ustalaşıldı (10+ doğru, EF >= 2.5, interval >= 21 gün)
+
+// Son cevapların kaydı
+export interface ResponseRecord {
+  timestamp: Date;
+  quality: QualityResponse; // 0-3 arası
+  responseTimeMs: number;
+  wasCorrect: boolean;
+}
+
+// ==========================================
+// REVIEW LOG - Her Soru-Cevap Kaydı
+// ==========================================
+export type QualityResponse = 0 | 1 | 2 | 3;
+// 0: Yanlış (hatırlanamadı)
+// 1: Zor (çok düşündükten sonra hatırlandı)
+// 2: İyi (biraz düşündükten sonra hatırlandı)
+// 3: Çok Kolay (anında hatırlandı)
+
+export type QuestionContext = 'mobile' | 'web' | 'desktop';
+
+export interface ReviewLog {
+  id: string;
+  userId: string;
+  cardId: string;
+  wordId: string;
+  
+  timestamp: Date;
+  responseTimeMs: number; // Cevap süresi (milisaniye)
+  quality: QualityResponse; // Kalite puanı (0-3)
+  
+  questionType: QuizType; // Soru tipi
+  wasCorrect: boolean;
+  
+  // Önceki ve sonraki durum (delta tracking)
+  previousEF?: number;
+  newEF?: number;
+  previousInterval?: number;
+  newInterval?: number;
+  
+  context?: QuestionContext;
+}
+
+// ==========================================
+// REVIEW SESSION - Quiz Oturumu
+// ==========================================
+export interface ReviewSession {
+  id: string;
+  userId: string;
+  wordListId: string;
+  
+  startTime: Date;
+  endTime?: Date;
+  
+  // Oturum istatistikleri
+  totalCards: number;
+  reviewedCards: number;
+  correctCount: number;
+  incorrectCount: number;
+  
+  // Detaylı loglar
+  logs: ReviewLog[];
+  
+  // Ortalama metrikler
+  averageResponseTimeMs?: number;
+  averageQuality?: number;
+  
+  isComplete: boolean;
 }
 
 // Kelime listesi

@@ -213,8 +213,9 @@ export const generateQuiz = (
       return generateFlashcardQuiz(words, count);
     case 'write':
       return generateWriteQuiz(words, count);
-    case 'mixed':
-      return generateMixedQuiz(words, count, isEnglishToTurkish);
+    case 'matching':
+      // Matching için multiple-choice kullan (matching component kendi içinde yönetiyor)
+      return generateMultipleChoiceQuiz(words, count, isEnglishToTurkish);
     default:
       return generateMultipleChoiceQuiz(words, count, isEnglishToTurkish);
   }
