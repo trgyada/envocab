@@ -1,6 +1,9 @@
 import React from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Word } from '../types';
+import { useCardStore } from '../stores/cardStore';
+import { useReviewSessionStore } from '../stores/reviewSessionStore';
+import { getMasteryLabel, getMasteryColor } from '../services/sm2Algorithm';
 
 interface ResultsState {
   score: number;
@@ -15,6 +18,10 @@ const Results: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const state = location.state as ResultsState | null;
+  
+  // SM-2 Store'ları
+  const { cards, cardStates, getCardByWordId } = useCardStore();
+  const { getStreakDays, getRecentSessions } = useReviewSessionStore();
 
   if (!state) {
     return (
@@ -102,18 +109,88 @@ const Results: React.FC = () => {
         {wrongWords && wrongWords.length > 0 && (
           <div className="wrong-words-section">
             <h3>
-              ❌ Yanlış Yapılan Kelimeler ({wrongWords.length})
+              ❌ Tekrar Edilmesi Gereken Kelimeler ({wrongWords.length})
             </h3>
             <div style={{ display: 'grid', gap: '10px' }}>
-              {wrongWords.map((word, idx) => (
-                <div key={idx} className="wrong-word-item">
-                  <strong>{word.english}</strong>
-                  <span>{word.turkish}</span>
-                </div>
-              ))}
+              {wrongWords.map((word, idx) => {
+                const card = getCardByWordId(word.id);
+                const cardState = card ? cardStates[card.id] : null;
+                const masteryLevel = cardState?.masteryLevel ?? 0;
+                
+                return (
+                  <div key={idx} className="wrong-word-item" style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    padding: '12px 15px'
+                  }}>
+                    <div>
+                      <strong>{word.english}</strong>
+                      <span style={{ marginLeft: '10px', color: 'var(--text-secondary)' }}>
+                        {word.turkish}
+                      </span>
+                    </div>
+                    <span style={{ 
+                      fontSize: '0.75rem', 
+                      padding: '4px 8px', 
+                      borderRadius: '12px',
+                      backgroundColor: getMasteryColor(masteryLevel),
+                      color: '#fff'
+                    }}>
+                      {getMasteryLabel(masteryLevel)}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
+        
+        {/* SM-2 Özet Bilgisi */}
+        <div style={{ 
+          marginTop: '25px', 
+          padding: '15px', 
+          backgroundColor: 'rgba(102, 126, 234, 0.1)', 
+          borderRadius: '12px',
+          textAlign: 'center'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>
+                🔥 {getStreakDays()}
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                Günlük Seri
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--success-color)' }}>
+                📊 {getRecentSessions(30).length}
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                Bu Ay Quiz
+              </div>
+            </div>
+            {cardStates && Object.keys(cardStates).length > 0 && (
+              <div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--warning-color)' }}>
+                  📚 {Object.values(cardStates).filter(s => s.masteryLevel >= 3).length}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  Öğrenilen
+                </div>
+              </div>
+            )}
+          </div>
+          <p style={{ 
+            marginTop: '15px', 
+            fontSize: '0.9rem', 
+            color: 'var(--text-secondary)',
+            marginBottom: 0
+          }}>
+            💡 Spaced repetition sistemi ile kelimeler en uygun zamanda tekrar edilecek
+          </p>
+        </div>
 
         <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '30px' }}>
           <button 
