@@ -2,8 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWordListStore } from '../stores/wordListStore';
 import { useUserProgressStore } from '../stores/userProgressStore';
-import { QuizQuestion, QuizType, Word } from '../types';
-import { generateQuiz, calculateScore } from '../services/quizEngine';
+import { useCardStore } from '../stores/cardStore';
+import { useReviewSessionStore } from '../stores/reviewSessionStore';
+import { QuizQuestion, QuizType, Word, QualityResponse } from '../types';
+import { generateQuiz, calculateScore, selectWordsForReview, selectWordsSimple } from '../services/quizEngine';
+import { estimateQualityFromResponse } from '../services/sm2Algorithm';
 import MultipleChoice from '../components/MultipleChoice';
 import Matching from '../components/Matching';
 
@@ -47,6 +50,23 @@ const Quiz: React.FC = () => {
   const { wordLists, selectedListId, selectWordList, updateWordMastery } = useWordListStore();
   const { addQuizResult } = useUserProgressStore();
   
+  // SM-2 Store'ları
+  const { 
+    cards, 
+    cardStates, 
+    createCardsFromWords, 
+    getCardByWordId,
+    updateCardState 
+  } = useCardStore();
+  const { 
+    startSession, 
+    endSession, 
+    addReviewLog, 
+    incrementCorrect, 
+    incrementIncorrect,
+    incrementReviewed 
+  } = useReviewSessionStore();
+  
   const [phase, setPhase] = useState<QuizPhase>('select-list');
   const [quizType, setQuizType] = useState<QuizType>('multiple-choice');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
@@ -57,11 +77,15 @@ const Quiz: React.FC = () => {
   const [questionCount, setQuestionCount] = useState(10);
   const [onlyDifficultWords, setOnlyDifficultWords] = useState(false); // Sadece zor kelimeler
   const [quizDirection, setQuizDirection] = useState<'en-to-tr' | 'tr-to-en'>('en-to-tr'); // Quiz yönü
+  const [useSM2Selection, setUseSM2Selection] = useState(true); // SM-2 tabanlı kelime seçimi
   
   // Flashcard specific state
   const [flashcardWords, setFlashcardWords] = useState<Word[]>([]);
   const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  
+  // Soru başlangıç zamanı (response time hesabı için)
+  const questionStartTimeRef = useRef<number>(0);
 
   // useRef to track total questions (to avoid closure issues)
   const totalQuestionsRef = useRef(0);
@@ -78,12 +102,41 @@ const Quiz: React.FC = () => {
       setPhase('select-type');
     }
   }, [selectedListId, wordLists]);
+  
+  // Kelime listesi seçildiğinde kartları oluştur
+  useEffect(() => {
+    if (selectedList && selectedList.words.length > 0) {
+      createCardsFromWords(selectedList.words);
+    }
+  }, [selectedList, createCardsFromWords]);
 
   const handleStartQuiz = () => {
     if (!selectedList) return;
 
-    // Kullanılacak kelimeleri belirle
-    const wordsToUse = onlyDifficultWords ? difficultWords : selectedList.words;
+    // SM-2 tabanlı kelime seçimi veya basit seçim
+    let wordsToUse: Word[];
+    
+    if (onlyDifficultWords) {
+      wordsToUse = difficultWords;
+    } else if (useSM2Selection && cards.length > 0) {
+      // SM-2 tabanlı akıllı kelime seçimi
+      wordsToUse = selectWordsForReview(
+        selectedList.words,
+        cardStates,
+        cards,
+        { 
+          limit: questionCount, 
+          newCardLimit: Math.ceil(questionCount / 3),
+          shuffle: true 
+        }
+      );
+    } else {
+      // Basit kelime seçimi (zorluk öncelikli)
+      wordsToUse = selectWordsSimple(selectedList.words, { 
+        limit: questionCount, 
+        prioritizeDifficult: true 
+      });
+    }
     
     if (wordsToUse.length === 0) {
       alert('Bu kategoride kelime bulunamadı!');
@@ -95,28 +148,33 @@ const Quiz: React.FC = () => {
     // Mark quiz as started
     quizStartedRef.current = true;
     
+    // SM-2 oturumunu başlat
+    startSession(selectedListId || '', count);
+    
     // Reset all state
     setStartTime(new Date());
+    questionStartTimeRef.current = Date.now();
     setCorrectCount(0);
     setWrongWords([]);
     setCurrentIndex(0);
     
     if (quizType === 'matching') {
+      // Matching için kelimeleri ayarla
+      setFlashcardWords(wordsToUse.slice(0, 8)); // Matching max 8 kelime
       setPhase('quiz');
       return;
     }
 
     if (quizType === 'flashcard') {
-      const shuffled = [...wordsToUse].sort(() => Math.random() - 0.5).slice(0, count);
-      setFlashcardWords(shuffled);
+      setFlashcardWords(wordsToUse.slice(0, count));
       setCurrentFlashcardIndex(0);
       setIsFlipped(false);
-      totalQuestionsRef.current = shuffled.length;
+      totalQuestionsRef.current = Math.min(count, wordsToUse.length);
       setPhase('quiz');
       return;
     }
 
-    // Multiple choice or mixed
+    // Multiple choice
     const isEnglishToTurkish = quizDirection === 'en-to-tr';
     const generatedQuestions = generateQuiz(wordsToUse, quizType, count, isEnglishToTurkish);
     console.log('Generated', generatedQuestions.length, 'questions');
@@ -131,6 +189,9 @@ const Quiz: React.FC = () => {
 
     // Reset quiz started flag
     quizStartedRef.current = false;
+    
+    // SM-2 oturumunu bitir
+    endSession();
 
     addQuizResult({
       sessionId: crypto.randomUUID(),
@@ -156,15 +217,50 @@ const Quiz: React.FC = () => {
       } 
     });
   };
+  
+  // SM-2 kart güncellemesi
+  const updateSM2CardState = (word: Word, isCorrect: boolean, responseTimeMs: number) => {
+    const card = getCardByWordId(word.id);
+    if (!card) return;
+    
+    // Kalite puanını hesapla
+    const quality = estimateQualityFromResponse(responseTimeMs, isCorrect);
+    
+    // Kart durumunu güncelle
+    updateCardState(card.id, quality, responseTimeMs);
+    
+    // Review log ekle
+    addReviewLog({
+      cardId: card.id,
+      wordId: word.id,
+      responseTimeMs,
+      quality,
+      questionType: quizType,
+      wasCorrect: isCorrect,
+    });
+    
+    // Oturum sayaçlarını güncelle
+    incrementReviewed();
+    if (isCorrect) {
+      incrementCorrect();
+    } else {
+      incrementIncorrect();
+    }
+  };
 
   const handleAnswer = (isCorrect: boolean, word: Word) => {
     const totalQuestions = totalQuestionsRef.current;
+    const responseTimeMs = Date.now() - questionStartTimeRef.current;
     
-    console.log('Answer - currentIndex:', currentIndex, 'totalQuestions:', totalQuestions);
+    console.log('Answer - currentIndex:', currentIndex, 'totalQuestions:', totalQuestions, 'responseTime:', responseTimeMs);
     
+    // Eski mastery sistemini güncelle
     if (selectedListId) {
       updateWordMastery(selectedListId, word.id, isCorrect);
     }
+    
+    // SM-2 kart durumunu güncelle
+    updateSM2CardState(word, isCorrect, responseTimeMs);
 
     const newCorrectCount = isCorrect ? correctCount + 1 : correctCount;
     const newWrongWords = isCorrect ? wrongWords : [...wrongWords, word];
@@ -181,6 +277,8 @@ const Quiz: React.FC = () => {
     } else {
       setTimeout(() => {
         setCurrentIndex(prev => prev + 1);
+        // Yeni soru için timer'ı resetle
+        questionStartTimeRef.current = Date.now();
       }, 1200);
     }
   };
@@ -188,10 +286,15 @@ const Quiz: React.FC = () => {
   const handleFlashcardAnswer = (knew: boolean) => {
     const currentWord = flashcardWords[currentFlashcardIndex];
     const totalCards = flashcardWords.length;
+    const responseTimeMs = Date.now() - questionStartTimeRef.current;
     
+    // Eski mastery sistemini güncelle
     if (selectedListId) {
       updateWordMastery(selectedListId, currentWord.id, knew);
     }
+    
+    // SM-2 kart durumunu güncelle
+    updateSM2CardState(currentWord, knew, responseTimeMs);
 
     const newCorrectCount = knew ? correctCount + 1 : correctCount;
     const newWrongWords = knew ? wrongWords : [...wrongWords, currentWord];
@@ -209,8 +312,24 @@ const Quiz: React.FC = () => {
     } else {
       setTimeout(() => {
         setCurrentFlashcardIndex(prev => prev + 1);
+        // Yeni kart için timer'ı resetle
+        questionStartTimeRef.current = Date.now();
       }, 300);
     }
+  };
+  
+  // Matching için kelime sonucu handler
+  const handleMatchingWordResult = (wordId: string, isCorrect: boolean) => {
+    const word = selectedList?.words.find(w => w.id === wordId);
+    if (!word) return;
+    
+    const responseTimeMs = Date.now() - questionStartTimeRef.current;
+    
+    // SM-2 kart durumunu güncelle
+    updateSM2CardState(word, isCorrect, responseTimeMs);
+    
+    // Timer'ı resetle
+    questionStartTimeRef.current = Date.now();
   };
 
   const handleMatchingComplete = (correct: number, total: number, wrong: Word[]) => {
@@ -221,6 +340,8 @@ const Quiz: React.FC = () => {
   const handleExitQuiz = () => {
     if (window.confirm('Quiz\'den çıkmak istediğinize emin misiniz? İlerlemeniz kaydedilmeyecek.')) {
       quizStartedRef.current = false;
+      // SM-2 oturumunu iptal et
+      endSession();
       setPhase('select-type');
       setCurrentIndex(0);
       setCorrectCount(0);
@@ -446,16 +567,22 @@ const Quiz: React.FC = () => {
   if (phase === 'quiz' && selectedList) {
     // Matching Game
     if (quizType === 'matching') {
-      const wordsForMatching = onlyDifficultWords ? difficultWords : selectedList.words;
+      // SM-2 seçimi yapıldıysa flashcardWords'ü, yapılmadıysa eski mantığı kullan
+      const wordsForMatching = flashcardWords.length > 0 
+        ? flashcardWords 
+        : (onlyDifficultWords ? difficultWords : selectedList.words).slice(0, 8);
       return (
         <Matching 
-          words={wordsForMatching.slice(0, 8)} 
+          words={wordsForMatching} 
           onComplete={handleMatchingComplete}
           onExit={handleExitQuiz}
           onWordResult={(wordId, isCorrect) => {
+            // Eski mastery güncelleme
             if (selectedListId) {
               updateWordMastery(selectedListId, wordId, isCorrect);
             }
+            // SM-2 güncelleme
+            handleMatchingWordResult(wordId, isCorrect);
           }}
         />
       );
