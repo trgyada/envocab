@@ -1,5 +1,6 @@
-import { Word, QuizQuestion, QuizType, MatchingCard, MatchingPair } from '../types';
+import { Word, QuizQuestion, QuizType, MatchingCard, MatchingPair, UserCardState, Card } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { prioritizeCards, getDueCards } from './sm2Algorithm';
 
 /**
  * Diziyi karıştırır (Fisher-Yates shuffle)
@@ -227,4 +228,208 @@ export const generateQuiz = (
 export const calculateScore = (correct: number, total: number): number => {
   if (total === 0) return 0;
   return Math.round((correct / total) * 100);
+};
+
+// ==========================================
+// SM-2 ENTEGRE KELIME SEÇİMİ
+// ==========================================
+
+/**
+ * SM-2 algoritmasına göre kelime seçimi yapar
+ * 
+ * Öncelik sırası:
+ * 1. Due (tekrar zamanı gelmiş) kartlar
+ * 2. Yüksek zorluk skorlu kartlar
+ * 3. Düşük mastery level'lı kartlar
+ * 4. Yeni kartlar (hiç görülmemiş)
+ * 
+ * @param words - Mevcut kelime listesi
+ * @param cardStates - Kart durumları (cardId -> UserCardState)
+ * @param cards - Kartlar listesi
+ * @param options - Seçim opsiyonları
+ */
+export interface SelectWordsOptions {
+  /** Maksimum kelime sayısı */
+  limit?: number;
+  /** Sadece due kartları getir */
+  dueOnly?: boolean;
+  /** Yeni kart limiti (hiç görülmemiş) */
+  newCardLimit?: number;
+  /** Karıştır */
+  shuffle?: boolean;
+}
+
+export const selectWordsForReview = (
+  words: Word[],
+  cardStates: Record<string, UserCardState>,
+  cards: Card[],
+  options: SelectWordsOptions = {}
+): Word[] => {
+  const {
+    limit = 20,
+    dueOnly = false,
+    newCardLimit = 5,
+    shuffle = true,
+  } = options;
+
+  // Word ID -> Word map oluştur
+  const wordMap = new Map(words.map(w => [w.id, w]));
+  
+  // Card -> Word ID map oluştur
+  const cardToWordId = new Map(cards.map(c => [c.id, c.wordId]));
+  
+  // Mevcut card state'lerini filtrele
+  const relevantStates = Object.values(cardStates).filter(state => {
+    const wordId = cardToWordId.get(state.cardId);
+    return wordId && wordMap.has(wordId);
+  });
+
+  // Due kartları bul
+  const dueStates = getDueCards(relevantStates);
+  const prioritizedDueStates = prioritizeCards(dueStates);
+  
+  // Due word'leri al
+  const dueWordIds = new Set(
+    prioritizedDueStates
+      .slice(0, limit)
+      .map(state => cardToWordId.get(state.cardId))
+      .filter((id): id is string => !!id)
+  );
+  
+  const dueWords = words.filter(w => dueWordIds.has(w.id));
+  
+  if (dueOnly) {
+    return shuffle ? shuffleArray(dueWords) : dueWords;
+  }
+  
+  // Yeni kartları bul (hiç state'i olmayan veya totalReviews === 0)
+  const seenWordIds = new Set(
+    relevantStates
+      .filter(s => s.totalReviews > 0)
+      .map(s => cardToWordId.get(s.cardId))
+  );
+  
+  const newWords = words.filter(w => !seenWordIds.has(w.id));
+  const selectedNewWords = shuffle 
+    ? shuffleArray(newWords).slice(0, newCardLimit)
+    : newWords.slice(0, newCardLimit);
+  
+  // Due + Yeni kelimeleri birleştir
+  const selectedWordIds = new Set([
+    ...dueWords.map(w => w.id),
+    ...selectedNewWords.map(w => w.id),
+  ]);
+  
+  // Limit'e ulaşılmadıysa, diğer kartlardan ekle (zorluk sırasına göre)
+  if (selectedWordIds.size < limit) {
+    const remaining = limit - selectedWordIds.size;
+    const allPrioritized = prioritizeCards(relevantStates);
+    
+    for (const state of allPrioritized) {
+      if (selectedWordIds.size >= limit) break;
+      
+      const wordId = cardToWordId.get(state.cardId);
+      if (wordId && !selectedWordIds.has(wordId)) {
+        selectedWordIds.add(wordId);
+      }
+    }
+  }
+  
+  // Seçilen kelimeleri döndür
+  const selectedWords = words.filter(w => selectedWordIds.has(w.id));
+  
+  return shuffle ? shuffleArray(selectedWords) : selectedWords;
+};
+
+/**
+ * Basit kelime seçimi (SM-2 state'siz)
+ * Mevcut mastery ve incorrect count'a göre öncelik verir
+ */
+export const selectWordsSimple = (
+  words: Word[],
+  options: { limit?: number; prioritizeDifficult?: boolean } = {}
+): Word[] => {
+  const { limit = 20, prioritizeDifficult = true } = options;
+  
+  if (!prioritizeDifficult) {
+    return shuffleArray(words).slice(0, limit);
+  }
+  
+  // Zorluk skoruna göre sırala (düşük mastery, yüksek incorrect)
+  const scored = words.map(word => ({
+    word,
+    score: (100 - word.mastery) + (word.incorrectCount * 10),
+  }));
+  
+  // Skora göre sırala
+  scored.sort((a, b) => b.score - a.score);
+  
+  // İlk yarısından rastgele seç (tamamen deterministic olmasın)
+  const topHalf = scored.slice(0, Math.max(limit * 2, scored.length));
+  const shuffled = shuffleArray(topHalf);
+  
+  return shuffled.slice(0, limit).map(s => s.word);
+};
+
+/**
+ * Belirli bir word list için quiz kelimelerini seçer
+ * CardStore entegrasyonu için wrapper
+ */
+export interface QuizSelectionResult {
+  words: Word[];
+  dueCount: number;
+  newCount: number;
+  reviewCount: number;
+}
+
+export const prepareQuizWords = (
+  words: Word[],
+  cardStates: Record<string, UserCardState>,
+  cards: Card[],
+  options: SelectWordsOptions = {}
+): QuizSelectionResult => {
+  const selectedWords = selectWordsForReview(words, cardStates, cards, options);
+  
+  // Word ID -> Word map
+  const wordMap = new Map(words.map(w => [w.id, w]));
+  
+  // Card -> Word ID map
+  const cardToWordId = new Map(cards.map(c => [c.id, c.wordId]));
+  
+  // Kategorileri say
+  let dueCount = 0;
+  let newCount = 0;
+  let reviewCount = 0;
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  selectedWords.forEach(word => {
+    const card = cards.find(c => c.wordId === word.id);
+    if (!card) {
+      newCount++;
+      return;
+    }
+    
+    const state = cardStates[card.id];
+    if (!state || state.totalReviews === 0) {
+      newCount++;
+    } else {
+      const nextReview = new Date(state.nextReviewDate);
+      nextReview.setHours(0, 0, 0, 0);
+      
+      if (nextReview <= today) {
+        dueCount++;
+      } else {
+        reviewCount++;
+      }
+    }
+  });
+  
+  return {
+    words: selectedWords,
+    dueCount,
+    newCount,
+    reviewCount,
+  };
 };
