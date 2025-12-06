@@ -1,0 +1,186 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { useUserProgressStore } from '../stores/userProgressStore';
+import { useWordListStore } from '../stores/wordListStore';
+import ProgressChart from '../components/ProgressChart';
+
+const Analytics: React.FC = () => {
+  const { stats, quizResults, getWeakWords } = useUserProgressStore();
+  const { wordLists } = useWordListStore();
+
+  const weakWords = getWeakWords();
+
+  // Son 7 günün verilerini hesapla
+  const getLast7DaysData = () => {
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      const dayResults = quizResults.filter(r => {
+        const resultDate = new Date(r.completedAt).toISOString().split('T')[0];
+        return resultDate === dateStr;
+      });
+
+      days.push({
+        date: date.toLocaleDateString('tr-TR', { weekday: 'short' }),
+        quizCount: dayResults.length,
+        avgScore: dayResults.length > 0 
+          ? Math.round(dayResults.reduce((sum, r) => sum + r.score, 0) / dayResults.length)
+          : 0,
+      });
+    }
+    return days;
+  };
+
+  const chartData = getLast7DaysData();
+
+  if (quizResults.length === 0) {
+    return (
+      <div className="analytics-container">
+        <h1 style={{ marginBottom: '30px' }}>📈 İstatistikler</h1>
+        <div className="empty-state">
+          <div className="empty-state-icon">📊</div>
+          <p>Henüz istatistik yok.</p>
+          <p style={{ fontSize: '0.9rem', marginBottom: '20px' }}>
+            Quiz tamamladıkça performansınız burada görünecek.
+          </p>
+          <Link to="/quiz" className="btn btn-primary">
+            İlk Quiz'i Başlat
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="analytics-container">
+      <h1 style={{ marginBottom: '30px' }}>📈 İstatistikler</h1>
+
+      {/* Genel İstatistikler */}
+      <div className="analytics-grid" style={{ marginBottom: '30px' }}>
+        <div className="analytics-card">
+          <h3 style={{ color: 'var(--primary-color)', marginBottom: '15px' }}>📊 Genel Performans</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            <div>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.totalQuizzes}</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Toplam Quiz</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>%{stats.averageScore}</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Ortalama Skor</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success-color)' }}>
+                %{stats.bestScore}
+              </div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>En İyi Skor</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning-color)' }}>
+                {stats.streakDays} 🔥
+              </div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Gün Serisi</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="analytics-card">
+          <h3 style={{ color: 'var(--secondary-color)', marginBottom: '15px' }}>📚 Kelime Havuzu</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            <div>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{wordLists.length}</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Liste Sayısı</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
+                {wordLists.reduce((sum, list) => sum + list.words.length, 0)}
+              </div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Toplam Kelime</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.totalWords}</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Çalışılan Kelime</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.totalStudyTime} dk</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Çalışma Süresi</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Haftalık Grafik */}
+      <div className="analytics-card" style={{ marginBottom: '30px' }}>
+        <h3 style={{ marginBottom: '20px' }}>📅 Son 7 Gün</h3>
+        <ProgressChart data={chartData} />
+      </div>
+
+      {/* Zayıf Kelimeler */}
+      {weakWords.length > 0 && (
+        <div className="analytics-card" style={{ marginBottom: '30px' }}>
+          <h3 style={{ color: 'var(--danger-color)', marginBottom: '15px' }}>
+            ⚠️ Dikkat Edilmesi Gereken Kelimeler
+          </h3>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '15px', fontSize: '0.9rem' }}>
+            Bu kelimeler en çok yanlış yapılanlar. Bunlara özel çalışmanızı öneriyoruz.
+          </p>
+          <div style={{ display: 'grid', gap: '10px' }}>
+            {weakWords.slice(0, 10).map((word, idx) => (
+              <div 
+                key={idx}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  padding: '12px 15px',
+                  background: 'var(--background-color)',
+                  borderRadius: '8px',
+                  borderLeft: '3px solid var(--warning-color)'
+                }}
+              >
+                <strong>{word.english}</strong>
+                <span style={{ color: 'var(--text-secondary)' }}>{word.turkish}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Son Quiz Sonuçları */}
+      <div className="analytics-card">
+        <h3 style={{ marginBottom: '15px' }}>🕐 Son Quiz Sonuçları</h3>
+        <div style={{ display: 'grid', gap: '10px' }}>
+          {quizResults.slice(0, 10).map((result, idx) => (
+            <div 
+              key={idx}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 15px',
+                background: 'var(--background-color)',
+                borderRadius: '8px',
+              }}
+            >
+              <div>
+                <div style={{ fontWeight: '500' }}>{result.wordListTitle}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  {new Date(result.completedAt).toLocaleDateString('tr-TR')} • {result.quizType}
+                </div>
+              </div>
+              <div style={{ 
+                fontWeight: 'bold', 
+                color: result.score >= 70 ? 'var(--success-color)' : 'var(--warning-color)' 
+              }}>
+                %{result.score}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Analytics;

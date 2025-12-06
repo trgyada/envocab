@@ -1,0 +1,98 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { useWordListStore } from '../stores/wordListStore';
+import { useUserProgressStore } from '../stores/userProgressStore';
+
+const Home: React.FC = () => {
+  const { wordLists } = useWordListStore();
+  const { stats } = useUserProgressStore();
+
+  const totalWords = wordLists.reduce((acc, list) => acc + list.words.length, 0);
+
+  return (
+    <div className="home-container">
+      <h1>VocabMaster</h1>
+      <p>
+        Excel dosyalarından kelime listeleri yükle, farklı quiz türleriyle pratik yap 
+        ve gelişimini takip et!
+      </p>
+
+      {/* Hızlı İstatistikler */}
+      <div className="stats-overview">
+        <div className="stat-box">
+          <div className="stat-icon">📚</div>
+          <div className="stat-value">{wordLists.length}</div>
+          <div className="stat-label">Kelime Listesi</div>
+        </div>
+        <div className="stat-box">
+          <div className="stat-icon">📝</div>
+          <div className="stat-value">{totalWords}</div>
+          <div className="stat-label">Toplam Kelime</div>
+        </div>
+        <div className="stat-box">
+          <div className="stat-icon">🎯</div>
+          <div className="stat-value">{stats.totalQuizzes}</div>
+          <div className="stat-label">Quiz Tamamlandı</div>
+        </div>
+        <div className="stat-box">
+          <div className="stat-icon">🔥</div>
+          <div className="stat-value">{stats.streakDays}</div>
+          <div className="stat-label">Gün Serisi</div>
+        </div>
+      </div>
+
+      <div className="navigation">
+        <Link to="/word-lists" className="nav-card">
+          <span className="nav-card-icon">📋</span>
+          <h3 className="nav-card-title">Kelime Listeleri</h3>
+          <p className="nav-card-description">
+            Excel veya CSV dosyalarından kelime listeleri yükle ve düzenle
+          </p>
+          {wordLists.length > 0 && (
+            <span className="nav-card-badge">{wordLists.length} Liste</span>
+          )}
+        </Link>
+
+        <Link to="/quiz" className="nav-card">
+          <span className="nav-card-icon">🧠</span>
+          <h3 className="nav-card-title">Quiz Başlat</h3>
+          <p className="nav-card-description">
+            Çoktan seçmeli, flashcard veya eşleştirme oyunu ile pratik yap
+          </p>
+          <span className="nav-card-badge">3 Mod</span>
+        </Link>
+
+        <Link to="/analytics" className="nav-card">
+          <span className="nav-card-icon">�</span>
+          <h3 className="nav-card-title">İstatistikler</h3>
+          <p className="nav-card-description">
+            Performansını analiz et, güçlü ve zayıf yönlerini keşfet
+          </p>
+          {stats.averageScore > 0 && (
+            <span className="nav-card-badge">%{stats.averageScore} Ortalama</span>
+          )}
+        </Link>
+      </div>
+
+      {/* Başlangıç Rehberi */}
+      {wordLists.length === 0 && (
+        <div className="getting-started">
+          <h3>🚀 Nasıl Başlarım?</h3>
+          <ol>
+            <li>
+              Excel veya CSV dosyası hazırla (1. sütun: İngilizce, 2. sütun: Türkçe)
+            </li>
+            <li>
+              "Kelime Listeleri" sayfasından dosyanı yükle
+            </li>
+            <li>
+              Quiz modunu seç ve öğrenmeye başla!
+            </li>
+          </ol>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Home;

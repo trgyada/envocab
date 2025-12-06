@@ -1,0 +1,27 @@
+{
+  "name": "EN Vocab - Kelime Quiz Uygulaması",
+  "short_name": "EN Vocab",
+  "description": "İngilizce kelime öğrenme uygulaması - Flashcard, Quiz ve daha fazlası",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f1a",
+  "theme_color": "#667eea",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["education", "utilities"],
+  "lang": "tr",
+  "dir": "ltr"
+}
