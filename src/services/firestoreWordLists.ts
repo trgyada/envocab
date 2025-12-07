@@ -25,10 +25,32 @@ const toDate = (value: any): Date | undefined => {
   return isNaN(parsed.getTime()) ? undefined : parsed;
 };
 
-const serializeWord = (word: Word) => ({
-  ...word,
-  lastPracticed: word.lastPracticed ? toTimestamp(word.lastPracticed) : null,
-});
+const serializeWord = (word: Word) => {
+  const base: any = {
+    id: word.id,
+    english: word.english,
+    turkish: word.turkish,
+    mastery: word.mastery || 0,
+    correctCount: word.correctCount || 0,
+    incorrectCount: word.incorrectCount || 0,
+    lastPracticed: word.lastPracticed ? toTimestamp(word.lastPracticed) : null,
+  };
+
+  if (word.partOfSpeech) {
+    base.partOfSpeech = word.partOfSpeech;
+  }
+  if (word.difficultyLevel) {
+    base.difficultyLevel = word.difficultyLevel;
+  }
+  if (word.frequencyRank !== undefined) {
+    base.frequencyRank = word.frequencyRank;
+  }
+  if (word.tags) {
+    base.tags = word.tags;
+  }
+
+  return base;
+};
 
 const serializeWordList = (list: WordList) => ({
   title: list.title,
@@ -43,9 +65,9 @@ const deserializeWord = (raw: any): Word => ({
   english: raw.english,
   turkish: raw.turkish,
   partOfSpeech: raw.partOfSpeech,
-  mastery: raw.mastery || 0,
-  correctCount: raw.correctCount || 0,
-  incorrectCount: raw.incorrectCount || 0,
+  mastery: raw.mastery ?? 0,
+  correctCount: raw.correctCount ?? 0,
+  incorrectCount: raw.incorrectCount ?? 0,
   lastPracticed: toDate(raw.lastPracticed),
 });
 
