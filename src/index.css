@@ -98,6 +98,9 @@ a {
   gap: 10px;
 }
 
+.brand-icon {
+  font-size: 1.3rem;
+}
 .navbar-brand span {
   font-size: 1.4rem;
 }
@@ -115,12 +118,30 @@ a {
   padding: 10px 12px;
   border-radius: var(--radius-md);
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .nav-link:hover,
 .nav-link.active {
   background: rgba(255, 152, 0, 0.18);
   color: #fff;
+}
+
+.nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.nav-icon.primary {
+  color: var(--primary);
+}
+
+.nav-icon.accent {
+  color: var(--accent);
 }
 
 .btn {
