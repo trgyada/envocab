@@ -12,17 +12,14 @@ import Matching from '../components/Matching';
 
 type QuizPhase = 'select-list' | 'select-type' | 'quiz' | 'finished';
 
-// Timer Component
 const Timer: React.FC<{ startTime: Date | null }> = ({ startTime }) => {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     if (!startTime) return;
-
     const interval = setInterval(() => {
       setElapsed(Math.floor((Date.now() - startTime.getTime()) / 1000));
     }, 1000);
-
     return () => clearInterval(interval);
   }, [startTime]);
 
@@ -53,7 +50,6 @@ const Quiz: React.FC = () => {
   const { wordLists, selectedListId, selectWordList, updateWordMastery } = useWordListStore();
   const { addQuizResult } = useUserProgressStore();
 
-  // SM-2 stores
   const { cards, cardStates, createCardsFromWords, getCardByWordId, updateCardState } = useCardStore();
   const { startSession, endSession, addReviewLog, incrementCorrect, incrementIncorrect, incrementReviewed } =
     useReviewSessionStore();
@@ -64,6 +60,7 @@ const Quiz: React.FC = () => {
 
   const [phase, setPhase] = useState<QuizPhase>('select-list');
   const [quizType, setQuizType] = useState<QuizType>('multiple-choice');
+  const [quizDirection, setQuizDirection] = useState<'en-to-tr' | 'tr-to-en' | 'mixed'>('mixed');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
@@ -73,7 +70,6 @@ const Quiz: React.FC = () => {
   const [onlyDifficultWords, setOnlyDifficultWords] = useState(false);
   const [useSM2Selection, setUseSM2Selection] = useState(true);
 
-  // Flashcard specific state
   const [flashcardWords, setFlashcardWords] = useState<Word[]>([]);
   const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -87,12 +83,10 @@ const Quiz: React.FC = () => {
   const difficultWords =
     selectedList?.words.filter((w) => w.incorrectCount > 0 || (w.correctCount > 0 && w.mastery < 50)) || [];
 
-  // Due review -> skip list selection
   useEffect(() => {
     if (isDueReviewMode && dueWordIds.length > 0) {
       const allWords = wordLists.flatMap((list) => list.words);
       const dueWords = allWords.filter((w) => dueWordIds.includes(w.id));
-
       if (dueWords.length > 0) {
         setFlashcardWords(dueWords);
         setQuestionCount(dueWords.length);
@@ -104,19 +98,29 @@ const Quiz: React.FC = () => {
     }
   }, [isDueReviewMode, dueWordIds, selectWordList, selectedListId, wordLists]);
 
-  // Move to select-type when a list is chosen
   useEffect(() => {
     if (!quizStartedRef.current && selectedListId && wordLists.find((l) => l.id === selectedListId)) {
       setPhase('select-type');
     }
   }, [selectedListId, wordLists]);
 
-  // Create cards when list changes
   useEffect(() => {
     if (selectedList && selectedList.words.length > 0) {
       createCardsFromWords(selectedList.words);
     }
   }, [selectedList, createCardsFromWords]);
+
+  const getOptionMeaning = (option: string) => {
+    const list = selectedList;
+    if (!list) return '';
+    const lower = option.trim().toLowerCase();
+    // if option matches turkish -> return english, else if matches english -> return turkish
+    const matchTr = list.words.find((w) => w.turkish.trim().toLowerCase() === lower);
+    if (matchTr) return matchTr.english;
+    const matchEn = list.words.find((w) => w.english.trim().toLowerCase() === lower);
+    if (matchEn) return matchEn.turkish;
+    return '';
+  };
 
   const handleStartQuiz = () => {
     if (!selectedList) return;
@@ -169,7 +173,7 @@ const Quiz: React.FC = () => {
       return;
     }
 
-    const generatedQuestions = generateQuiz(wordsToUse, quizType, count, 'mixed');
+    const generatedQuestions = generateQuiz(wordsToUse, quizType, count, quizDirection);
     setQuestions(generatedQuestions);
     totalQuestionsRef.current = generatedQuestions.length;
     setPhase('quiz');
@@ -207,6 +211,12 @@ const Quiz: React.FC = () => {
     });
   };
 
+  const handleFinishEarly = () => {
+    const total = totalQuestionsRef.current || questions.length || flashcardWords.length || 0;
+    const effectiveTotal = Math.max(currentIndex + 1, totalQuestionsRef.current || questions.length || flashcardWords.length || 0);
+    finishQuiz(correctCount, effectiveTotal, wrongWords);
+  };
+
   const updateSM2CardState = (word: Word, isCorrect: boolean, responseTimeMs: number) => {
     const card = getCardByWordId(word.id);
     if (!card) return;
@@ -232,7 +242,7 @@ const Quiz: React.FC = () => {
   };
 
   const handleAnswer = (isCorrect: boolean, word: Word) => {
-    const totalQuestions = totalQuestionsRef.current;
+    const totalQuestions = totalQuestionsRef.current || questions.length;
     const responseTimeMs = Date.now() - questionStartTimeRef.current;
 
     if (selectedListId) {
@@ -256,7 +266,7 @@ const Quiz: React.FC = () => {
       setTimeout(() => {
         setCurrentIndex((prev) => prev + 1);
         questionStartTimeRef.current = Date.now();
-      }, 900);
+      }, 1000);
     }
   };
 
@@ -280,13 +290,13 @@ const Quiz: React.FC = () => {
     const isLastCard = currentFlashcardIndex >= totalCards - 1;
 
     if (isLastCard) {
-      setTimeout(() => finishQuiz(newCorrectCount, totalCards, newWrongWords), 500);
+      setTimeout(() => finishQuiz(newCorrectCount, totalCards, newWrongWords), 1000);
     } else {
       setTimeout(() => {
         setCurrentFlashcardIndex((prev) => prev + 1);
         setFlashcardDirection(Math.random() < 0.5 ? 'en-to-tr' : 'tr-to-en');
         questionStartTimeRef.current = Date.now();
-      }, 300);
+      }, 1000);
     }
   };
 
@@ -362,7 +372,7 @@ const Quiz: React.FC = () => {
         <div style={{ maxWidth: '520px', margin: '0 auto' }}>
           <div style={{ marginBottom: '30px' }}>
             <label style={{ display: 'block', marginBottom: '10px', fontWeight: '600' }}>
-              ❓ Soru Sayısı: {questionCount}
+              Soru Sayisi: {questionCount}
             </label>
             <input
               type="range"
@@ -401,6 +411,26 @@ const Quiz: React.FC = () => {
                   <span className="quiz-type-icon">{icon}</span>
                   <span className="quiz-type-label">{label}</span>
                 </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600' }}>Soru yonu</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+              {[
+                { value: 'mixed' as const, label: 'Karışık' },
+                { value: 'en-to-tr' as const, label: 'İng → Tr' },
+                { value: 'tr-to-en' as const, label: 'Tr → İng' },
+              ].map((item) => (
+                <button
+                  key={item.value}
+                  onClick={() => setQuizDirection(item.value)}
+                  className={`btn ${quizDirection === item.value ? 'btn-primary' : 'btn-outline'}`}
+                  style={{ width: '100%', padding: '10px 12px' }}
+                >
+                  {item.label}
+                </button>
               ))}
             </div>
           </div>
@@ -455,26 +485,6 @@ const Quiz: React.FC = () => {
             )}
           </div>
 
-         {/*<div
-            style={{
-              marginBottom: '30px',
-              padding: '15px',
-              borderRadius: '12px',
-              background: 'rgba(255, 152, 0, 0.14)',
-              border: '1px solid rgba(255, 152, 0, 0.25)'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '1.4rem' }}>🔀</span>
-              <div>
-                <div style={{ fontWeight: '700', color: 'var(--primary)' }}>Karışık Mod</div>
-                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                  Sorular rastgele İngilizce→Türkçe veya Türkçe→İngilizce gelir.
-                </div>
-              </div>
-            </div>
-          </div>*/}
-
           <button
             className="btn btn-primary btn-lg"
             onClick={handleStartQuiz}
@@ -525,9 +535,14 @@ const Quiz: React.FC = () => {
 
       return (
         <div className="quiz-container">
-          <button className="quiz-exit-btn" onClick={handleExitQuiz} title="Quizden çık">
-            ✖️
-          </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <button className="quiz-exit-btn" onClick={handleExitQuiz} title="Quizden çık">
+              ✖️
+            </button>
+            <button className="btn btn-outline btn-sm" onClick={() => handleFinishEarly()}>
+              Testi Bitir
+            </button>
+          </div>
 
           <div className="quiz-header">
             <div className="quiz-progress">
@@ -590,9 +605,14 @@ const Quiz: React.FC = () => {
 
       return (
         <div className="quiz-container">
-          <button className="quiz-exit-btn" onClick={handleExitQuiz} title="Quizden çık">
-            ✖️
-          </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <button className="quiz-exit-btn" onClick={handleExitQuiz} title="Quizden çık">
+              ✖️
+            </button>
+            <button className="btn btn-outline btn-sm" onClick={() => handleFinishEarly()}>
+              Testi Bitir
+            </button>
+          </div>
 
           <div className="quiz-header">
             <div className="quiz-progress">
@@ -605,7 +625,11 @@ const Quiz: React.FC = () => {
             <span className="quiz-counter">Soru {currentIndex + 1} / {questions.length}</span>
           </div>
 
-          <MultipleChoice question={currentQuestion} onAnswer={(isCorrect) => handleAnswer(isCorrect, currentQuestion.word)} />
+          <MultipleChoice
+            question={currentQuestion}
+            onAnswer={(isCorrect, word) => handleAnswer(isCorrect, word)}
+            optionMeaning={getOptionMeaning}
+          />
 
           <div
             style={{
@@ -628,3 +652,4 @@ const Quiz: React.FC = () => {
 };
 
 export default Quiz;
+

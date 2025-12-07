@@ -12,6 +12,7 @@ interface UserProgressState {
   getRecentResults: (limit?: number) => QuizResult[];
   getResultsByWordList: (wordListId: string) => QuizResult[];
   getWeakWords: () => Word[];
+  getAllWrongWords: () => Word[];
   updateStreak: () => void;
   resetStats: () => void;
 }
@@ -95,6 +96,19 @@ export const useUserProgressStore = create<UserProgressState>()(
           .sort((a, b) => b.count - a.count)
           .slice(0, 20)
           .map((item) => item.word);
+      },
+
+      getAllWrongWords: () => {
+        const results = get().quizResults;
+        const unique = new Map<string, Word>();
+        results.forEach((r) => {
+          r.wrongWords.forEach((w) => {
+            if (!unique.has(w.id)) {
+              unique.set(w.id, w);
+            }
+          });
+        });
+        return Array.from(unique.values());
       },
 
       updateStreak: () => {

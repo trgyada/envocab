@@ -6,6 +6,24 @@ import Results from './pages/Results';
 import Analytics from './pages/Analytics';
 import WordLists from './pages/WordLists';
 import { useWordListStore } from './stores/wordListStore';
+import AnimatedFlame from './components/AnimatedFlame';
+
+const IconFlame = () => (
+  <svg width="18" height="18" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="flame-grad" x1="20" y1="4" x2="44" y2="60" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#FFCA28" />
+        <stop offset="0.5" stopColor="#FF9800" />
+        <stop offset="1" stopColor="#DD2C00" />
+      </linearGradient>
+    </defs>
+    <path
+      d="M32 6c2.5 6.5 1 11-3 16-4 5-7 10-5 16-4-2-8-8-7-14C17.5 15 25 12 24 2c8 4 12 10 13 17 3-2 6-6 5-11 9 7 12 18 7 29-3 7-11 13-17 19-9-4-16-11-18-20C11 23 21 13 32 6Z"
+      fill="url(#flame-grad)"
+      stroke="none"
+    />
+  </svg>
+);
 
 const IconHome = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -47,9 +65,11 @@ const Navigation: React.FC = () => {
   return (
     <nav className="navbar">
       <div className="navbar-content">
-        <Link to="/" className="navbar-brand">
-          <span aria-hidden="true" className="brand-icon">🔥</span> VocabMaster
-        </Link>
+        <div className="navbar-center">
+          <Link to="/" aria-label="Ana sayfa" className="flame-link">
+            <AnimatedFlame />
+          </Link>
+        </div>
         <div className="navbar-links">
           <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
             <span className="nav-icon"><IconHome /></span> Ana Sayfa

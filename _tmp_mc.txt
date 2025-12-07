@@ -1,35 +1,36 @@
-import React, { useEffect, useState } from 'react';
-import { PartOfSpeech, QuizQuestion, Word } from '../types';
+import React, { useState, useEffect } from 'react';
+import { QuizQuestion, PartOfSpeech } from '../types';
 
 interface MultipleChoiceProps {
   question: QuizQuestion;
-  onAnswer: (isCorrect: boolean, word: Word) => void;
-  optionMeaning?: (option: string) => string;
+  onAnswer: (isCorrect: boolean) => void;
 }
 
+// Kelime türü kısaltmalarını göster
 const getPartOfSpeechLabel = (pos?: PartOfSpeech): string => {
   if (!pos) return '';
   const labels: Record<PartOfSpeech, string> = {
-    n: '(n.)',
-    v: '(v.)',
-    adj: '(adj.)',
-    adv: '(adv.)',
-    prep: '(prep.)',
-    conj: '(conj.)',
-    pron: '(pron.)',
-    interj: '(interj.)',
-    det: '(det.)',
-    phr: '(phr.)',
+    'n': '(n.)',
+    'v': '(v.)',
+    'adj': '(adj.)',
+    'adv': '(adv.)',
+    'prep': '(prep.)',
+    'conj': '(conj.)',
+    'pron': '(pron.)',
+    'interj': '(interj.)',
+    'det': '(det.)',
+    'phr': '(phr.)',
     '': ''
   };
   return labels[pos] || '';
 };
 
-const MultipleChoice: React.FC<MultipleChoiceProps> = ({ question, onAnswer, optionMeaning }) => {
+const MultipleChoice: React.FC<MultipleChoiceProps> = ({ question, onAnswer }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  // Soru değiştiğinde state'leri sıfırla
   useEffect(() => {
     setSelectedAnswer(null);
     setShowResult(false);
@@ -38,31 +39,24 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({ question, onAnswer, opt
 
   const handleOptionClick = (option: string) => {
     if (showResult || isTransitioning) return;
-
+    
     setSelectedAnswer(option);
     setShowResult(true);
     setIsTransitioning(true);
-
+    
     const isCorrect = option === question.correctAnswer;
-
+    
+    // Kısa bir gecikme ile sonraki soruya geç
     setTimeout(() => {
-      onAnswer(isCorrect, question.word);
+      onAnswer(isCorrect);
     }, 1);
-  };
-
-  const handleUnknown = () => {
-    if (showResult || isTransitioning) return;
-    setSelectedAnswer('UNKNOWN');
-    setShowResult(true);
-    setIsTransitioning(true);
-    setTimeout(() => onAnswer(false, question.word), 1);
   };
 
   const getButtonClass = (option: string) => {
     let baseClass = 'option-btn';
-
+    
     if (!showResult) return baseClass;
-
+    
     if (option === question.correctAnswer) {
       return `${baseClass} correct`;
     }
@@ -72,12 +66,14 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({ question, onAnswer, opt
     return baseClass;
   };
 
+  // Soru yönünü belirle
   const isEnglishToTurkish = question.direction !== 'tr-to-en';
-  const directionLabel = isEnglishToTurkish ? 'İngilizce → Türkçe' : 'Türkçe → İngilizce';
 
   return (
     <div className="quiz-card">
-      <div className="question-badge">{directionLabel}</div>
+      <div className="question-badge">
+        {isEnglishToTurkish ? '🇬🇧 İngilizce → 🇹🇷 Türkçe' : '🇹🇷 Türkçe → 🇬🇧 İngilizce'}
+      </div>
       <h2 className="question-text">
         {question.question}
         {question.word.partOfSpeech && (
@@ -85,7 +81,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({ question, onAnswer, opt
         )}
       </h2>
       <p className="question-hint">
-        {isEnglishToTurkish ? 'Doğru Türkçe karşılığını seç' : 'Doğru İngilizce karşılığını seç'}
+        {isEnglishToTurkish ? 'Doğru Türkçe karşılığını seçin' : 'Doğru İngilizce karşılığını seçin'}
       </p>
       <div className="options">
         {question.options?.map((option, index) => (
@@ -97,32 +93,21 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({ question, onAnswer, opt
           >
             <span className="option-letter">{String.fromCharCode(65 + index)}</span>
             <span className="option-text">{option}</span>
-            {showResult && optionMeaning && (
-              <span className="option-meaning-inline">{optionMeaning(option) || '—'}</span>
+            {showResult && option === question.correctAnswer && (
+              <span className="option-icon">✓</span>
             )}
-            {showResult && option === question.correctAnswer && <span className="option-icon">✓</span>}
             {showResult && option === selectedAnswer && option !== question.correctAnswer && (
-              <span className="option-icon">✕</span>
+              <span className="option-icon">✗</span>
             )}
           </button>
         ))}
       </div>
-      {!showResult && (
-        <div style={{ marginTop: '14px', textAlign: 'center' }}>
-          <button className="btn btn-outline btn-sm" onClick={handleUnknown}>
-            Bilmiyorum / Listeye ekle
-          </button>
-        </div>
-      )}
       {showResult && (
         <div className={`result-feedback ${selectedAnswer === question.correctAnswer ? 'correct' : 'incorrect'}`}>
           {selectedAnswer === question.correctAnswer ? (
-            <>Doğru!</>
+            <>🎉 Doğru!</>
           ) : (
-            <>
-              {selectedAnswer === 'UNKNOWN' ? 'Bilmiyorum olarak işaretlendi. ' : 'Yanlış! '}
-              Doğru cevap: <strong>{question.correctAnswer}</strong>
-            </>
+            <>❌ Yanlış! Doğru cevap: <strong>{question.correctAnswer}</strong></>
           )}
         </div>
       )}

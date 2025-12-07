@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserProgressStore } from '../stores/userProgressStore';
 import { useWordListStore } from '../stores/wordListStore';
@@ -12,7 +12,7 @@ const Analytics: React.FC = () => {
   const navigate = useNavigate();
   const { stats, quizResults, getWeakWords, resetStats } = useUserProgressStore();
   const { wordLists } = useWordListStore();
-  const { cardStates, getMasteryDistribution, getDifficultCards, cards, resetAllCardStates } = useCardStore();
+  const { cardStates, getMasteryDistribution, cards, resetAllCardStates, getDifficultCards } = useCardStore();
   const { getStreakDays, getTotalStats, clearHistory } = useReviewSessionStore();
 
   const [showDueCardsModal, setShowDueCardsModal] = useState(false);
@@ -22,7 +22,7 @@ const Analytics: React.FC = () => {
   const masteryDistribution = getMasteryDistribution();
   const sm2Stats = getTotalStats();
   const streak = getStreakDays();
-  getDifficultCards(undefined, 0.6); // keep call to align with previous behavior (data warmed)
+  getDifficultCards(undefined, 0.6); // warm up
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -54,7 +54,7 @@ const Analytics: React.FC = () => {
     clearHistory();
     resetStats();
     setShowResetConfirm(false);
-    alert('Tüm istatistikler sıfırlandı!');
+    alert('Tum istatistikler sifirlandi!');
   };
 
   const handleStartDueCardsQuiz = () => {
@@ -64,19 +64,23 @@ const Analytics: React.FC = () => {
   };
 
   const getLast7DaysData = () => {
-    const days = [];
+    const days = [] as { date: string; quizCount: number; avgScore: number }[];
+    const toKey = (d: Date) => {
+      const copy = new Date(d);
+      copy.setHours(0, 0, 0, 0);
+      return copy.toLocaleDateString('tr-TR');
+    };
+
     for (let i = 6; i >= 0; i--) {
       const date = new Date();
+      date.setHours(0, 0, 0, 0);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateKey = toKey(date);
 
-      const dayResults = quizResults.filter((r) => {
-        const resultDate = new Date(r.completedAt).toISOString().split('T')[0];
-        return resultDate === dateStr;
-      });
+      const dayResults = quizResults.filter((r) => toKey(new Date(r.completedAt)) === dateKey);
 
       days.push({
-        date: date.toLocaleDateString('tr-TR', { weekday: 'short' }),
+        date: date.toLocaleDateString('tr-TR', { weekday: 'short', day: '2-digit', month: '2-digit' }),
         quizCount: dayResults.length,
         avgScore:
           dayResults.length > 0
@@ -92,15 +96,15 @@ const Analytics: React.FC = () => {
   if (quizResults.length === 0) {
     return (
       <div className="analytics-container">
-        <h1 style={{ marginBottom: '30px' }}>📊 İstatistikler</h1>
+        <h1 style={{ marginBottom: '30px' }}>Istatistikler</h1>
         <div className="empty-state">
-          <div className="empty-state-icon">🧭</div>
-          <p>Henüz istatistik yok.</p>
+          <div className="empty-state-icon">📊</div>
+          <p>Henuz istatistik yok.</p>
           <p style={{ fontSize: '0.9rem', marginBottom: '20px' }}>
-            Quiz tamamladıkça performansınız burada görünecek.
+            Quiz tamamladikca performans burada gorunecek.
           </p>
           <Link to="/quiz" className="btn btn-primary">
-            İlk Quiz'i Başlat
+            Quiz Baslat
           </Link>
         </div>
       </div>
@@ -109,11 +113,11 @@ const Analytics: React.FC = () => {
 
   return (
     <div className="analytics-container">
-      <h1 style={{ marginBottom: '30px' }}>📊 İstatistikler</h1>
+      <h1 style={{ marginBottom: '30px' }}>Istatistikler</h1>
 
       <div className="analytics-grid" style={{ marginBottom: '24px' }}>
         <div className="analytics-card">
-          <h3 style={{ color: 'var(--primary)', marginBottom: '15px' }}>🔥 Genel Performans</h3>
+          <h3 style={{ color: 'var(--primary)', marginBottom: '15px' }}>Genel Performans</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
             <div>
               <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.totalQuizzes}</div>
@@ -125,21 +129,21 @@ const Analytics: React.FC = () => {
             </div>
             <div>
               <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>%{stats.bestScore}</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>En İyi Skor</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>En Iyi Skor</div>
             </div>
             <div>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>🔥 {stats.streakDays}</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Gün Serisi</div>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>{stats.streakDays}</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Gun Serisi</div>
             </div>
           </div>
         </div>
 
         <div className="analytics-card">
-          <h3 style={{ color: 'var(--accent)', marginBottom: '15px' }}>📚 Kelime Havuzu</h3>
+          <h3 style={{ color: 'var(--accent)', marginBottom: '15px' }}>Kelime Havuzu</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
             <div>
               <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{wordLists.length}</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Liste Sayısı</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Liste Sayisi</div>
             </div>
             <div>
               <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
@@ -149,24 +153,24 @@ const Analytics: React.FC = () => {
             </div>
             <div>
               <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.totalWords}</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Çalışılan Kelime</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Calisilan Kelime</div>
             </div>
             <div>
               <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.totalStudyTime} dk</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Çalışma Süresi</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Calisma Suresi</div>
             </div>
           </div>
         </div>
       </div>
 
       <div className="analytics-card" style={{ marginBottom: '24px' }}>
-        <h3 style={{ marginBottom: '16px' }}>📅 Son 7 Gün</h3>
+        <h3 style={{ marginBottom: '16px' }}>Son 7 Gun</h3>
         <ProgressChart data={chartData} />
       </div>
 
       {Object.keys(cardStates).length > 0 && (
         <div className="analytics-card" style={{ marginBottom: '24px' }}>
-          <h3 style={{ marginBottom: '16px' }}>🧠 Öğrenme Seviyesi Dağılımı</h3>
+          <h3 style={{ marginBottom: '16px' }}>Ogrenme Seviyesi Dagilimi</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {([5, 4, 3, 2, 1, 0] as MasteryLevel[]).map((level) => {
               const count = masteryDistribution[level];
@@ -225,7 +229,7 @@ const Analytics: React.FC = () => {
               }}
             >
               <div>
-                <span style={{ fontWeight: '700', color: 'var(--warning)' }}>⏰ {dueCardsCount} kart</span>
+                <span style={{ fontWeight: '700', color: 'var(--warning)' }}>{dueCardsCount} kart</span>
                 <span style={{ color: 'var(--text-secondary)', marginLeft: '6px' }}>tekrar bekliyor</span>
               </div>
               <button
@@ -233,7 +237,7 @@ const Analytics: React.FC = () => {
                 className="btn btn-primary"
                 style={{ padding: '8px 14px', fontSize: '0.9rem' }}
               >
-                Şimdi Çalış
+                Simdi Calis
               </button>
             </div>
           )}
@@ -242,11 +246,11 @@ const Analytics: React.FC = () => {
 
       {sm2Stats.totalSessions > 0 && (
         <div className="analytics-card" style={{ marginBottom: '24px' }}>
-          <h3 style={{ color: 'var(--primary)', marginBottom: '12px' }}>⏳ Spaced Repetition Özeti</h3>
+          <h3 style={{ color: 'var(--primary)', marginBottom: '12px' }}>Spaced Repetition Ozeti</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
             <div style={{ textAlign: 'center', padding: '14px', background: 'rgba(41, 182, 246, 0.1)', borderRadius: '12px' }}>
-              <div style={{ fontSize: '1.7rem', fontWeight: 'bold', color: 'var(--primary)' }}>🔥 {streak}</div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Günlük Seri</div>
+              <div style={{ fontSize: '1.7rem', fontWeight: 'bold', color: 'var(--primary)' }}>{streak}</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Gunluk Seri</div>
             </div>
             <div style={{ textAlign: 'center', padding: '14px', background: 'rgba(41, 182, 246, 0.1)', borderRadius: '12px' }}>
               <div style={{ fontSize: '1.7rem', fontWeight: 'bold', color: 'var(--success)' }}>
@@ -258,13 +262,13 @@ const Analytics: React.FC = () => {
               <div style={{ fontSize: '1.7rem', fontWeight: 'bold', color: 'var(--warning)' }}>
                 %{Math.round(sm2Stats.averageAccuracy)}
               </div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Doğruluk</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Dogruluk</div>
             </div>
             <div style={{ textAlign: 'center', padding: '14px', background: 'rgba(41, 182, 246, 0.1)', borderRadius: '12px' }}>
               <div style={{ fontSize: '1.7rem', fontWeight: 'bold', color: 'var(--accent)' }}>
                 {Math.round(sm2Stats.totalStudyTimeMinutes)}
               </div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Dakika Çalışma</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Dakika Calisma</div>
             </div>
           </div>
         </div>
@@ -272,9 +276,9 @@ const Analytics: React.FC = () => {
 
       {weakWords.length > 0 && (
         <div className="analytics-card" style={{ marginBottom: '24px' }}>
-          <h3 style={{ color: 'var(--danger)', marginBottom: '12px' }}>🚨 Dikkat Edilmesi Gereken Kelimeler</h3>
+          <h3 style={{ color: 'var(--danger)', marginBottom: '12px' }}>Dikkat Edilmesi Gereken Kelimeler</h3>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '12px', fontSize: '0.95rem' }}>
-            Bu kelimeler en çok hata yaptıkların. Öncelikli çalışmanı öneririz.
+            Bu kelimeler en cok hata yaptiklarin. Oncelikli calisman onerilir.
           </p>
           <div style={{ display: 'grid', gap: '10px' }}>
             {weakWords.slice(0, 10).map((word, idx) => (
@@ -297,8 +301,8 @@ const Analytics: React.FC = () => {
         </div>
       )}
 
-      <div className="analytics-card">
-        <h3 style={{ marginBottom: '12px' }}>📝 Son Quiz Sonuçları</h3>
+      <div className="analytics-card" style={{ marginBottom: '24px' }}>
+        <h3 style={{ marginBottom: '12px' }}>Son Quiz Sonuclari</h3>
         <div style={{ display: 'grid', gap: '10px' }}>
           {quizResults.slice(0, 10).map((result, idx) => (
             <div
@@ -308,14 +312,14 @@ const Analytics: React.FC = () => {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 padding: '12px 14px',
-                  background: 'rgba(41, 182, 246, 0.1)',
+                background: 'rgba(41, 182, 246, 0.1)',
                 borderRadius: '10px'
               }}
             >
               <div>
                 <div style={{ fontWeight: '600' }}>{result.wordListTitle}</div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  {new Date(result.completedAt).toLocaleDateString('tr-TR')} • {result.quizType}
+                  {new Date(result.completedAt).toLocaleDateString('tr-TR')} · {result.quizType}
                 </div>
               </div>
               <div
@@ -332,23 +336,23 @@ const Analytics: React.FC = () => {
       </div>
 
       <div className="analytics-card" style={{ marginTop: '24px', textAlign: 'center' }}>
-        <h3 style={{ marginBottom: '12px', color: 'var(--danger)' }}>⚠️ Tehlikeli Bölge</h3>
+        <h3 style={{ marginBottom: '12px', color: 'var(--danger)' }}>Tehlikeli Bolge</h3>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '14px', fontSize: '0.95rem' }}>
-          Tüm SM-2 öğrenme verilerini, quiz geçmişini ve istatistikleri sıfırlar. Kelime listeleri silinmez.
+          Tum SM-2 ogrenme verilerini, quiz gecmisini ve istatistikleri sifirlar. Kelime listeleri silinmez.
         </p>
         <button
           onClick={() => setShowResetConfirm(true)}
           className="btn btn-danger"
           style={{ padding: '10px 18px' }}
         >
-          Her Şeyi Sıfırla
+          Her seyi sifirla
         </button>
       </div>
 
       {showDueCardsModal && (
         <div className="modal-overlay" onClick={() => setShowDueCardsModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', maxHeight: '80vh' }}>
-            <h2 style={{ marginBottom: '16px' }}>🔔 Tekrar Edilecek Kelimeler ({dueCardsCount})</h2>
+            <h2 style={{ marginBottom: '16px' }}>Tekrar Edilecek Kelimeler ({dueCardsCount})</h2>
 
             <div
               style={{
@@ -401,7 +405,7 @@ const Analytics: React.FC = () => {
                 Kapat
               </button>
               <button className="btn btn-primary" onClick={handleStartDueCardsQuiz}>
-                Şimdi Çalış
+                Simdi Calis
               </button>
             </div>
           </div>
@@ -413,14 +417,14 @@ const Analytics: React.FC = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
             <h2 style={{ marginBottom: '12px', color: 'var(--danger)' }}>Emin misin?</h2>
             <p style={{ marginBottom: '18px', color: 'var(--text-secondary)' }}>
-              Bu işlem tüm SM-2 verilerini, kart durumlarını, quiz geçmişini ve istatistikleri <strong>kalıcı olarak</strong> silecek.
+              Bu islem tum SM-2 verilerini, kart durumlarini, quiz gecmisini ve istatistikleri kalici olarak silecek.
             </p>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button className="btn btn-outline" onClick={() => setShowResetConfirm(false)}>
-                İptal
+                Iptal
               </button>
               <button className="btn btn-danger" onClick={handleResetAllStats}>
-                Evet, Sıfırla
+                Evet, sifirla
               </button>
             </div>
           </div>

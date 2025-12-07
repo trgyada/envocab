@@ -88,21 +88,17 @@ a {
   gap: 12px;
 }
 
-.navbar-brand {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--text-primary);
-  text-decoration: none;
+.navbar-center {
+  flex: 1;
   display: flex;
-  align-items: center;
-  gap: 10px;
+  justify-content: center;
 }
 
-.brand-icon {
-  font-size: 1.3rem;
-}
-.navbar-brand span {
-  font-size: 1.4rem;
+.flame-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
 }
 
 .navbar-links {
@@ -383,14 +379,14 @@ a {
 .quiz-progress {
   flex: 1;
   height: 10px;
-  background: #1f2a44;
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 12px;
   overflow: hidden;
 }
 
 .quiz-progress-bar {
   height: 100%;
-  background: linear-gradient(135deg, var(--primary), var(--accent));
+  background: linear-gradient(90deg, #6f7bff, #6ac6ff, #ffca28);
   border-radius: 12px;
   transition: width 0.3s ease;
 }
@@ -440,8 +436,8 @@ a {
   align-items: center;
   gap: 12px;
   padding: 16px 18px;
-  background: var(--surface-alt);
-  border: 2px solid var(--border);
+  background: linear-gradient(135deg, rgba(79, 93, 255, 0.12), rgba(255, 212, 79, 0.08));
+  border: 2px solid rgba(255, 255, 255, 0.05);
   border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: 1rem;
@@ -452,7 +448,7 @@ a {
 
 .option-btn:hover:not(:disabled) {
   border-color: var(--primary);
-  background: #1b2640;
+  background: linear-gradient(135deg, rgba(79, 93, 255, 0.18), rgba(255, 212, 79, 0.12));
   transform: translateX(4px);
 }
 
@@ -474,7 +470,7 @@ a {
 .option-letter {
   width: 34px;
   height: 34px;
-  background: linear-gradient(135deg, var(--primary), var(--accent));
+  background: linear-gradient(135deg, #6f7bff, #ffca28);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -488,8 +484,70 @@ a {
   flex: 1;
 }
 
+.option-meaning-inline {
+  margin-left: 8px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  background: rgba(255, 212, 79, 0.14);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
 .option-icon {
   font-size: 1.2rem;
+}
+
+.option-meaning-panel {
+  margin-top: 18px;
+  padding: 14px 16px;
+  background: #0f172a;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  text-align: left;
+}
+
+.option-meaning-title {
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.option-meaning-list {
+  display: grid;
+  gap: 10px;
+}
+
+.option-meaning-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.option-meaning-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.option-meaning-word {
+  font-weight: 700;
+  color: #fff;
+}
+
+.option-meaning-translation {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.option-letter.small {
+  width: 28px;
+  height: 28px;
+  font-size: 0.9rem;
 }
 
 .result-feedback {
@@ -802,6 +860,37 @@ a {
   padding: 20px;
   transition: all 0.2s ease;
   box-shadow: var(--shadow-soft);
+}
+
+.word-preview {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.word-preview-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-md);
+}
+
+.word-preview-term {
+  font-weight: 700;
+  color: #fff;
+}
+
+.word-preview-translation {
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.word-preview-more {
+  color: var(--text-muted);
+  font-size: 0.9rem;
 }
 
 .wordlist-card:hover {
@@ -1293,6 +1382,9 @@ a {
     font-size: 1.1rem;
     gap: 6px;
   }
+  .navbar-center {
+    display: none;
+  }
   .nav-link {
     padding: 8px 10px;
     font-size: 0.9rem;
@@ -1310,4 +1402,68 @@ a {
 ::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, var(--primary), var(--accent));
   border-radius: 10px;
+}
+.flame-logo {
+  width: 64px;
+  height: 88px;
+}
+
+.flame-logo svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.flame-logo path {
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill-opacity: 0;
+  animation:
+    draw-lines 2.4s cubic-bezier(0.5, 0, 0.2, 1) infinite alternate,
+    fill-color 1.4s ease-in-out infinite alternate 1.2s;
+}
+
+.flame-left {
+  stroke: #ffca28;
+  stroke-dasharray: 350;
+  stroke-dashoffset: 350;
+}
+
+.flame-right {
+  stroke: #ffa000;
+  stroke-dasharray: 350;
+  stroke-dashoffset: 350;
+  animation-delay: 0.3s, 1.5s;
+}
+
+.flame-center {
+  stroke: #dd2c00;
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  animation-delay: 0.6s, 1.8s;
+}
+
+.flame-center.highlight {
+  animation: fade-in 1.5s ease-in-out infinite alternate 1.4s;
+  stroke: none;
+}
+
+@keyframes draw-lines {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fill-color {
+  to {
+    fill-opacity: 1;
+    stroke-width: 0;
+  }
+}
+
+@keyframes fade-in {
+  to {
+    opacity: 1;
+  }
 }

@@ -1,56 +1,58 @@
-# Vocab Quiz App
+# VocabMaster
 
-## Overview
-The Vocab Quiz App is a web-based application designed to help users learn vocabulary through interactive quizzes. The application supports various quiz formats, including multiple-choice questions, matching exercises, and flashcards. Users can upload their vocabulary lists in Excel format, track their progress, and analyze their performance over time.
+Tek kullanıcı için tasarlanmış, Firestore senkronizasyonlu kelime/quiz uygulaması. Excel/CSV'den liste yükleme, manuel ekleme, çoktan seçmeli/flashcard/eşleştirme modları, SM-2 tabanlı tekrar seçimi ve cihazlar arasında aynı veriyi paylaşma desteği içerir.
 
-## Features
-- **Interactive Quizzes**: Engage with vocabulary through multiple-choice questions, matching exercises, and flashcards.
-- **Progress Tracking**: Visualize your learning journey with progress charts that display performance metrics.
-- **Excel Integration**: Easily upload vocabulary lists from Excel files for use in quizzes.
-- **Performance Analytics**: Access detailed analytics to monitor your learning progress and identify areas for improvement.
+## Özellikler
+- Excel/CSV yükleme ve manuel kelime ekleme; aynı İngilizce kelimenin tekrar eklenmesini engeller.
+- Quiz modları: Çoktan seçmeli, Flashcard, Eşleştirme.
+- Soru yönü seçimi: Karışık, İngilizce→Türkçe, Türkçe→İngilizce.
+- “Bilmiyorum / listeye ekle” butonu ve yanlış cevaplar otomatik “Bilemediğim Kelimeler” listesine kaydedilir.
+- Yanlış/kaçırılan kelimeler Word Lists ekranında ayrı bir kartta, satırlar arası boşlukla gösterilir.
+- Şık seçildikten sonra her şıkkın anlamı turuncu etiketle şık içinde görünür; soru geçişleri ~1 saniye bekler.
+- Quiz sırasında “Testi Bitir” ile erken bitirme; sonuçlar/istatistikler korunur.
+- SM-2 destekli kart durumu ve performans logları; zorlu kelime filtresi.
+- Firestore senkronizasyonu (tek hesapla tüm cihazlarda aynı veri).
+- Navbar ortasında animasyonlu logo; tıklayınca ana sayfaya döner.
 
-## Project Structure
-```
-vocab-quiz-app
-├── src
-│   ├── components          # Reusable components for the application
-│   ├── pages               # Different pages of the application
-│   ├── services            # Services for handling business logic
-│   ├── stores              # State management for vocabulary lists and user progress
-│   ├── types               # TypeScript types and interfaces
-│   ├── utils               # Utility functions
-│   ├── App.tsx             # Main application component
-│   └── main.tsx            # Entry point of the application
-├── public
-│   └── index.html          # Main HTML file
-├── package.json            # NPM configuration file
-├── tsconfig.json           # TypeScript configuration file
-└── vite.config.ts          # Vite configuration file
-```
-
-## Installation
-1. Clone the repository:
-   ```
-   git clone https://github.com/yourusername/vocab-quiz-app.git
-   ```
-2. Navigate to the project directory:
-   ```
-   cd vocab-quiz-app
-   ```
-3. Install the dependencies:
-   ```
-   npm install
-   ```
-
-## Usage
-To start the application, run:
-```
+## Kurulum
+```bash
+npm install
 npm run dev
 ```
-Open your browser and navigate to `http://localhost:3000` to access the app.
+Lokal adres: `http://localhost:5173`
 
-## Contributing
-Contributions are welcome! Please open an issue or submit a pull request for any enhancements or bug fixes.
+## Ortam Değişkenleri
+`.env.local` (repoya koyma) ve Vercel Environment Variables'a aynı değerleri ekle:
+```
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+VITE_FIREBASE_MEASUREMENT_ID=...    # opsiyonel
+VITE_FIREBASE_USER=...              # tek kullanıcı email
+VITE_FIREBASE_PASS=...              # tek kullanıcı şifre
+```
 
-## License
-This project is licensed under the MIT License. See the LICENSE file for details.
+## Firestore Kuralı (tek kullanıcı)
+Firebase Console → Authentication'dan oluşturduğun kullanıcı UID'sini bul, aşağıdaki kurala yaz:
+```rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == "YOUR_UID";
+    }
+  }
+}
+```
+
+## Dağıtım (Vercel)
+1) Production ortamına tüm `VITE_*` değişkenlerini gir.
+2) Deploy et. SPA yönlendirmesi gerekiyorsa `vercel.json` içinde `rewrites` tanımlı olmalı.
+
+## Kısa Notlar
+- Şık geçişleri ve flashcard geçişleri yaklaşık 1 saniye bekler; anlam etiketleri şık içinde görünür.
+- “Bilemediğim Kelimeler” kartındaki satırlar geniş aralıklı ve 12 kelimeye kadar listelenir, fazlası özetlenir.
+- Navbar logosu animasyonlu; tıklayınca ana sayfaya döner.

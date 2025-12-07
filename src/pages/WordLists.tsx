@@ -1,15 +1,16 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import { useWordListStore } from '../stores/wordListStore';
+import { useUserProgressStore } from '../stores/userProgressStore';
 import { parseExcelFile, isValidExcelFile } from '../services/excelParser';
 import { Word } from '../types';
 
 type ViewMode = 'lists' | 'detail' | 'add-manual';
 
 const WordLists: React.FC = () => {
-  const {
-    wordLists,
-    addWordList,
-    removeWordList,
+  const { 
+    wordLists, 
+    addWordList, 
+    removeWordList, 
     selectWordList,
     selectedListId,
     addWordToList,
@@ -24,6 +25,8 @@ const WordLists: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('lists');
   const [viewingListId, setViewingListId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const { getAllWrongWords } = useUserProgressStore();
+  const wrongWords = getAllWrongWords();
 
   const [manualListName, setManualListName] = useState('');
   const [manualWords, setManualWords] = useState<{ english: string; turkish: string }[]>([{ english: '', turkish: '' }]);
@@ -52,7 +55,7 @@ const WordLists: React.FC = () => {
     if (!file) return;
 
     if (!isValidExcelFile(file)) {
-      setMessage({ text: 'Lütfen geçerli bir Excel veya CSV dosyası seçin.', type: 'error' });
+      setMessage({ text: 'LÃ¼tfen geÃ§erli bir Excel veya CSV dosyasÄ± seÃ§in.', type: 'error' });
       return;
     }
 
@@ -65,7 +68,7 @@ const WordLists: React.FC = () => {
       const title = listTitle.trim() || file.name.replace(/\.[^/.]+$/, '');
       addWordList(title, result.words);
       setMessage({
-        text: `"${title}" başarıyla yüklendi! ${result.words.length} kelime eklendi.`,
+        text: `"${title}" baÅŸarÄ±yla yÃ¼klendi! ${result.words.length} kelime eklendi.`,
         type: 'success'
       });
       setListTitle('');
@@ -73,14 +76,14 @@ const WordLists: React.FC = () => {
         fileInputRef.current.value = '';
       }
     } else {
-      setMessage({ text: result.error || 'Dosya yüklenirken hata oluştu.', type: 'error' });
+      setMessage({ text: result.error || 'Dosya yÃ¼klenirken hata oluÅŸtu.', type: 'error' });
     }
 
     setIsLoading(false);
   };
 
   const handleRemoveList = (id: string, title: string) => {
-    if (window.confirm(`"${title}" listesini silmek istediğine emin misin?`)) {
+    if (window.confirm(`"${title}" listesini silmek istediÄŸine emin misin?`)) {
       removeWordList(id);
       setMessage({ text: `"${title}" silindi.`, type: 'success' });
       if (viewingListId === id) {
@@ -114,15 +117,15 @@ const WordLists: React.FC = () => {
       return;
     }
 
-    // Yeni liste oluşturma
+    // Yeni liste oluÅŸturma
     if (manualTargetListId === 'new') {
       if (!manualListName.trim()) {
-        setMessage({ text: 'Lütfen liste adını girin.', type: 'error' });
+        setMessage({ text: 'LÃ¼tfen liste adÄ±nÄ± girin.', type: 'error' });
         return;
       }
 
       addWordList(manualListName.trim(), validWords);
-      setMessage({ text: `"${manualListName}" oluşturuldu! ${validWords.length} kelime eklendi.`, type: 'success' });
+      setMessage({ text: `"${manualListName}" oluÅŸturuldu! ${validWords.length} kelime eklendi.`, type: 'success' });
       setManualListName('');
       setManualWords([{ english: '', turkish: '' }]);
       setViewMode('lists');
@@ -132,7 +135,7 @@ const WordLists: React.FC = () => {
     // Mevcut listeye ekleme
     const targetList = wordLists.find((l) => l.id === manualTargetListId);
     if (!targetList) {
-      setMessage({ text: 'Hedef liste bulunamadı.', type: 'error' });
+      setMessage({ text: 'Hedef liste bulunamadÄ±.', type: 'error' });
       return;
     }
 
@@ -151,7 +154,7 @@ const WordLists: React.FC = () => {
     });
 
     setMessage({
-      text: `${targetList.title} listesine ${added} kelime eklendi${skipped ? `, ${skipped} tekrar atlandı` : ''}.`,
+      text: `${targetList.title} listesine ${added} kelime eklendi${skipped ? `, ${skipped} tekrar atlandÄ±` : ''}.`,
       type: added > 0 ? 'success' : 'error',
     });
     setManualWords([{ english: '', turkish: '' }]);
@@ -168,7 +171,7 @@ const WordLists: React.FC = () => {
     const turkish = newWord.turkish.trim();
 
     if (!english || !turkish) {
-      setMessage({ text: 'İngilizce ve Türkçe alanlarını doldurun.', type: 'error' });
+      setMessage({ text: 'Ä°ngilizce ve TÃ¼rkÃ§e alanlarÄ±nÄ± doldurun.', type: 'error' });
       return;
     }
 
@@ -195,7 +198,7 @@ const WordLists: React.FC = () => {
 
     updateWord(viewingListId, editingWordId, editEnglish.trim(), editTurkish.trim());
     setEditingWordId(null);
-    setMessage({ text: 'Kelime güncellendi!', type: 'success' });
+    setMessage({ text: 'Kelime gÃ¼ncellendi!', type: 'success' });
   };
 
   const cancelEdit = () => {
@@ -219,30 +222,30 @@ const WordLists: React.FC = () => {
   const handleShareList = (list: typeof wordLists[0]) => {
     const text = list.words.map((w) => `${w.english} - ${w.turkish}`).join('\n');
     navigator.clipboard.writeText(text);
-    setMessage({ text: 'Liste panoya kopyalandı!', type: 'success' });
+    setMessage({ text: 'Liste panoya kopyalandÄ±!', type: 'success' });
   };
 
   if (viewMode === 'add-manual') {
     return (
       <div className="wordlists-container">
         <button className="btn btn-outline" onClick={() => setViewMode('lists')} style={{ marginBottom: '16px' }}>
-          ← Geri
+          â† Geri
         </button>
 
-        <h1 style={{ marginBottom: '24px' }}>✍️ Manuel Liste Oluştur</h1>
+        <h1 style={{ marginBottom: '24px' }}>âœï¸ Manuel Liste OluÅŸtur</h1>
 
         <div className="manual-add-section">
           <input
             type="text"
             value={manualListName}
             onChange={(e) => setManualListName(e.target.value)}
-            placeholder="Liste adı *"
+            placeholder="Liste adÄ± *"
             className="input-field"
             style={{ marginBottom: '16px', fontSize: '1.05rem', padding: '14px' }}
             disabled={manualTargetListId !== 'new'}
           />
 
-          {/* Hedef liste seçimi */}
+          {/* Hedef liste seÃ§imi */}
           <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
             <select
               className="input-field"
@@ -250,15 +253,15 @@ const WordLists: React.FC = () => {
               onChange={(e) => setManualTargetListId(e.target.value as 'new' | string)}
               style={{ flex: 1, minWidth: '220px' }}
             >
-              <option value="new">➕ Yeni liste oluştur</option>
+              <option value="new">â• Yeni liste oluÅŸtur</option>
               {wordLists.map((l) => (
                 <option key={l.id} value={l.id}>
-                  📂 {l.title} ({l.words.length} kelime)
+                  ğŸ“‚ {l.title} ({l.words.length} kelime)
                 </option>
               ))}
             </select>
             <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', alignSelf: 'center' }}>
-              Mevcut liste seçersen ad alanı pasif olur.
+              Mevcut liste seÃ§ersen ad alanÄ± pasif olur.
             </span>
           </div>
 
@@ -279,7 +282,7 @@ const WordLists: React.FC = () => {
                     type="text"
                     value={word.turkish}
                     onChange={(e) => updateManualWord(index, 'turkish', e.target.value)}
-                    placeholder="Türkçe"
+                    placeholder="TÃ¼rkÃ§e"
                     className="word-card-edit-input"
                     style={{ flex: 1 }}
                   />
@@ -291,7 +294,7 @@ const WordLists: React.FC = () => {
                     disabled={manualWords.length === 1}
                     title="Sil"
                   >
-                    🗑️
+                    ğŸ—‘ï¸
                   </button>
                 </div>
               </div>
@@ -299,7 +302,7 @@ const WordLists: React.FC = () => {
           </div>
 
           <button className="btn btn-outline" onClick={addManualWordRow} style={{ marginTop: '14px', width: '100%' }}>
-            + Yeni Satır Ekle
+            + Yeni SatÄ±r Ekle
           </button>
 
           <button
@@ -307,7 +310,7 @@ const WordLists: React.FC = () => {
             onClick={handleCreateManualList}
             style={{ marginTop: '16px', width: '100%' }}
           >
-            {manualTargetListId === 'new' ? '✅ Listeyi Oluştur' : '✅ Listeye Ekle'} (
+            {manualTargetListId === 'new' ? 'âœ… Listeyi OluÅŸtur' : 'âœ… Listeye Ekle'} (
             {manualWords.filter((w) => w.english && w.turkish).length} kelime)
           </button>
         </div>
@@ -333,7 +336,7 @@ const WordLists: React.FC = () => {
           }}
           style={{ marginBottom: '16px' }}
         >
-          ← Geri
+          â† Geri
         </button>
 
         <div className="word-list-header">
@@ -354,14 +357,14 @@ const WordLists: React.FC = () => {
                     if (newTitle.trim()) {
                       updateListTitle(viewingListId!, newTitle.trim());
                       setEditingTitle(false);
-                      setMessage({ text: 'Başlık güncellendi!', type: 'success' });
+                      setMessage({ text: 'BaÅŸlÄ±k gÃ¼ncellendi!', type: 'success' });
                     }
                   }}
                 >
                   Kaydet
                 </button>
                 <button className="btn btn-outline btn-sm" onClick={() => setEditingTitle(false)}>
-                  İptal
+                  Ä°ptal
                 </button>
               </div>
             ) : (
@@ -371,28 +374,28 @@ const WordLists: React.FC = () => {
                   setNewTitle(viewingList.title);
                   setEditingTitle(true);
                 }}
-                title="Başlığı düzenlemek için tıkla"
+                title="BaÅŸlÄ±ÄŸÄ± dÃ¼zenlemek iÃ§in tÄ±kla"
               >
-                <span className="word-list-icon">🧾</span>
+                <span className="word-list-icon">ğŸ§¾</span>
                 {viewingList.title}
               </h1>
             )}
             <div className="word-list-actions">
               <button className="word-list-action-btn" onClick={() => handleExportList(viewingList)}>
-                ⬇️ İndir
+                â¬‡ï¸ Ä°ndir
               </button>
               <button className="word-list-action-btn" onClick={() => handleShareList(viewingList)}>
-                📋 Kopyala
+                ğŸ“‹ Kopyala
               </button>
             </div>
           </div>
           <p className="word-list-meta">
-            {viewingList.words.length} kelime • Oluşturulma: {new Date(viewingList.createdAt).toLocaleDateString('tr-TR')}
+            {viewingList.words.length} kelime â€¢ OluÅŸturulma: {new Date(viewingList.createdAt).toLocaleDateString('tr-TR')}
           </p>
         </div>
 
         <div className="word-list-search">
-          <span className="search-icon">🔍</span>
+          <span className="search-icon">ğŸ”</span>
           <input
             type="text"
             value={searchQuery}
@@ -410,7 +413,7 @@ const WordLists: React.FC = () => {
 
         <div className="word-table-header">
           <span className="word-table-col">English</span>
-          <span className="word-table-col">Türkçe</span>
+          <span className="word-table-col">TÃ¼rkÃ§e</span>
           <span className="word-table-col-actions"></span>
         </div>
 
@@ -436,7 +439,7 @@ const WordLists: React.FC = () => {
                 handleAddWordToList();
               }
             }}
-            placeholder="Çevirisi..."
+            placeholder="Ã‡evirisi..."
             className="word-table-input"
           />
           <button className="word-table-add-btn" onClick={handleAddWordToList} title="Ekle">
@@ -446,7 +449,7 @@ const WordLists: React.FC = () => {
 
         <div className="word-table-body">
           {filteredWords.length === 0 ? (
-            <div className="word-table-empty">{searchQuery ? 'Arama sonucu bulunamadı.' : 'Henüz kelime yok.'}</div>
+            <div className="word-table-empty">{searchQuery ? 'Arama sonucu bulunamadÄ±.' : 'HenÃ¼z kelime yok.'}</div>
           ) : (
             filteredWords.map((word) => (
               <div key={word.id} className="word-table-row">
@@ -467,10 +470,10 @@ const WordLists: React.FC = () => {
                     />
                     <div className="word-table-actions">
                       <button onClick={saveEditWord} className="word-table-icon-btn save" title="Kaydet">
-                        ✓
+                        âœ“
                       </button>
-                      <button onClick={cancelEdit} className="word-table-icon-btn cancel" title="İptal">
-                        ✕
+                      <button onClick={cancelEdit} className="word-table-icon-btn cancel" title="Ä°ptal">
+                        âœ•
                       </button>
                     </div>
                   </>
@@ -479,8 +482,8 @@ const WordLists: React.FC = () => {
                     <span className="word-table-english">{word.english}</span>
                     <span className="word-table-turkish">{word.turkish}</span>
                     <div className="word-table-actions">
-                      <button className={`word-table-icon-btn star ${word.incorrectCount > 0 ? 'active' : ''}`} title="İşaretle">
-                        ★
+                      <button className={`word-table-icon-btn star ${word.incorrectCount > 0 ? 'active' : ''}`} title="Ä°ÅŸaretle">
+                        â˜…
                       </button>
                       <button
                         className="word-table-icon-btn sound"
@@ -491,21 +494,21 @@ const WordLists: React.FC = () => {
                         }}
                         title="Sesli oku"
                       >
-                        🔈
+                        ğŸ”ˆ
                       </button>
-                      <button className="word-table-icon-btn edit" onClick={() => startEditWord(word)} title="Düzenle">
-                        ✎
+                      <button className="word-table-icon-btn edit" onClick={() => startEditWord(word)} title="DÃ¼zenle">
+                        âœ
                       </button>
                       <button
                         className="word-table-icon-btn delete"
                         onClick={() => {
-                          if (window.confirm('Bu kelimeyi silmek istediğine emin misin?')) {
+                          if (window.confirm('Bu kelimeyi silmek istediÄŸine emin misin?')) {
                             removeWordFromList(viewingListId!, word.id);
                           }
                         }}
                         title="Sil"
                       >
-                        🗑️
+                        ğŸ—‘ï¸
                       </button>
                     </div>
                   </>
@@ -520,19 +523,19 @@ const WordLists: React.FC = () => {
 
   return (
     <div className="wordlists-container">
-      <h1 style={{ marginBottom: '24px' }}>📂 Kelime Listeleri</h1>
+      <h1 style={{ marginBottom: '24px' }}>ğŸ“‚ Kelime Listeleri</h1>
 
       <div className="upload-section">
         <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center' }}>
           <div className="upload-option">
-            <span className="upload-icon">📁</span>
-            <h3>Dosyadan Yükle</h3>
+            <span className="upload-icon">ğŸ“</span>
+            <h3>Dosyadan YÃ¼kle</h3>
             <div className="file-input-wrapper">
               <input
                 type="text"
                 value={listTitle}
                 onChange={(e) => setListTitle(e.target.value)}
-                placeholder="Liste adı (opsiyonel)"
+                placeholder="Liste adÄ± (opsiyonel)"
                 className="input-field"
                 style={{ marginBottom: '10px' }}
               />
@@ -546,14 +549,14 @@ const WordLists: React.FC = () => {
                 style={{ display: 'none' }}
               />
               <label htmlFor="file-upload" className="file-label" style={{ cursor: 'pointer' }}>
-                Excel / CSV Seç
+                Excel / CSV SeÃ§
               </label>
             </div>
           </div>
 
           <div className="upload-option">
-            <span className="upload-icon">✍️</span>
-            <h3>Manuel Oluştur</h3>
+            <span className="upload-icon">âœï¸</span>
+            <h3>Manuel OluÅŸtur</h3>
             <button className="btn btn-secondary" onClick={() => setViewMode('add-manual')}>
               Elle Kelime Ekle
             </button>
@@ -561,7 +564,7 @@ const WordLists: React.FC = () => {
         </div>
 
         <p className="upload-hint" style={{ marginTop: '14px' }}>
-          Excel/CSV: 1. sütun İngilizce, 2. sütun Türkçe | Ayraç: virgül veya noktalı virgül
+          Excel/CSV: 1. sÃ¼tun Ä°ngilizce, 2. sÃ¼tun TÃ¼rkÃ§e | AyraÃ§: virgÃ¼l veya noktalÄ± virgÃ¼l
         </p>
 
         {isLoading && <div className="spinner" />}
@@ -570,12 +573,32 @@ const WordLists: React.FC = () => {
       </div>
 
       <h2 style={{ marginBottom: '16px', marginTop: '26px' }}>Mevcut Listeler ({wordLists.length})</h2>
+      {wrongWords.length > 0 && (
+        <div className="wordlist-grid" style={{ marginBottom: '16px' }}>
+          <div className="wordlist-card">
+            <h3>Bilemedigim Kelimeler</h3>
+            <p>{wrongWords.length} kelime</p>
+            <div className="word-preview" style={{ maxHeight: '180px', overflowY: 'auto' }}>
+              {wrongWords.slice(0, 12).map((w) => (
+                <div key={w.id} className="word-preview-item">
+                  <div className="word-preview-term">{w.english}</div>
+                  <div className="word-preview-translation">{w.turkish}</div>
+                </div>
+              ))}
+              {wrongWords.length > 12 && (
+                <div className="word-preview-more">+ {wrongWords.length - 12} kelime daha</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {wordLists.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">📭</div>
-          <p>Henüz kelime listesi yok.</p>
-          <p style={{ fontSize: '0.9rem' }}>Dosya yükleyerek veya manuel ekleyerek başlayın.</p>
+          <div className="empty-state-icon">ğŸ“­</div>
+          <p>HenÃ¼z kelime listesi yok.</p>
+          <p style={{ fontSize: '0.9rem' }}>Dosya yÃ¼kleyerek veya manuel ekleyerek baÅŸlayÄ±n.</p>
         </div>
       ) : (
         <div className="wordlist-grid">
@@ -595,8 +618,8 @@ const WordLists: React.FC = () => {
                 </p>
 
                 <div className="list-stats">
-                  <span className="stat-item">✅ {list.words.filter((w) => w.correctCount > 0).length}</span>
-                  <span className="stat-item warning">⚠️ {list.words.filter((w) => w.incorrectCount > 0).length}</span>
+                  <span className="stat-item">âœ… {list.words.filter((w) => w.correctCount > 0).length}</span>
+                  <span className="stat-item warning">âš ï¸ {list.words.filter((w) => w.incorrectCount > 0).length}</span>
                 </div>
               </div>
 
@@ -608,7 +631,7 @@ const WordLists: React.FC = () => {
                     selectWordList(selectedListId === list.id ? null : list.id);
                   }}
                 >
-                  {selectedListId === list.id ? '✅ Seçili' : 'Quiz için Seç'}
+                  {selectedListId === list.id ? 'âœ… SeÃ§ili' : 'Quiz iÃ§in SeÃ§'}
                 </button>
                 <button
                   className="btn btn-outline"
@@ -618,7 +641,7 @@ const WordLists: React.FC = () => {
                     setViewMode('detail');
                   }}
                 >
-                  👁️ Görüntüle
+                  ğŸ‘ï¸ GÃ¶rÃ¼ntÃ¼le
                 </button>
                 <button
                   className="btn btn-danger"
@@ -627,7 +650,7 @@ const WordLists: React.FC = () => {
                     handleRemoveList(list.id, list.title);
                   }}
                 >
-                  🗑️ Sil
+                  ğŸ—‘ï¸ Sil
                 </button>
               </div>
             </div>
