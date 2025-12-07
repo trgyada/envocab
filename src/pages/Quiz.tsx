@@ -5,7 +5,7 @@ import { useUserProgressStore } from '../stores/userProgressStore';
 import { useCardStore } from '../stores/cardStore';
 import { useReviewSessionStore } from '../stores/reviewSessionStore';
 import { QuizQuestion, QuizType, Word } from '../types';
-import { generateQuiz, calculateScore, selectWordsForReview, selectWordsSimple } from '../services/quizEngine';
+import { generateQuiz, calculateScore, selectWordsForReview, selectWordsSimple, shuffleArray } from '../services/quizEngine';
 import { estimateQualityFromResponse } from '../services/sm2Algorithm';
 import MultipleChoice from '../components/MultipleChoice';
 import Matching from '../components/Matching';
@@ -141,6 +141,9 @@ const Quiz: React.FC = () => {
         prioritizeDifficult: true
       });
     }
+
+    // Ek karistirma ve “hic sorulmamis” onceligi icin once karistir
+    wordsToUse = shuffleArray(wordsToUse);
 
     if (wordsToUse.length === 0) {
       alert('Bu kategoride kelime bulunamadı!');
