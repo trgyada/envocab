@@ -49,15 +49,23 @@ export const useWordListStore = create<WordListState>()(
       },
 
       addWordList: (title, rawWords) => {
-        const words: Word[] = rawWords.map((w) => ({
-          id: uuidv4(),
-          english: w.english,
-          turkish: w.turkish,
-          partOfSpeech: w.partOfSpeech,
-          mastery: 0,
-          correctCount: 0,
-          incorrectCount: 0,
-        }));
+        const seen = new Set<string>();
+        const words: Word[] = [];
+
+        rawWords.forEach((w) => {
+          const key = w.english.trim().toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          words.push({
+            id: uuidv4(),
+            english: w.english.trim(),
+            turkish: w.turkish.trim(),
+            partOfSpeech: w.partOfSpeech,
+            mastery: 0,
+            correctCount: 0,
+            incorrectCount: 0,
+          });
+        });
 
         const newList: WordList = {
           id: uuidv4(),
@@ -138,11 +146,18 @@ export const useWordListStore = create<WordListState>()(
         set((state) => ({
           wordLists: state.wordLists.map((list) => {
             if (list.id !== listId) return list;
+
+            const key = english.trim().toLowerCase();
+            const exists = list.words.some((w) => w.english.trim().toLowerCase() === key);
+            if (exists) {
+              updatedList = list;
+              return list;
+            }
             
             const newWord: Word = {
               id: uuidv4(),
-              english,
-              turkish,
+              english: english.trim(),
+              turkish: turkish.trim(),
               mastery: 0,
               correctCount: 0,
               incorrectCount: 0,

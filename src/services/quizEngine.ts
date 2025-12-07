@@ -26,35 +26,64 @@ export const generateMultipleChoiceQuestion = (
   direction: 'en-to-tr' | 'tr-to-en' | 'mixed' = 'mixed'
 ): QuizQuestion => {
   // Karışık modda rastgele yön seç
-  const isEnglishToTurkish = direction === 'mixed' 
-    ? Math.random() > 0.5 
+  const isEnglishToTurkish = direction === 'mixed'
+    ? Math.random() > 0.5
     : direction === 'en-to-tr';
-    
+
   const question = isEnglishToTurkish ? word.english : word.turkish;
   const correctAnswer = isEnglishToTurkish ? word.turkish : word.english;
 
-  // Yanlış şıkları seç (doğru cevap hariç ve tekrar etmeyen)
+  // Yanlış şıkları seç (doğru cevap hariç, tekrar yok, anlamca yakın olanlara öncelik)
   const otherWords = allWords.filter((w) => w.id !== word.id);
-  const shuffledOthers = shuffleArray(otherWords);
-  
-  // 3 yanlış şık + 1 doğru cevap - tekrar eden cevapları filtrele
+
+  const scoreCandidate = (candidate: Word, optionText: string) => {
+    let score = 0;
+    if (candidate.partOfSpeech && word.partOfSpeech && candidate.partOfSpeech === word.partOfSpeech) {
+      score += 3;
+    }
+    const lenDiff = Math.abs(optionText.length - correctAnswer.length);
+    if (lenDiff <= 2) score += 2;
+    if (optionText[0]?.toLowerCase() === correctAnswer[0]?.toLowerCase()) score += 1;
+    return score;
+  };
+
+  const ranked = otherWords
+    .map((w) => {
+      const option = isEnglishToTurkish ? w.turkish : w.english;
+      return { option, score: scoreCandidate(w, option) };
+    })
+    .filter((item) => item.option && item.option.trim().length > 0)
+    .sort((a, b) => b.score - a.score);
+
+  const topCandidates = ranked.slice(0, 12);
+  const shuffledTop = shuffleArray(topCandidates);
+
   const usedAnswers = new Set<string>([correctAnswer.toLowerCase().trim()]);
   const wrongOptions: string[] = [];
-  
-  for (const w of shuffledOthers) {
-    const option = isEnglishToTurkish ? w.turkish : w.english;
-    const normalizedOption = option.toLowerCase().trim();
-    
-    // Eğer bu cevap daha önce kullanılmadıysa ekle
+
+  for (const item of shuffledTop) {
+    const normalizedOption = item.option.toLowerCase().trim();
     if (!usedAnswers.has(normalizedOption)) {
       usedAnswers.add(normalizedOption);
-      wrongOptions.push(option);
-      
-      // 3 yanlış şık yeterli
+      wrongOptions.push(item.option);
       if (wrongOptions.length >= 3) break;
     }
   }
-  
+
+  // Hâlâ eksikse rastgele tamamla
+  if (wrongOptions.length < 3) {
+    const fallback = shuffleArray(otherWords);
+    for (const w of fallback) {
+      const option = isEnglishToTurkish ? w.turkish : w.english;
+      const normalizedOption = option.toLowerCase().trim();
+      if (!usedAnswers.has(normalizedOption)) {
+        usedAnswers.add(normalizedOption);
+        wrongOptions.push(option);
+        if (wrongOptions.length >= 3) break;
+      }
+    }
+  }
+
   const options = shuffleArray([correctAnswer, ...wrongOptions]);
 
   return {
@@ -64,7 +93,6 @@ export const generateMultipleChoiceQuestion = (
     question,
     options,
     correctAnswer,
-    // Soru yönünü kaydet (UI'da göstermek için)
     direction: isEnglishToTurkish ? 'en-to-tr' : 'tr-to-en',
   };
 };
@@ -91,7 +119,7 @@ export const generateMultipleChoiceQuiz = (
 };
 
 /**
- * Flashcard soruları oluşturur
+ * Flashcard sorularını oluşturur
  */
 export const generateFlashcardQuiz = (words: Word[], count?: number): QuizQuestion[] => {
   const shuffledWords = shuffleArray(words);
@@ -120,7 +148,7 @@ export const generateMatchingGame = (words: Word[], pairCount: number = 6): Matc
     isMatched: false,
   }));
 
-  // İngilizce ve Türkçe kartları oluştur
+  // İngilizce ve Türkçe kartlarını oluştur
   const englishCards: MatchingCard[] = pairs.map((pair) => ({
     id: uuidv4(),
     text: pair.english,
@@ -144,7 +172,7 @@ export const generateMatchingGame = (words: Word[], pairCount: number = 6): Matc
 };
 
 /**
- * Yazma soruları oluşturur
+ * Yazma sorularını oluşturur
  */
 export const generateWriteQuiz = (
   words: Word[],
@@ -348,7 +376,6 @@ export const selectWordsForReview = (
   
   // Limit'e ulaşılmadıysa, diğer kartlardan ekle (zorluk sırasına göre)
   if (selectedWordIds.size < limit) {
-    const remaining = limit - selectedWordIds.size;
     const allPrioritized = prioritizeCards(relevantStates);
     
     for (const state of allPrioritized) {
