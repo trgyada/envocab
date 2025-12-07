@@ -16,12 +16,20 @@ export const shuffleArray = <T>(array: T[]): T[] => {
 
 /**
  * Çoktan seçmeli soru oluşturur
+ * @param word Kelime
+ * @param allWords Tüm kelimeler (yanlış şıklar için)
+ * @param direction Soru yönü: 'en-to-tr', 'tr-to-en', veya 'mixed' (karışık)
  */
 export const generateMultipleChoiceQuestion = (
   word: Word,
   allWords: Word[],
-  isEnglishToTurkish: boolean = true
+  direction: 'en-to-tr' | 'tr-to-en' | 'mixed' = 'mixed'
 ): QuizQuestion => {
+  // Karışık modda rastgele yön seç
+  const isEnglishToTurkish = direction === 'mixed' 
+    ? Math.random() > 0.5 
+    : direction === 'en-to-tr';
+    
   const question = isEnglishToTurkish ? word.english : word.turkish;
   const correctAnswer = isEnglishToTurkish ? word.turkish : word.english;
 
@@ -56,23 +64,30 @@ export const generateMultipleChoiceQuestion = (
     question,
     options,
     correctAnswer,
+    // Soru yönünü kaydet (UI'da göstermek için)
+    direction: isEnglishToTurkish ? 'en-to-tr' : 'tr-to-en',
   };
 };
 
 /**
- * Çoktan seçmeli quiz soruları oluşturur
+ * Çoktan seçmeli quiz soruları oluşturur (karışık yön ile)
  */
 export const generateMultipleChoiceQuiz = (
   words: Word[],
   count?: number,
-  isEnglishToTurkish: boolean = true
+  direction: 'en-to-tr' | 'tr-to-en' | 'mixed' = 'mixed'
 ): QuizQuestion[] => {
   const shuffledWords = shuffleArray(words);
   const quizWords = count ? shuffledWords.slice(0, count) : shuffledWords;
   
-  return quizWords.map((word) =>
-    generateMultipleChoiceQuestion(word, words, isEnglishToTurkish)
-  );
+  return quizWords.map((word, index) => {
+    // Mixed modunda dengeli dağılım için sırayla yön değiştir
+    const chosenDirection =
+      direction === 'mixed'
+        ? (index % 2 === 0 ? 'en-to-tr' : 'tr-to-en')
+        : direction;
+    return generateMultipleChoiceQuestion(word, words, chosenDirection);
+  });
 };
 
 /**
@@ -151,17 +166,26 @@ export const generateWriteQuiz = (
 /**
  * Karışık quiz oluşturur
  */
-export const generateMixedQuiz = (words: Word[], count?: number, isEnglishToTurkish: boolean = true): QuizQuestion[] => {
+export const generateMixedQuiz = (
+  words: Word[], 
+  count?: number, 
+  direction: 'en-to-tr' | 'tr-to-en' | 'mixed' = 'mixed'
+): QuizQuestion[] => {
   const shuffledWords = shuffleArray(words);
   const quizWords = count ? shuffledWords.slice(0, count) : shuffledWords;
 
   return quizWords.map((word, index) => {
     const questionTypes: QuizType[] = ['multiple-choice', 'flashcard', 'write'];
     const selectedType = questionTypes[index % questionTypes.length];
+    
+    // Karışık modda her soru için rastgele yön
+    const isEnglishToTurkish = direction === 'mixed' 
+      ? Math.random() > 0.5 
+      : direction === 'en-to-tr';
 
     switch (selectedType) {
       case 'multiple-choice':
-        return generateMultipleChoiceQuestion(word, words, isEnglishToTurkish);
+        return generateMultipleChoiceQuestion(word, words, direction);
       case 'flashcard':
         return {
           id: uuidv4(),
@@ -169,6 +193,7 @@ export const generateMixedQuiz = (words: Word[], count?: number, isEnglishToTurk
           questionType: 'flashcard' as const,
           question: isEnglishToTurkish ? word.english : word.turkish,
           correctAnswer: isEnglishToTurkish ? word.turkish : word.english,
+          direction: isEnglishToTurkish ? 'en-to-tr' : 'tr-to-en' as const,
         };
       case 'write':
         return {
@@ -177,9 +202,10 @@ export const generateMixedQuiz = (words: Word[], count?: number, isEnglishToTurk
           questionType: 'write' as const,
           question: isEnglishToTurkish ? word.english : word.turkish,
           correctAnswer: isEnglishToTurkish ? word.turkish : word.english,
+          direction: isEnglishToTurkish ? 'en-to-tr' : 'tr-to-en' as const,
         };
       default:
-        return generateMultipleChoiceQuestion(word, words, isEnglishToTurkish);
+        return generateMultipleChoiceQuestion(word, words, direction);
     }
   });
 };
@@ -199,26 +225,26 @@ export const checkAnswer = (userAnswer: string, correctAnswer: string): boolean 
 };
 
 /**
- * Quiz tipine göre soru oluşturur
+ * Quiz tipine göre soru oluşturur (karışık yön destekli)
  */
 export const generateQuiz = (
   words: Word[],
   type: QuizType,
   count?: number,
-  isEnglishToTurkish: boolean = true
+  direction: 'en-to-tr' | 'tr-to-en' | 'mixed' = 'mixed'
 ): QuizQuestion[] => {
   switch (type) {
     case 'multiple-choice':
-      return generateMultipleChoiceQuiz(words, count, isEnglishToTurkish);
+      return generateMultipleChoiceQuiz(words, count, direction);
     case 'flashcard':
       return generateFlashcardQuiz(words, count);
     case 'write':
       return generateWriteQuiz(words, count);
     case 'matching':
       // Matching için multiple-choice kullan (matching component kendi içinde yönetiyor)
-      return generateMultipleChoiceQuiz(words, count, isEnglishToTurkish);
+      return generateMultipleChoiceQuiz(words, count, direction);
     default:
-      return generateMultipleChoiceQuiz(words, count, isEnglishToTurkish);
+      return generateMultipleChoiceQuiz(words, count, direction);
   }
 };
 

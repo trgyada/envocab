@@ -173,6 +173,9 @@ export interface WordList {
   updatedAt: Date;
 }
 
+// Quiz soru yönü
+export type QuizDirection = 'en-to-tr' | 'tr-to-en' | 'mixed';
+
 // Quiz sorusu
 export interface QuizQuestion {
   id: string;
@@ -183,6 +186,7 @@ export interface QuizQuestion {
   correctAnswer: string;
   userAnswer?: string;
   isCorrect?: boolean;
+  direction?: 'en-to-tr' | 'tr-to-en'; // Bu sorunun yönü (karışık modda her soru için farklı olabilir)
 }
 
 // Quiz oturumu

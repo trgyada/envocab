@@ -49,7 +49,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({ question, onAnswer }) =
     // Kısa bir gecikme ile sonraki soruya geç
     setTimeout(() => {
       onAnswer(isCorrect);
-    }, 200);
+    }, 1);
   };
 
   const getButtonClass = (option: string) => {
@@ -66,10 +66,13 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({ question, onAnswer }) =
     return baseClass;
   };
 
+  // Soru yönünü belirle
+  const isEnglishToTurkish = question.direction !== 'tr-to-en';
+
   return (
     <div className="quiz-card">
       <div className="question-badge">
-        🇬🇧 İngilizce → 🇹🇷 Türkçe
+        {isEnglishToTurkish ? '🇬🇧 İngilizce → 🇹🇷 Türkçe' : '🇹🇷 Türkçe → 🇬🇧 İngilizce'}
       </div>
       <h2 className="question-text">
         {question.question}
@@ -78,7 +81,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({ question, onAnswer }) =
         )}
       </h2>
       <p className="question-hint">
-        Doğru Türkçe karşılığını seçin
+        {isEnglishToTurkish ? 'Doğru Türkçe karşılığını seçin' : 'Doğru İngilizce karşılığını seçin'}
       </p>
       <div className="options">
         {question.options?.map((option, index) => (

@@ -88,7 +88,7 @@ const Matching: React.FC<MatchingProps> = ({ words, onComplete, onExit, onWordRe
       // Animasyon bittikten sonra listeden kaldır (0.3s animasyon)
       setTimeout(() => {
         setMatchedPairs((prev) => [...prev, selectedCard.wordId]);
-      }, 300);
+      }, 50);
       
       // Tamamlandı mı kontrol et
       const newMatchedCount = matchedPairs.length + 1;

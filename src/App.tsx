@@ -8,24 +8,24 @@ import WordLists from './pages/WordLists';
 
 const Navigation: React.FC = () => {
   const location = useLocation();
-  
+
   const isActive = (path: string) => location.pathname === path;
-  
+
   return (
     <nav className="navbar">
       <div className="navbar-content">
         <Link to="/" className="navbar-brand">
-          <span>🎓</span> VocabMaster
+          <span aria-hidden="true">🔥</span> VocabMaster
         </Link>
         <div className="navbar-links">
           <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
             🏠 Ana Sayfa
           </Link>
           <Link to="/word-lists" className={`nav-link ${isActive('/word-lists') ? 'active' : ''}`}>
-            📋 Listeler
+            📂 Listeler
           </Link>
           <Link to="/quiz" className={`nav-link ${isActive('/quiz') ? 'active' : ''}`}>
-            🧠 Quiz
+            🚀 Quiz
           </Link>
           <Link to="/analytics" className={`nav-link ${isActive('/analytics') ? 'active' : ''}`}>
             📊 İstatistik
