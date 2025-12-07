@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import Quiz from './pages/Quiz';
 import Results from './pages/Results';
 import Analytics from './pages/Analytics';
 import WordLists from './pages/WordLists';
+import { useWordListStore } from './stores/wordListStore';
 
 const Navigation: React.FC = () => {
   const location = useLocation();
@@ -37,6 +38,12 @@ const Navigation: React.FC = () => {
 };
 
 const App: React.FC = () => {
+  const { hydrateFromCloud } = useWordListStore();
+
+  useEffect(() => {
+    hydrateFromCloud();
+  }, [hydrateFromCloud]);
+
   return (
     <Router>
       <Navigation />

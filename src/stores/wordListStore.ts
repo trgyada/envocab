@@ -2,10 +2,17 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Word, WordList } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { 
+  fetchWordListsFromFirestore, 
+  saveWordListToFirestore, 
+  deleteWordListFromFirestore 
+} from '../services/firestoreWordLists';
 
 interface WordListState {
   wordLists: WordList[];
   selectedListId: string | null;
+  hydrateFromCloud: () => Promise<void>;
+  syncList: (list: WordList) => Promise<void>;
   
   // Actions
   addWordList: (title: string, words: Omit<Word, 'id' | 'mastery' | 'correctCount' | 'incorrectCount'>[]) => void;
@@ -25,6 +32,21 @@ export const useWordListStore = create<WordListState>()(
     (set, get) => ({
       wordLists: [],
       selectedListId: null,
+      hydrateFromCloud: async () => {
+        try {
+          const lists = await fetchWordListsFromFirestore();
+          set({ wordLists: lists });
+        } catch (err) {
+          console.error('Cloud hydrate failed', err);
+        }
+      },
+      syncList: async (list: WordList) => {
+        try {
+          await saveWordListToFirestore(list);
+        } catch (err) {
+          console.error('Sync list failed', err);
+        }
+      },
 
       addWordList: (title, rawWords) => {
         const words: Word[] = rawWords.map((w) => ({
@@ -48,6 +70,9 @@ export const useWordListStore = create<WordListState>()(
         set((state) => ({
           wordLists: [...state.wordLists, newList],
         }));
+
+        // Sync to Firestore
+        get().syncList(newList);
       },
 
       removeWordList: (id) => {
@@ -55,6 +80,8 @@ export const useWordListStore = create<WordListState>()(
           wordLists: state.wordLists.filter((list) => list.id !== id),
           selectedListId: state.selectedListId === id ? null : state.selectedListId,
         }));
+
+        deleteWordListFromFirestore(id).catch((err) => console.error('Delete list failed', err));
       },
 
       selectWordList: (id) => {
@@ -67,11 +94,12 @@ export const useWordListStore = create<WordListState>()(
       },
 
       updateWordMastery: (listId, wordId, isCorrect) => {
+        let updatedList: WordList | null = null;
         set((state) => ({
           wordLists: state.wordLists.map((list) => {
             if (list.id !== listId) return list;
             
-            return {
+            const nextList = {
               ...list,
               updatedAt: new Date(),
               words: list.words.map((word) => {
@@ -91,8 +119,12 @@ export const useWordListStore = create<WordListState>()(
                 };
               }),
             };
+            updatedList = nextList;
+            return nextList;
           }),
         }));
+
+        if (updatedList) get().syncList(updatedList);
       },
 
       getWordsByMastery: (listId, maxMastery) => {
@@ -102,6 +134,7 @@ export const useWordListStore = create<WordListState>()(
       },
 
       addWordToList: (listId, english, turkish) => {
+        let updatedList: WordList | null = null;
         set((state) => ({
           wordLists: state.wordLists.map((list) => {
             if (list.id !== listId) return list;
@@ -115,35 +148,45 @@ export const useWordListStore = create<WordListState>()(
               incorrectCount: 0,
             };
             
-            return {
+            const nextList = {
               ...list,
               updatedAt: new Date(),
               words: [...list.words, newWord],
             };
+            updatedList = nextList;
+            return nextList;
           }),
         }));
+
+        if (updatedList) get().syncList(updatedList);
       },
 
       removeWordFromList: (listId, wordId) => {
+        let updatedList: WordList | null = null;
         set((state) => ({
           wordLists: state.wordLists.map((list) => {
             if (list.id !== listId) return list;
             
-            return {
+            const nextList = {
               ...list,
               updatedAt: new Date(),
               words: list.words.filter((word) => word.id !== wordId),
             };
+            updatedList = nextList;
+            return nextList;
           }),
         }));
+
+        if (updatedList) get().syncList(updatedList);
       },
 
       updateWord: (listId, wordId, english, turkish) => {
+        let updatedList: WordList | null = null;
         set((state) => ({
           wordLists: state.wordLists.map((list) => {
             if (list.id !== listId) return list;
             
-            return {
+            const nextList = {
               ...list,
               updatedAt: new Date(),
               words: list.words.map((word) => {
@@ -151,17 +194,26 @@ export const useWordListStore = create<WordListState>()(
                 return { ...word, english, turkish };
               }),
             };
+            updatedList = nextList;
+            return nextList;
           }),
         }));
+
+        if (updatedList) get().syncList(updatedList);
       },
 
       updateListTitle: (listId, newTitle) => {
+        let updatedList: WordList | null = null;
         set((state) => ({
           wordLists: state.wordLists.map((list) => {
             if (list.id !== listId) return list;
-            return { ...list, title: newTitle, updatedAt: new Date() };
+            const nextList = { ...list, title: newTitle, updatedAt: new Date() };
+            updatedList = nextList;
+            return nextList;
           }),
         }));
+
+        if (updatedList) get().syncList(updatedList);
       },
     }),
     {
