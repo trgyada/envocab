@@ -53,16 +53,11 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
 
   const handleOptionClick = (option: string) => {
     if (showResult || isTransitioning) return;
-
     setSelectedAnswer(option);
     setShowResult(true);
     setIsTransitioning(true);
-
     const isCorrect = option === question.correctAnswer;
-
-    setTimeout(() => {
-      onAnswer(isCorrect, question.word);
-    }, 1);
+    setTimeout(() => onAnswer(isCorrect, question.word), 1);
   };
 
   const handleUnknown = () => {
@@ -74,17 +69,11 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
   };
 
   const getButtonClass = (option: string) => {
-    let baseClass = 'option-btn';
-
-    if (!showResult) return baseClass;
-
-    if (option === question.correctAnswer) {
-      return `${baseClass} correct`;
-    }
-    if (option === selectedAnswer && option !== question.correctAnswer) {
-      return `${baseClass} incorrect`;
-    }
-    return baseClass;
+    const base = 'option-btn';
+    if (!showResult) return base;
+    if (option === question.correctAnswer) return `${base} correct`;
+    if (option === selectedAnswer && option !== question.correctAnswer) return `${base} incorrect`;
+    return base;
   };
 
   const isEnglishToTurkish = question.direction !== 'tr-to-en';
@@ -134,9 +123,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
           >
             <span className="option-letter">{String.fromCharCode(65 + index)}</span>
             <span className="option-text">{option}</span>
-            {showResult && optionMeaning && (
-              <span className="option-meaning-inline">{optionMeaning(option) || '—'}</span>
-            )}
+            {showResult && optionMeaning && <span className="option-meaning-inline">{optionMeaning(option) || '—'}</span>}
             {showResult && option === question.correctAnswer && <span className="option-icon">✓</span>}
             {showResult && option === selectedAnswer && option !== question.correctAnswer && (
               <span className="option-icon">✕</span>
@@ -144,6 +131,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
           </button>
         ))}
       </div>
+
       {!showResult && (
         <div style={{ marginTop: '14px', textAlign: 'center' }}>
           <button className="btn btn-outline btn-sm" onClick={handleUnknown}>
@@ -151,6 +139,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
           </button>
         </div>
       )}
+
       {showResult && (
         <div className={`result-feedback ${selectedAnswer === question.correctAnswer ? 'correct' : 'incorrect'}`}>
           {selectedAnswer === question.correctAnswer ? (
@@ -168,4 +157,3 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
 };
 
 export default MultipleChoice;
-
