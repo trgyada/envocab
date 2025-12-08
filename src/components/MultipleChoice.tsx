@@ -5,6 +5,13 @@ interface MultipleChoiceProps {
   question: QuizQuestion;
   onAnswer: (isCorrect: boolean, word: Word) => void;
   optionMeaning?: (option: string) => string;
+  example?: {
+    sentence?: string;
+    translation?: string;
+    loading?: boolean;
+    error?: string;
+  };
+  onRequestExample?: () => void;
 }
 
 const getPartOfSpeechLabel = (pos?: PartOfSpeech): string => {
@@ -25,7 +32,13 @@ const getPartOfSpeechLabel = (pos?: PartOfSpeech): string => {
   return labels[pos] || '';
 };
 
-const MultipleChoice: React.FC<MultipleChoiceProps> = ({ question, onAnswer, optionMeaning }) => {
+const MultipleChoice: React.FC<MultipleChoiceProps> = ({
+  question,
+  onAnswer,
+  optionMeaning,
+  example,
+  onRequestExample
+}) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -87,6 +100,27 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({ question, onAnswer, opt
       <p className="question-hint">
         {isEnglishToTurkish ? 'Doğru Türkçe karşılığını seç' : 'Doğru İngilizce karşılığını seç'}
       </p>
+
+      {onRequestExample && (
+        <div className="example-box">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+            <div className="example-title">Örnek cümle (Gemini)</div>
+            <button className="btn btn-outline btn-sm" onClick={onRequestExample} disabled={example?.loading}>
+              {example?.loading ? 'Yükleniyor...' : example?.sentence ? 'Yeniden getir' : 'Göster'}
+            </button>
+          </div>
+          {example?.error && <div className="example-error">{example.error}</div>}
+          {example?.sentence && (
+            <div className="example-sentence">
+              {example.sentence}
+              {showResult && example.translation && (
+                <div className="example-translation">Çeviri: {example.translation}</div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="options">
         {question.options?.map((option, index) => (
           <button

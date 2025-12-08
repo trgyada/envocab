@@ -69,6 +69,15 @@ const Quiz: React.FC = () => {
   const [questionCount, setQuestionCount] = useState(10);
   const [onlyDifficultWords, setOnlyDifficultWords] = useState(false);
   const [useSM2Selection, setUseSM2Selection] = useState(true);
+  const [showExamples, setShowExamples] = useState(false);
+
+  type ExampleState = {
+    sentence?: string;
+    translation?: string;
+    loading?: boolean;
+    error?: string;
+  };
+  const [exampleMap, setExampleMap] = useState<Record<string, ExampleState>>({});
 
   const [flashcardWords, setFlashcardWords] = useState<Word[]>([]);
   const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
@@ -136,10 +145,10 @@ const Quiz: React.FC = () => {
         shuffle: true
       });
     } else {
-      wordsToUse = selectWordsSimple(selectedList.words, {
-        limit: questionCount,
-        prioritizeDifficult: true
-      });
+    wordsToUse = selectWordsSimple(selectedList.words, {
+      limit: questionCount,
+      prioritizeDifficult: true
+    });
     }
 
     // Ek karistirma ve “hic sorulmamis” onceligi icin once karistir

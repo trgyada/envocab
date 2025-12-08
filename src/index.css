@@ -569,6 +569,37 @@ a {
   color: var(--danger);
 }
 
+.example-box {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #0f172a;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  text-align: left;
+}
+
+.example-title {
+  font-weight: 700;
+}
+
+.example-sentence {
+  margin-top: 8px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.example-translation {
+  margin-top: 6px;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.example-error {
+  margin-top: 6px;
+  color: var(--danger);
+  font-weight: 600;
+}
+
 .quiz-type-selection {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
