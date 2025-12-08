@@ -13,7 +13,7 @@ const Analytics: React.FC = () => {
   const { stats, quizResults, getWeakWords, resetStats } = useUserProgressStore();
   const { wordLists } = useWordListStore();
   const { cardStates, getMasteryDistribution, cards, resetAllCardStates, getDifficultCards } = useCardStore();
-  const { getStreakDays, getTotalStats, clearHistory } = useReviewSessionStore();
+  const { getTotalStats, clearHistory } = useReviewSessionStore();
 
   const [showDueCardsModal, setShowDueCardsModal] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -21,7 +21,6 @@ const Analytics: React.FC = () => {
   const weakWords = getWeakWords();
   const masteryDistribution = getMasteryDistribution();
   const sm2Stats = getTotalStats();
-  const streak = getStreakDays();
   getDifficultCards(undefined, 0.6); // warm up
 
   const today = new Date();
@@ -64,7 +63,7 @@ const Analytics: React.FC = () => {
   };
 
   const getLast7DaysData = () => {
-    const days = [] as { date: string; quizCount: number; avgScore: number }[];
+    const days: { date: string; quizCount: number; avgScore: number }[] = [];
     const toKey = (d: Date) => {
       const copy = new Date(d);
       copy.setHours(0, 0, 0, 0);
@@ -132,8 +131,8 @@ const Analytics: React.FC = () => {
               <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>En Iyi Skor</div>
             </div>
             <div>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>{stats.streakDays}</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Gun Serisi</div>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.totalStudyTime} dk</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Toplam Calisma</div>
             </div>
           </div>
         </div>
@@ -248,10 +247,6 @@ const Analytics: React.FC = () => {
         <div className="analytics-card" style={{ marginBottom: '24px' }}>
           <h3 style={{ color: 'var(--primary)', marginBottom: '12px' }}>Spaced Repetition Ozeti</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
-            <div style={{ textAlign: 'center', padding: '14px', background: 'rgba(41, 182, 246, 0.1)', borderRadius: '12px' }}>
-              <div style={{ fontSize: '1.7rem', fontWeight: 'bold', color: 'var(--primary)' }}>{streak}</div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Gunluk Seri</div>
-            </div>
             <div style={{ textAlign: 'center', padding: '14px', background: 'rgba(41, 182, 246, 0.1)', borderRadius: '12px' }}>
               <div style={{ fontSize: '1.7rem', fontWeight: 'bold', color: 'var(--success)' }}>
                 {sm2Stats.totalCardsReviewed}

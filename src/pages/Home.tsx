@@ -32,10 +32,7 @@ const Home: React.FC = () => {
           <div className="stat-icon">✅</div>
           <div className="stat-value">{stats.totalQuizzes}</div>
           <div className="stat-label">Quiz Tamamlandı</div>
-        </div>
-        <div className="stat-box">
-          <div className="stat-icon">🔥</div>
-          <div className="stat-value">{stats.streakDays}</div>
+          <div className="stat-label">Quiz Tamamlandi</div>
           <div className="stat-label">Gün Serisi</div>
         </div>
       </div>

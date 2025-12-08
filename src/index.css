@@ -158,24 +158,24 @@ a {
 .btn-primary {
   background: linear-gradient(135deg, var(--primary), var(--primary-strong));
   color: #0b0f1c;
-  box-shadow: 0 12px 28px rgba(255, 152, 0, 0.35);
+  box-shadow: 0 10px 20px rgba(79, 93, 255, 0.25);
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 34px rgba(255, 152, 0, 0.45);
+  box-shadow: 0 12px 24px rgba(79, 93, 255, 0.3);
 }
 
 .btn-secondary {
   background: linear-gradient(135deg, var(--accent), var(--accent-strong));
   color: #0b0f1c;
-  box-shadow: 0 12px 28px rgba(79, 195, 247, 0.3);
+  box-shadow: 0 10px 20px rgba(255, 212, 79, 0.2);
 }
 
 .btn-danger {
   background: linear-gradient(135deg, #f87171, #ef4444);
   color: #0b0f1c;
-  box-shadow: 0 12px 28px rgba(239, 68, 68, 0.35);
+  box-shadow: 0 10px 20px rgba(239, 68, 68, 0.25);
 }
 
 .btn-outline {
@@ -435,12 +435,12 @@ a {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 18px;
+  padding: 14px 14px;
   background: linear-gradient(135deg, rgba(79, 93, 255, 0.12), rgba(255, 212, 79, 0.08));
   border: 2px solid rgba(255, 255, 255, 0.05);
   border-radius: var(--radius-md);
   color: var(--text-primary);
-  font-size: 1rem;
+  font-size: 0.96rem;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
@@ -468,9 +468,9 @@ a {
 }
 
 .option-letter {
-  width: 34px;
-  height: 34px;
-  background: linear-gradient(135deg, #6f7bff, #ffca28);
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(135deg, #4f5dff, #6ac6ff);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1372,7 +1372,7 @@ a {
   }
 
   .quiz-card {
-    padding: 24px;
+    padding: 20px;
   }
 
   .navbar {
@@ -1388,6 +1388,17 @@ a {
   .nav-link {
     padding: 8px 10px;
     font-size: 0.9rem;
+  }
+
+  .option-btn {
+    padding: 12px 12px;
+    font-size: 0.9rem;
+    gap: 10px;
+  }
+
+  .option-letter {
+    width: 28px;
+    height: 28px;
   }
 }
 
