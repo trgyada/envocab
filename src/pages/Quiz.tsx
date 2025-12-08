@@ -609,8 +609,10 @@ const Quiz: React.FC = () => {
               lang
             })
           });
-          if (!res.ok) throw new Error('İstek başarısız');
           const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data?.error || 'İstek başarısız');
+          }
           setExampleMap((prev) => ({
             ...prev,
             [exampleKey]: { sentence: data.sentence, translation: data.translation, loading: false }
@@ -618,7 +620,7 @@ const Quiz: React.FC = () => {
         } catch (err) {
           setExampleMap((prev) => ({
             ...prev,
-            [exampleKey]: { loading: false, error: 'Örnek cümle alınamadı.' }
+            [exampleKey]: { loading: false, error: err instanceof Error ? err.message : 'Örnek cümle alınamadı.' }
           }));
         }
       };
@@ -653,6 +655,7 @@ const Quiz: React.FC = () => {
             optionMeaning={getOptionMeaning}
             example={showExamples ? exampleState : undefined}
             onRequestExample={showExamples ? requestExample : undefined}
+            debugInfo={showExamples ? exampleState?.error || null : null}
           />
 
           <div
