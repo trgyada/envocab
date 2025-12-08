@@ -488,8 +488,8 @@ a {
   margin-left: 8px;
   padding: 4px 8px;
   border-radius: 10px;
-  background: rgba(255, 212, 79, 0.14);
-  color: var(--accent);
+  background: rgba(79, 93, 255, 0.12);
+  color: var(--primary-strong);
   font-weight: 700;
   font-size: 0.95rem;
 }

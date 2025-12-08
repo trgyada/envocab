@@ -1,10 +1,10 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserProgressStore } from '../stores/userProgressStore';
 import { useWordListStore } from '../stores/wordListStore';
 import { useCardStore } from '../stores/cardStore';
 import { useReviewSessionStore } from '../stores/reviewSessionStore';
-import { getMasteryLabel, getMasteryColor } from '../services/sm2Algorithm';
+import { getMasteryColor, getMasteryLabel } from '../services/sm2Algorithm';
 import { MasteryLevel } from '../types';
 import ProgressChart from '../components/ProgressChart';
 
@@ -53,7 +53,7 @@ const Analytics: React.FC = () => {
     clearHistory();
     resetStats();
     setShowResetConfirm(false);
-    alert('Tum istatistikler sifirlandi!');
+    alert('Tüm istatistikler sıfırlandı!');
   };
 
   const handleStartDueCardsQuiz = () => {
@@ -75,9 +75,7 @@ const Analytics: React.FC = () => {
       date.setHours(0, 0, 0, 0);
       date.setDate(date.getDate() - i);
       const dateKey = toKey(date);
-
       const dayResults = quizResults.filter((r) => toKey(new Date(r.completedAt)) === dateKey);
-
       days.push({
         date: date.toLocaleDateString('tr-TR', { weekday: 'short', day: '2-digit', month: '2-digit' }),
         quizCount: dayResults.length,
@@ -95,15 +93,13 @@ const Analytics: React.FC = () => {
   if (quizResults.length === 0) {
     return (
       <div className="analytics-container">
-        <h1 style={{ marginBottom: '30px' }}>Istatistikler</h1>
+        <h1 style={{ marginBottom: '30px' }}>İstatistikler</h1>
         <div className="empty-state">
           <div className="empty-state-icon">📊</div>
-          <p>Henuz istatistik yok.</p>
-          <p style={{ fontSize: '0.9rem', marginBottom: '20px' }}>
-            Quiz tamamladikca performans burada gorunecek.
-          </p>
+          <p>Henüz istatistik yok.</p>
+          <p style={{ fontSize: '0.9rem', marginBottom: '20px' }}>Quiz tamamladıkça performans burada görünecek.</p>
           <Link to="/quiz" className="btn btn-primary">
-            Quiz Baslat
+            Quiz Başlat
           </Link>
         </div>
       </div>
@@ -112,7 +108,7 @@ const Analytics: React.FC = () => {
 
   return (
     <div className="analytics-container">
-      <h1 style={{ marginBottom: '30px' }}>Istatistikler</h1>
+      <h1 style={{ marginBottom: '30px' }}>İstatistikler</h1>
 
       <div className="analytics-grid" style={{ marginBottom: '24px' }}>
         <div className="analytics-card">
@@ -128,11 +124,11 @@ const Analytics: React.FC = () => {
             </div>
             <div>
               <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>%{stats.bestScore}</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>En Iyi Skor</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>En İyi Skor</div>
             </div>
             <div>
               <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.totalStudyTime} dk</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Toplam Calisma</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Toplam Çalışma</div>
             </div>
           </div>
         </div>
@@ -142,7 +138,7 @@ const Analytics: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
             <div>
               <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{wordLists.length}</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Liste Sayisi</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Liste Sayısı</div>
             </div>
             <div>
               <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
@@ -152,24 +148,24 @@ const Analytics: React.FC = () => {
             </div>
             <div>
               <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.totalWords}</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Calisilan Kelime</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Çalışılan Kelime</div>
             </div>
             <div>
               <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.totalStudyTime} dk</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Calisma Suresi</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Çalışma Süresi</div>
             </div>
           </div>
         </div>
       </div>
 
       <div className="analytics-card" style={{ marginBottom: '24px' }}>
-        <h3 style={{ marginBottom: '16px' }}>Son 7 Gun</h3>
+        <h3 style={{ marginBottom: '16px' }}>Son 7 Gün</h3>
         <ProgressChart data={chartData} />
       </div>
 
       {Object.keys(cardStates).length > 0 && (
         <div className="analytics-card" style={{ marginBottom: '24px' }}>
-          <h3 style={{ marginBottom: '16px' }}>Ogrenme Seviyesi Dagilimi</h3>
+          <h3 style={{ marginBottom: '16px' }}>Öğrenme Seviyesi Dağılımı</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {([5, 4, 3, 2, 1, 0] as MasteryLevel[]).map((level) => {
               const count = masteryDistribution[level];
@@ -236,7 +232,7 @@ const Analytics: React.FC = () => {
                 className="btn btn-primary"
                 style={{ padding: '8px 14px', fontSize: '0.9rem' }}
               >
-                Simdi Calis
+                Şimdi Çalış
               </button>
             </div>
           )}
@@ -245,7 +241,7 @@ const Analytics: React.FC = () => {
 
       {sm2Stats.totalSessions > 0 && (
         <div className="analytics-card" style={{ marginBottom: '24px' }}>
-          <h3 style={{ color: 'var(--primary)', marginBottom: '12px' }}>Spaced Repetition Ozeti</h3>
+          <h3 style={{ color: 'var(--primary)', marginBottom: '12px' }}>Spaced Repetition Özeti</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
             <div style={{ textAlign: 'center', padding: '14px', background: 'rgba(41, 182, 246, 0.1)', borderRadius: '12px' }}>
               <div style={{ fontSize: '1.7rem', fontWeight: 'bold', color: 'var(--success)' }}>
@@ -257,13 +253,13 @@ const Analytics: React.FC = () => {
               <div style={{ fontSize: '1.7rem', fontWeight: 'bold', color: 'var(--warning)' }}>
                 %{Math.round(sm2Stats.averageAccuracy)}
               </div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Dogruluk</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Doğruluk</div>
             </div>
             <div style={{ textAlign: 'center', padding: '14px', background: 'rgba(41, 182, 246, 0.1)', borderRadius: '12px' }}>
               <div style={{ fontSize: '1.7rem', fontWeight: 'bold', color: 'var(--accent)' }}>
                 {Math.round(sm2Stats.totalStudyTimeMinutes)}
               </div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Dakika Calisma</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Dakika Çalışma</div>
             </div>
           </div>
         </div>
@@ -273,7 +269,7 @@ const Analytics: React.FC = () => {
         <div className="analytics-card" style={{ marginBottom: '24px' }}>
           <h3 style={{ color: 'var(--danger)', marginBottom: '12px' }}>Dikkat Edilmesi Gereken Kelimeler</h3>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '12px', fontSize: '0.95rem' }}>
-            Bu kelimeler en cok hata yaptiklarin. Oncelikli calisman onerilir.
+            Bu kelimeler en çok hata yaptıkların. Öncelikli çalışmanı öneririz.
           </p>
           <div style={{ display: 'grid', gap: '10px' }}>
             {weakWords.slice(0, 10).map((word, idx) => (
@@ -297,7 +293,7 @@ const Analytics: React.FC = () => {
       )}
 
       <div className="analytics-card" style={{ marginBottom: '24px' }}>
-        <h3 style={{ marginBottom: '12px' }}>Son Quiz Sonuclari</h3>
+        <h3 style={{ marginBottom: '12px' }}>Son Quiz Sonuçları</h3>
         <div style={{ display: 'grid', gap: '10px' }}>
           {quizResults.slice(0, 10).map((result, idx) => (
             <div
@@ -331,16 +327,16 @@ const Analytics: React.FC = () => {
       </div>
 
       <div className="analytics-card" style={{ marginTop: '24px', textAlign: 'center' }}>
-        <h3 style={{ marginBottom: '12px', color: 'var(--danger)' }}>Tehlikeli Bolge</h3>
+        <h3 style={{ marginBottom: '12px', color: 'var(--danger)' }}>Tehlikeli Bölge</h3>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '14px', fontSize: '0.95rem' }}>
-          Tum SM-2 ogrenme verilerini, quiz gecmisini ve istatistikleri sifirlar. Kelime listeleri silinmez.
+          Tüm SM-2 öğrenme verilerini, quiz geçmişini ve istatistikleri sıfırlar. Kelime listeleri silinmez.
         </p>
         <button
           onClick={() => setShowResetConfirm(true)}
           className="btn btn-danger"
           style={{ padding: '10px 18px' }}
         >
-          Her seyi sifirla
+          Her şeyi sıfırla
         </button>
       </div>
 
@@ -400,7 +396,7 @@ const Analytics: React.FC = () => {
                 Kapat
               </button>
               <button className="btn btn-primary" onClick={handleStartDueCardsQuiz}>
-                Simdi Calis
+                Şimdi Çalış
               </button>
             </div>
           </div>
@@ -412,14 +408,14 @@ const Analytics: React.FC = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
             <h2 style={{ marginBottom: '12px', color: 'var(--danger)' }}>Emin misin?</h2>
             <p style={{ marginBottom: '18px', color: 'var(--text-secondary)' }}>
-              Bu islem tum SM-2 verilerini, kart durumlarini, quiz gecmisini ve istatistikleri kalici olarak silecek.
+              Bu işlem tüm SM-2 verilerini, kart durumlarını, quiz geçmişini ve istatistikleri kalıcı olarak silecek.
             </p>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button className="btn btn-outline" onClick={() => setShowResetConfirm(false)}>
-                Iptal
+                İptal
               </button>
               <button className="btn btn-danger" onClick={handleResetAllStats}>
-                Evet, sifirla
+                Evet, sıfırla
               </button>
             </div>
           </div>
