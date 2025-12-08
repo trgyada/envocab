@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const modelName = 'gemini-1.5-flash-latest';
+const modelName = 'gemini-1.5-flash';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
