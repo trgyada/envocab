@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// v1 endpoint ve güncel model adı
-const modelName = 'gemini-1.5-flash-001';
+// v1 endpoint ve güncel model adı (Gemini 2.5 Flash)
+const modelName = 'gemini-2.5-flash';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -36,7 +36,14 @@ Yaniti su JSON formatinda ver:
 }
 `;
 
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent({
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: prompt }]
+        }
+      ]
+    });
     const text = result.response.text().trim();
 
     let data: { sentence?: string; translation?: string } = {};
