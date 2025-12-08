@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// v1 endpoint ve güncel model adı (Gemini 2.5 Flash)
+// v1 endpoint ve güncel model adı (Gemini 2.5 Flash123)
 const modelName = 'gemini-2.5-flash';
 
 export default async function handler(req: any, res: any) {
