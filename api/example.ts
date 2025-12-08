@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// v1 endpoint ve güncel model adı (Gemini 2.5 Flash123)
+// v1 endpoint ve güncel model (Gemini 2.5 Flash)
 const modelName = 'gemini-2.5-flash';
 
 export default async function handler(req: any, res: any) {
@@ -44,13 +44,19 @@ Yaniti su JSON formatinda ver:
         }
       ]
     });
-    const text = result.response.text().trim();
+    const raw = result.response.text().trim();
+    const clean = raw.replace(/```(json)?/gi, '').replace(/```/g, '').trim();
 
     let data: { sentence?: string; translation?: string } = {};
     try {
-      data = JSON.parse(text);
+      data = JSON.parse(clean);
     } catch {
-      data = { sentence: text, translation: '' };
+      const sentenceMatch = clean.match(/"sentence"\\s*:\\s*"([^"]+)"/i);
+      const translationMatch = clean.match(/"translation"\\s*:\\s*"([^"]+)"/i);
+      data = {
+        sentence: sentenceMatch ? sentenceMatch[1] : clean,
+        translation: translationMatch ? translationMatch[1] : ''
+      };
     }
 
     return res.status(200).json({
