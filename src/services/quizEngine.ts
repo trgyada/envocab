@@ -14,6 +14,19 @@ export const shuffleArray = <T>(array: T[]): T[] => {
   return shuffled;
 };
 
+/** Daha önce az sorulmuş kelimeleri öne alan karıştırma */
+export const prioritizeUnseenWords = (words: Word[]): Word[] => {
+  const scored = words.map((w) => {
+    const seen = (w.correctCount || 0) + (w.incorrectCount || 0);
+    const mastery = w.mastery || 0;
+    // Daha az görülen ve mastery düşük olanlar daha öne çıksın, ufak rastgelelik ekle
+    const score = seen * 2 + mastery + Math.random();
+    return { word: w, score };
+  });
+  scored.sort((a, b) => a.score - b.score);
+  return scored.map((s) => s.word);
+};
+
 /**
  * Çoktan seçmeli soru oluşturur
  * @param word Kelime

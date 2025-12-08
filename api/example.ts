@@ -51,6 +51,6 @@ Yanıtı şu JSON formatında ver:
   } catch (error: any) {
     console.error('Gemini error', error?.message || error);
     const status = error?.status || 500;
-    return res.status(status).json({ error: 'Example generation failed' });
+    return res.status(status).json({ error: error?.message || 'Example generation failed', status });
   }
 }

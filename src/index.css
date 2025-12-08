@@ -600,6 +600,13 @@ a {
   font-weight: 600;
 }
 
+.example-debug {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
 .quiz-type-selection {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

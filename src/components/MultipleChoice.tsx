@@ -12,6 +12,7 @@ interface MultipleChoiceProps {
     error?: string;
   };
   onRequestExample?: () => void;
+  debugInfo?: string | null;
 }
 
 const getPartOfSpeechLabel = (pos?: PartOfSpeech): string => {
@@ -37,7 +38,8 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
   onAnswer,
   optionMeaning,
   example,
-  onRequestExample
+  onRequestExample,
+  debugInfo
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -118,6 +120,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
               )}
             </div>
           )}
+          {debugInfo && <div className="example-debug">{debugInfo}</div>}
         </div>
       )}
 
@@ -165,3 +168,4 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
 };
 
 export default MultipleChoice;
+

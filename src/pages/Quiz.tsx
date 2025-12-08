@@ -7,7 +7,8 @@ import {
   generateQuiz,
   selectWordsForReview,
   selectWordsSimple,
-  shuffleArray
+  shuffleArray,
+  prioritizeUnseenWords
 } from '../services/quizEngine';
 import { estimateQualityFromResponse } from '../services/sm2Algorithm';
 import { useCardStore } from '../stores/cardStore';
@@ -145,7 +146,7 @@ const Quiz: React.FC = () => {
       wordsToUse = selectWordsSimple(selectedList.words, { limit: questionCount, prioritizeDifficult: true });
     }
 
-    wordsToUse = shuffleArray(wordsToUse);
+    wordsToUse = shuffleArray(prioritizeUnseenWords(wordsToUse));
 
     const count = Math.min(questionCount, wordsToUse.length);
     quizStartedRef.current = true;
@@ -675,3 +676,5 @@ const Quiz: React.FC = () => {
 };
 
 export default Quiz;
+
+
