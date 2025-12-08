@@ -80,6 +80,7 @@ const Quiz: React.FC = () => {
   const [useSM2Selection, setUseSM2Selection] = useState(true);
   const [showExamples, setShowExamples] = useState(false);
   const [exampleMap, setExampleMap] = useState<Record<string, ExampleState>>({});
+  const [hasAnswered, setHasAnswered] = useState(false);
 
   const [flashcardWords, setFlashcardWords] = useState<Word[]>([]);
   const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
@@ -118,6 +119,10 @@ const Quiz: React.FC = () => {
       createCardsFromWords(selectedList.words);
     }
   }, [selectedList, createCardsFromWords]);
+
+  useEffect(() => {
+    setHasAnswered(false);
+  }, [currentIndex, questions]);
 
   const getOptionMeaning = (option: string) => {
     const list = selectedList;
@@ -233,7 +238,6 @@ const Quiz: React.FC = () => {
   };
 
   const handleAnswer = (isCorrect: boolean, word: Word) => {
-    const totalQuestions = totalQuestionsRef.current || questions.length;
     const responseTimeMs = Date.now() - questionStartTimeRef.current;
     if (selectedListId) updateWordMastery(selectedListId, word.id, isCorrect);
     updateSM2CardState(word, isCorrect, responseTimeMs);
@@ -242,16 +246,7 @@ const Quiz: React.FC = () => {
     const newWrong = isCorrect ? wrongWords : [...wrongWords, word];
     setCorrectCount(newCorrect);
     setWrongWords(newWrong);
-
-    const isLast = currentIndex >= totalQuestions - 1;
-    if (isLast) {
-      setTimeout(() => finishQuiz(newCorrect, totalQuestions, newWrong), 1000);
-    } else {
-      setTimeout(() => {
-        setCurrentIndex((prev) => prev + 1);
-        questionStartTimeRef.current = Date.now();
-      }, 1000);
-    }
+    setHasAnswered(true);
   };
 
   const handleFlashcardAnswer = (knew: boolean) => {
@@ -289,6 +284,19 @@ const Quiz: React.FC = () => {
 
   const handleMatchingComplete = (correct: number, total: number, wrong: Word[]) => {
     finishQuiz(correct, total, wrong);
+  };
+
+  const goNextQuestion = () => {
+    if (!hasAnswered) return;
+    const isLast = currentIndex >= questions.length - 1;
+    if (isLast) {
+      const total = totalQuestionsRef.current || questions.length;
+      finishQuiz(correctCount, total, wrongWords);
+    } else {
+      setCurrentIndex((prev) => prev + 1);
+      questionStartTimeRef.current = Date.now();
+      setHasAnswered(false);
+    }
   };
 
   const handleExitQuiz = () => {
@@ -657,6 +665,12 @@ const Quiz: React.FC = () => {
             onRequestExample={showExamples ? requestExample : undefined}
             debugInfo={showExamples ? exampleState?.error || null : null}
           />
+
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+            <button className="btn btn-primary" onClick={goNextQuestion} disabled={!hasAnswered}>
+              {currentIndex >= questions.length - 1 ? 'Bitir' : 'Sonraki Soru'}
+            </button>
+          </div>
 
           <div
             style={{
