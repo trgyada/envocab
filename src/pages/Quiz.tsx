@@ -121,6 +121,39 @@ const Quiz: React.FC = () => {
   }, [selectedList, createCardsFromWords]);
 
   useEffect(() => {
+    if (!showExamples) return;
+    if (questions.length === 0) return;
+    if (currentIndex >= questions.length) return;
+    const q = questions[currentIndex];
+    const key = `${q.word.id}-${q.direction}`;
+    const existing = exampleMap[key];
+    if (existing?.sentence || existing?.loading) return;
+    // fire and forget
+    const lang = q.direction === 'tr-to-en' ? 'tr' : 'en';
+    setExampleMap((prev) => ({ ...prev, [key]: { ...prev[key], loading: true, error: undefined } }));
+    fetch('/api/example', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ word: lang === 'tr' ? q.word.turkish : q.word.english, lang })
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || 'Ornek alinamadi');
+        setExampleMap((prev) => ({
+          ...prev,
+          [key]: { sentence: data.sentence, translation: data.translation, loading: false }
+        }));
+      })
+      .catch((err) => {
+        setExampleMap((prev) => ({
+          ...prev,
+          [key]: { loading: false, error: err instanceof Error ? err.message : 'Ornek alinamadi' }
+        }));
+      });
+  }, [showExamples, questions, currentIndex]);
+
+
+  useEffect(() => {
     setHasAnswered(false);
   }, [currentIndex, questions]);
 

@@ -77,7 +77,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
   };
 
   const isEnglishToTurkish = question.direction !== 'tr-to-en';
-  const directionLabel = isEnglishToTurkish ? 'İngilizce → Türkçe' : 'Türkçe → İngilizce';
+  const directionLabel = isEnglishToTurkish ? 'Ingilizce -> Turkce' : 'Turkce -> Ingilizce';
 
   return (
     <div className="quiz-card">
@@ -89,15 +89,15 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
         )}
       </h2>
       <p className="question-hint">
-        {isEnglishToTurkish ? 'Doğru Türkçe karşılığını seç' : 'Doğru İngilizce karşılığını seç'}
+        {isEnglishToTurkish ? 'Dogru Turkce karsiligini sec' : 'Dogru Ingilizce karsiligini sec'}
       </p>
 
       {onRequestExample && (
         <div className="example-box">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
-            <div className="example-title">Örnek cümle (Gemini)</div>
+            <div className="example-title">Ornek cumle (Gemini)</div>
             <button className="btn btn-outline btn-sm" onClick={onRequestExample} disabled={example?.loading}>
-              {example?.loading ? 'Yükleniyor...' : example?.sentence ? 'Yeniden getir' : 'Göster'}
+              {example?.loading ? 'Yukleniyor...' : 'Yeniden getir'}
             </button>
           </div>
           {example?.error && <div className="example-error">{example.error}</div>}
@@ -105,7 +105,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
             <div className="example-sentence">
               {example.sentence}
               {showResult && example.translation && (
-                <div className="example-translation">Çeviri: {example.translation}</div>
+                <div className="example-translation">Ceviri: {example.translation}</div>
               )}
             </div>
           )}
@@ -123,10 +123,10 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
           >
             <span className="option-letter">{String.fromCharCode(65 + index)}</span>
             <span className="option-text">{option}</span>
-            {showResult && optionMeaning && <span className="option-meaning-inline">{optionMeaning(option) || '—'}</span>}
-            {showResult && option === question.correctAnswer && <span className="option-icon">✓</span>}
+            {showResult && optionMeaning && <span className="option-meaning-inline">{optionMeaning(option) || ''}</span>}
+            {showResult && option === question.correctAnswer && <span className="option-icon"></span>}
             {showResult && option === selectedAnswer && option !== question.correctAnswer && (
-              <span className="option-icon">✕</span>
+              <span className="option-icon"></span>
             )}
           </button>
         ))}
@@ -143,11 +143,11 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
       {showResult && (
         <div className={`result-feedback ${selectedAnswer === question.correctAnswer ? 'correct' : 'incorrect'}`}>
           {selectedAnswer === question.correctAnswer ? (
-            <>Doğru!</>
+            <>Doru!</>
           ) : (
             <>
-              {selectedAnswer === 'UNKNOWN' ? 'Bilmiyorum olarak işaretlendi. ' : 'Yanlış! '}
-              Doğru cevap: <strong>{question.correctAnswer}</strong>
+              {selectedAnswer === 'UNKNOWN' ? 'Bilmiyorum olarak iaretlendi. ' : 'Yanl! '}
+              Doru cevap: <strong>{question.correctAnswer}</strong>
             </>
           )}
         </div>
