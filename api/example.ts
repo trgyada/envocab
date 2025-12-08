@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const modelName = 'gemini-1.5-flash';
+const modelName = 'gemini-1.5-flash-latest';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -34,7 +34,9 @@ Yanıtı şu JSON formatında ver:
 }
 `;
 
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }]
+    });
     const text = result.response.text().trim();
 
     let data: { sentence?: string; translation?: string } = {};
@@ -51,6 +53,9 @@ Yanıtı şu JSON formatında ver:
   } catch (error: any) {
     console.error('Gemini error', error?.message || error);
     const status = error?.status || 500;
-    return res.status(status).json({ error: error?.message || 'Example generation failed', status });
+    return res.status(status).json({
+      error: error?.message || 'Example generation failed',
+      status
+    });
   }
 }
