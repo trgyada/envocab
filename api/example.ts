@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const modelName = 'gemini-1.5-flash';
+// v1 endpoint ve güncel model adı
+const modelName = 'gemini-1.5-flash-001';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -18,25 +19,24 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
+    // v1 API kullan
+    const genAI = new GoogleGenerativeAI(apiKey, { apiVersion: 'v1' });
     const model = genAI.getGenerativeModel({ model: modelName });
 
     const prompt = `
 Kelime: "${word}"
-Dil: ${lang === 'en' ? 'İngilizce' : 'Türkçe'}
-Görev: C1-C2 seviyesinde tek cümle kur. Kelimeyi doğal bağlamda kullan.
-Çeviri: Cevap verildikten sonra göstermek için karşı dilde bir çeviri de üret.
+Dil: ${lang === 'en' ? 'Ingilizce' : 'Turkce'}
+Gorev: C1-C2 seviyesinde tek cumle kur. Kelimeyi dogal baglamda kullan.
+Ceviri: Cevap verildikten sonra gostermek icin karsi dilde bir ceviri de uret.
 
-Yanıtı şu JSON formatında ver:
+Yaniti su JSON formatinda ver:
 {
-  "sentence": "cümle",
-  "translation": "çeviri"
+  "sentence": "cumle",
+  "translation": "ceviri"
 }
 `;
 
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }]
-    });
+    const result = await model.generateContent(prompt);
     const text = result.response.text().trim();
 
     let data: { sentence?: string; translation?: string } = {};
