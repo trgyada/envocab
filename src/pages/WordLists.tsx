@@ -19,8 +19,15 @@ const WordLists: React.FC = () => {
     updateListTitle
   } = useWordListStore();
 
-  const { getAllWrongWords } = useUserProgressStore();
-  const wrongWords = getAllWrongWords();
+  const allWrong = new Map<string, Word>();
+  wordLists.forEach((l) => {
+    l.words
+      .filter((w) => w.incorrectCount > 0)
+      .forEach((w) => {
+        if (!allWrong.has(w.id)) allWrong.set(w.id, w);
+      });
+  });
+  const wrongWords = Array.from(allWrong.values());
 
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [isLoading, setIsLoading] = useState(false);

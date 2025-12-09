@@ -81,8 +81,17 @@ const Quiz: React.FC = () => {
   const [showExamples, setShowExamples] = useState(false);
   const [exampleMap, setExampleMap] = useState<Record<string, ExampleState>>({});
   const [hasAnswered, setHasAnswered] = useState(false);
-  const { getAllWrongWords } = useUserProgressStore();
-  const globalWrongWords = getAllWrongWords();
+  const allDifficultWords = React.useMemo(() => {
+    const map = new Map<string, Word>();
+    wordLists.forEach((l) =>
+      l.words
+        .filter((w) => w.incorrectCount > 0)
+        .forEach((w) => {
+          if (!map.has(w.id)) map.set(w.id, w);
+        })
+    );
+    return Array.from(map.values());
+  }, [wordLists]);
 
   const [flashcardWords, setFlashcardWords] = useState<Word[]>([]);
   const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
@@ -180,7 +189,7 @@ const Quiz: React.FC = () => {
     let wordsToUse: Word[];
 
     if (onlyDifficultWords) {
-      wordsToUse = globalWrongWords.length > 0 ? globalWrongWords : difficultWords;
+      wordsToUse = allDifficultWords.length > 0 ? allDifficultWords : difficultWords;
     } else if (useSM2Selection && cards.length > 0) {
       wordsToUse = selectWordsForReview(selectedList.words, cardStates, cards, {
         limit: questionCount,
@@ -506,7 +515,7 @@ const Quiz: React.FC = () => {
               <div>
                 <div style={{ fontWeight: '600', marginBottom: '5px' }}>Zor Kelimeler</div>
                 <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                  Sadece daha once hata yapilan kelimeler ({globalWrongWords.length} kelime)
+                  Sadece daha once hata yapilan kelimeler ({allDifficultWords.length} kelime)
                 </div>
               </div>
               <div
@@ -521,7 +530,7 @@ const Quiz: React.FC = () => {
             className="btn btn-primary btn-lg"
             onClick={startQuiz}
             style={{ width: '100%', marginTop: '20px' }}
-            disabled={onlyDifficultWords && (globalWrongWords.length === 0 && difficultWords.length === 0)}
+            disabled={onlyDifficultWords && (allDifficultWords.length === 0 && difficultWords.length === 0)}
           >
             Quiz'i Baslat
           </button>
