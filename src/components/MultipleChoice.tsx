@@ -143,10 +143,10 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
       {showResult && (
         <div className={`result-feedback ${selectedAnswer === question.correctAnswer ? 'correct' : 'incorrect'}`}>
           {selectedAnswer === question.correctAnswer ? (
-            <>Doru!</>
+            <>Doğru!</>
           ) : (
             <>
-              {selectedAnswer === 'UNKNOWN' ? 'Bilmiyorum olarak iaretlendi. ' : 'Yanl! '}
+              {selectedAnswer === 'UNKNOWN' ? 'Bilmiyorum olarak işaretlendi. ' : 'Yanlış! '}
               Doru cevap: <strong>{question.correctAnswer}</strong>
             </>
           )}

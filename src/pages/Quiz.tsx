@@ -138,7 +138,12 @@ const Quiz: React.FC = () => {
     })
       .then(async (res) => {
         const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || 'Ornek alinamadi');
+        if (!res.ok) {
+          if (res.status === 429) {
+            throw new Error('429: Rate limit asildi, lutfen biraz sonra tekrar dene.');
+          }
+          throw new Error(data?.error || 'Ornek alinamadi');
+        }
         setExampleMap((prev) => ({
           ...prev,
           [key]: { sentence: data.sentence, translation: data.translation, loading: false }
