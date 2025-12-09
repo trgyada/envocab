@@ -78,16 +78,27 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
 
   const isEnglishToTurkish = question.direction !== 'tr-to-en';
   const directionLabel = isEnglishToTurkish ? 'Ingilizce -> Turkce' : 'Turkce -> Ingilizce';
+  const speakCurrent = () => {
+    const text = isEnglishToTurkish ? question.word.english : question.word.turkish;
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = isEnglishToTurkish ? 'en-US' : 'tr-TR';
+    speechSynthesis.speak(utter);
+  };
 
   return (
     <div className="quiz-card">
       <div className="question-badge">{directionLabel}</div>
-      <h2 className="question-text">
-        {question.question}
-        {question.word.partOfSpeech && (
-          <span className="part-of-speech"> {getPartOfSpeechLabel(question.word.partOfSpeech)}</span>
-        )}
-      </h2>
+      <div className="question-text-row">
+        <h2 className="question-text">
+          {question.question}
+          {question.word.partOfSpeech && (
+            <span className="part-of-speech"> {getPartOfSpeechLabel(question.word.partOfSpeech)}</span>
+          )}
+        </h2>
+        <button className="question-speak-btn" onClick={speakCurrent} title="Sesli oku">
+          🔊
+        </button>
+      </div>
       <p className="question-hint">
         {isEnglishToTurkish ? 'Dogru Turkce karsiligini sec' : 'Dogru Ingilizce karsiligini sec'}
       </p>

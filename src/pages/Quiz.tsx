@@ -81,6 +81,8 @@ const Quiz: React.FC = () => {
   const [showExamples, setShowExamples] = useState(false);
   const [exampleMap, setExampleMap] = useState<Record<string, ExampleState>>({});
   const [hasAnswered, setHasAnswered] = useState(false);
+  const { getAllWrongWords } = useUserProgressStore();
+  const globalWrongWords = getAllWrongWords();
 
   const [flashcardWords, setFlashcardWords] = useState<Word[]>([]);
   const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
@@ -178,7 +180,7 @@ const Quiz: React.FC = () => {
     let wordsToUse: Word[];
 
     if (onlyDifficultWords) {
-      wordsToUse = difficultWords;
+      wordsToUse = globalWrongWords.length > 0 ? globalWrongWords : difficultWords;
     } else if (useSM2Selection && cards.length > 0) {
       wordsToUse = selectWordsForReview(selectedList.words, cardStates, cards, {
         limit: questionCount,
@@ -384,11 +386,13 @@ const Quiz: React.FC = () => {
   }
 
   // select type/settings
+  
+  // select type/settings
   if (phase === 'select-type') {
     const maxQuestions = selectedList?.words.length || 10;
     return (
       <div className="quiz-container">
-        <h1 style={{ marginBottom: '10px', textAlign: 'center' }}>Quiz Ayarları</h1>
+        <h1 style={{ marginBottom: '10px', textAlign: 'center' }}>Quiz Ayarlari</h1>
         <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '30px' }}>
           {selectedList?.title} - {selectedList?.words.length} kelime
         </p>
@@ -396,7 +400,7 @@ const Quiz: React.FC = () => {
         <div style={{ maxWidth: '520px', margin: '0 auto' }}>
           <div style={{ marginBottom: '30px' }}>
             <label style={{ display: 'block', marginBottom: '10px', fontWeight: '600' }}>
-              Soru Sayısı: {questionCount}
+              Soru Sayisi: {questionCount}
             </label>
             <input
               type="range"
@@ -413,12 +417,12 @@ const Quiz: React.FC = () => {
           </div>
 
           <div style={{ marginBottom: '30px' }}>
-            <label style={{ display: 'block', marginBottom: '15px', fontWeight: '600' }}>Quiz Tipi Seç</label>
+            <label style={{ display: 'block', marginBottom: '15px', fontWeight: '600' }}>Quiz Tipi Sec</label>
             <div className="quiz-type-grid">
               {[
-                { type: 'multiple-choice' as QuizType, icon: '📝', label: 'Çoktan Seçmeli' },
-                { type: 'flashcard' as QuizType, icon: '📑', label: 'Flashcard' },
-                { type: 'matching' as QuizType, icon: '🔗', label: 'Eşleştirme' }
+                { type: 'multiple-choice' as QuizType, icon: '?', label: 'Coktan Secmeli' },
+                { type: 'flashcard' as QuizType, icon: 'F', label: 'Flashcard' },
+                { type: 'matching' as QuizType, icon: 'M', label: 'Eslesme' }
               ].map(({ type, icon, label }) => (
                 <div
                   key={type}
@@ -433,12 +437,12 @@ const Quiz: React.FC = () => {
           </div>
 
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600' }}>Soru yönü</label>
+            <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600' }}>Soru yonu</label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
               {[
-                { value: 'mixed' as const, label: 'Karışık' },
-                { value: 'en-to-tr' as const, label: 'İng → Tr' },
-                { value: 'tr-to-en' as const, label: 'Tr → İng' }
+                { value: 'mixed' as const, label: 'Karisik' },
+                { value: 'en-to-tr' as const, label: 'Ing -> Tr' },
+                { value: 'tr-to-en' as const, label: 'Tr -> Ing' }
               ].map((item) => (
                 <button
                   key={item.value}
@@ -462,25 +466,27 @@ const Quiz: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '10px'
+              gap: '10px',
+              opacity: quizType === 'multiple-choice' ? 1 : 0.5
             }}
           >
             <div>
-              <div style={{ fontWeight: '700', marginBottom: '6px' }}>Örnek cümle (Gemini)</div>
+              <div style={{ fontWeight: '700', marginBottom: '6px' }}>Ornek cumle (Gemini)</div>
               <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                Butonla aç; yanıt sonrası çeviri gösterilir (kota için kapalı başlar).
+                Quiz baslamadan ornek cumleler hazirlanir; ceviri yanit sonrasinda gosterilir.
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input
-                id="toggle-example"
-                type="checkbox"
-                checked={showExamples}
-                onChange={(e) => setShowExamples(e.target.checked)}
-              />
-              <label htmlFor="toggle-example" style={{ fontSize: '0.9rem' }}>
-                Açık
-              </label>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div
+                className={`toggle-shell ${showExamples && quizType === 'multiple-choice' ? 'enabled' : 'disabled'}`}
+                style={{ cursor: quizType === 'multiple-choice' ? 'pointer' : 'not-allowed' }}
+                onClick={() => {
+                  if (quizType !== 'multiple-choice') return;
+                  setShowExamples((v) => !v);
+                }}
+              >
+                <div className="toggle-knob" />
+              </div>
             </div>
           </div>
 
@@ -500,47 +506,24 @@ const Quiz: React.FC = () => {
               <div>
                 <div style={{ fontWeight: '600', marginBottom: '5px' }}>Zor Kelimeler</div>
                 <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                  Sadece daha önce hata yapılan kelimeler ({difficultWords.length} kelime)
+                  Sadece daha once hata yapilan kelimeler ({globalWrongWords.length} kelime)
                 </div>
               </div>
               <div
-                style={{
-                  width: '50px',
-                  height: '28px',
-                  borderRadius: '14px',
-                  background: onlyDifficultWords ? 'var(--danger)' : '#e2e8f0',
-                  position: 'relative',
-                  transition: 'all 0.2s ease'
-                }}
+                className={`toggle-shell ${onlyDifficultWords ? 'enabled' : 'disabled'}`}
               >
-                <div
-                  style={{
-                    width: '22px',
-                    height: '22px',
-                    borderRadius: '50%',
-                    background: onlyDifficultWords ? '#0b0f1c' : '#e5e7eb',
-                    position: 'absolute',
-                    top: '3px',
-                    left: onlyDifficultWords ? '25px' : '3px',
-                    transition: 'all 0.2s ease'
-                  }}
-                />
+                <div className="toggle-knob" />
               </div>
             </div>
-            {onlyDifficultWords && difficultWords.length === 0 && (
-              <div style={{ marginTop: '10px', color: 'var(--warning)', fontSize: '0.9rem' }}>
-                Henüz işaretli zor kelime yok. Önce birkaç quiz çözebilirsiniz.
-              </div>
-            )}
           </div>
 
           <button
             className="btn btn-primary btn-lg"
             onClick={startQuiz}
             style={{ width: '100%', marginTop: '20px' }}
-            disabled={onlyDifficultWords && difficultWords.length === 0}
+            disabled={onlyDifficultWords && (globalWrongWords.length === 0 && difficultWords.length === 0)}
           >
-            Quiz'i Başlat
+            Quiz'i Baslat
           </button>
 
           <button
@@ -552,14 +535,14 @@ const Quiz: React.FC = () => {
             }}
             style={{ width: '100%', marginTop: '12px' }}
           >
-            Farklı Liste Seç
+            Farkli Liste Sec
           </button>
         </div>
       </div>
     );
   }
 
-  // quiz phase
+// quiz phase
   if (phase === 'quiz' && selectedList) {
     if (quizType === 'matching') {
       const wordsForMatching =
