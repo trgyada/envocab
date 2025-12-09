@@ -420,9 +420,9 @@ const Quiz: React.FC = () => {
             <label style={{ display: 'block', marginBottom: '15px', fontWeight: '600' }}>Quiz Tipi Sec</label>
             <div className="quiz-type-grid">
               {[
-                { type: 'multiple-choice' as QuizType, icon: '?', label: 'Coktan Secmeli' },
-                { type: 'flashcard' as QuizType, icon: 'F', label: 'Flashcard' },
-                { type: 'matching' as QuizType, icon: 'M', label: 'Eslesme' }
+                { type: 'multiple-choice' as QuizType, icon: '📝', label: 'Coktan Secmeli' },
+                { type: 'flashcard' as QuizType, icon: '🃏', label: 'Flashcard' },
+                { type: 'matching' as QuizType, icon: '🔗', label: 'Eslesme' }
               ].map(({ type, icon, label }) => (
                 <div
                   key={type}
