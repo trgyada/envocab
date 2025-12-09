@@ -1,7 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // v1 endpoint ve güncel model (Gemini 2.5 Flash)
-const modelName = 'gemini-2.5-flash';
+// const modelName = 'gemini-2.5-flash';
+const modelName = 'gemma-3-27b-it';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -26,7 +27,7 @@ export default async function handler(req: any, res: any) {
     const prompt = `
 Kelime: "${word}"
 Dil: ${lang === 'en' ? 'Ingilizce' : 'Turkce'}
-Gorev: C1-C2 seviyesinde tek cumle kur. Kelimeyi dogal baglamda kullan.
+Gorev: YDS-YOKDIL tipinde B2-C1 seviyesinde tek cumle kur. Kelimeyi dogal baglamda kullan.
 Ceviri: Cevap verildikten sonra gostermek icin karsi dilde bir ceviri de uret.
 
 Yaniti su JSON formatinda ver:
