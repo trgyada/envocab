@@ -28,6 +28,7 @@ const WordLists: React.FC = () => {
       });
   });
   const wrongWords = Array.from(allWrong.values());
+  const unknownList = wordLists.find((l) => l.id === 'unknown');
 
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -549,23 +550,42 @@ const WordLists: React.FC = () => {
 
       <h2 style={{ marginBottom: '16px', marginTop: '26px' }}>Mevcut Listeler ({wordLists.length})</h2>
 
-      {wrongWords.length > 0 && (
+      {(wrongWords.length > 0 || unknownList) && (
         <div className="wordlist-grid" style={{ marginBottom: '16px' }}>
-          <div className="wordlist-card">
-            <h3>Bilemedigim Kelimeler</h3>
-            <p>{wrongWords.length} kelime</p>
-            <div className="word-preview" style={{ maxHeight: '180px', overflowY: 'auto' }}>
-              {wrongWords.slice(0, 12).map((w) => (
-                <div key={w.id} className="word-preview-item">
-                  <div className="word-preview-term">{w.english}</div>
-                  <div className="word-preview-translation">{w.turkish}</div>
-                </div>
-              ))}
-              {wrongWords.length > 12 && (
-                <div className="word-preview-more">+ {wrongWords.length - 12} kelime daha</div>
-              )}
+          {wrongWords.length > 0 && (
+            <div className="wordlist-card">
+              <h3>Bilemedigim Kelimeler</h3>
+              <p>{wrongWords.length} kelime</p>
+              <div className="word-preview" style={{ maxHeight: '180px', overflowY: 'auto' }}>
+                {wrongWords.slice(0, 12).map((w) => (
+                  <div key={w.id} className="word-preview-item">
+                    <div className="word-preview-term">{w.english}</div>
+                    <div className="word-preview-translation">{w.turkish}</div>
+                  </div>
+                ))}
+                {wrongWords.length > 12 && (
+                  <div className="word-preview-more">+ {wrongWords.length - 12} kelime daha</div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+          {unknownList && (
+            <div className="wordlist-card">
+              <h3>Bilinmeyenler</h3>
+              <p>{unknownList.words.length} kelime</p>
+              <div className="word-preview" style={{ maxHeight: '180px', overflowY: 'auto' }}>
+                {unknownList.words.slice(0, 12).map((w) => (
+                  <div key={w.id} className="word-preview-item">
+                    <div className="word-preview-term">{w.english}</div>
+                    <div className="word-preview-translation">{w.turkish}</div>
+                  </div>
+                ))}
+                {unknownList.words.length > 12 && (
+                  <div className="word-preview-more">+ {unknownList.words.length - 12} kelime daha</div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

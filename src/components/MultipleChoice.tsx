@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { PartOfSpeech, QuizQuestion, Word } from '../types';
+import SelectableText from './SelectableText';
+import { useWordListStore } from '../stores/wordListStore';
 
 interface MultipleChoiceProps {
   question: QuizQuestion;
@@ -10,6 +12,7 @@ interface MultipleChoiceProps {
     translation?: string;
     loading?: boolean;
     error?: string;
+    lang?: 'en' | 'tr';
   };
   onRequestExample?: () => void;
   debugInfo?: string | null;
@@ -44,11 +47,19 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [selectedWord, setSelectedWord] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translateError, setTranslateError] = useState<string | null>(null);
+  const { addUnknownWord } = useWordListStore();
 
   useEffect(() => {
     setSelectedAnswer(null);
     setShowResult(false);
     setIsTransitioning(false);
+    setSelectedWord(null);
+    setIsModalOpen(false);
+    setTranslateError(null);
   }, [question.id]);
 
   const handleOptionClick = (option: string) => {
@@ -85,6 +96,37 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
     speechSynthesis.speak(utter);
   };
 
+  const handleWordClick = (word: string) => {
+    setSelectedWord(word);
+    setIsModalOpen(true);
+    setTranslateError(null);
+  };
+
+  const confirmAddUnknown = async () => {
+    if (!selectedWord) return;
+    setIsTranslating(true);
+    setTranslateError(null);
+    const lang = example?.lang || (question.direction === 'tr-to-en' ? 'tr' : 'en');
+    const target = lang === 'tr' ? 'en' : 'tr';
+    try {
+      const res = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: selectedWord, from: lang, to: target })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Ceviri basarisiz');
+      const english = lang === 'en' ? selectedWord : data.translation || selectedWord;
+      const turkish = lang === 'tr' ? selectedWord : data.translation || selectedWord;
+      addUnknownWord({ english, turkish, source: 'example' });
+      setIsModalOpen(false);
+    } catch (err: any) {
+      setTranslateError(err?.message || 'Ceviri yapilamadi');
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
   return (
     <div className="quiz-card">
       <div className="question-badge">{directionLabel}</div>
@@ -96,7 +138,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
           )}
         </h2>
         <button className="question-speak-btn" onClick={speakCurrent} title="Sesli oku">
-          🔊
+          §Y"S
         </button>
       </div>
       <p className="question-hint">
@@ -114,7 +156,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
           {example?.error && <div className="example-error">{example.error}</div>}
           {example?.sentence && (
             <div className="example-sentence">
-              {example.sentence}
+              <SelectableText text={example.sentence} onWordClick={handleWordClick} />
               {showResult && example.translation && (
                 <div className="example-translation">Ceviri: {example.translation}</div>
               )}
@@ -154,13 +196,33 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
       {showResult && (
         <div className={`result-feedback ${selectedAnswer === question.correctAnswer ? 'correct' : 'incorrect'}`}>
           {selectedAnswer === question.correctAnswer ? (
-            <>Doğru!</>
+            <>DoŽYru!</>
           ) : (
             <>
-              {selectedAnswer === 'UNKNOWN' ? 'Bilmiyorum olarak işaretlendi. ' : 'Yanlış! '}
+              {selectedAnswer === 'UNKNOWN' ? 'Bilmiyorum olarak iYaretlendi. ' : 'YanlŽñY! '}
               Doru cevap: <strong>{question.correctAnswer}</strong>
             </>
           )}
+        </div>
+      )}
+
+      {isModalOpen && selectedWord && (
+        <div className="modal-backdrop">
+          <div className="modal-card">
+            <h4>Bilinmeyen kelime</h4>
+            <p>
+              <strong>{selectedWord}</strong> kelimesini “Bilinmeyenler” listesine eklemek ister misin?
+            </p>
+            {translateError && <div className="example-error" style={{ marginBottom: 8 }}>{translateError}</div>}
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button className="btn btn-outline btn-sm" onClick={() => setIsModalOpen(false)} disabled={isTranslating}>
+                Iptal
+              </button>
+              <button className="btn btn-primary btn-sm" onClick={confirmAddUnknown} disabled={isTranslating}>
+                {isTranslating ? 'Ekleniyor...' : 'Ekle'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

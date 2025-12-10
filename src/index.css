@@ -1563,3 +1563,37 @@ a {
   transform: translateX(24px);
   background: #0b1224;
 }
+
+.selectable-text {
+  line-height: 1.5;
+}
+.selectable-word {
+  cursor: pointer;
+  padding: 2px 3px;
+  border-radius: 6px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.selectable-word:hover {
+  background: rgba(255, 193, 7, 0.16);
+  color: var(--primary-color);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 16px;
+}
+.modal-card {
+  background: #0f172a;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  max-width: 360px;
+  width: 100%;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+}

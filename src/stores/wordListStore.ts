@@ -29,6 +29,7 @@ interface WordListState {
     wordId: string,
     payload: { sentence?: string; translation?: string; lang?: 'en' | 'tr'; model?: string; updatedAt?: Date }
   ) => void;
+  addUnknownWord: (params: { english: string; turkish: string; source?: string }) => void;
 }
 
 export const useWordListStore = create<WordListState>()(
@@ -263,6 +264,50 @@ export const useWordListStore = create<WordListState>()(
         }));
 
         updatedLists.forEach((list) => get().syncList(list));
+      },
+
+      addUnknownWord: ({ english, turkish, source }) => {
+        if (!english.trim() || !turkish.trim()) return;
+        set((state) => {
+          const existingUnknown = state.wordLists.find((l) => l.id === 'unknown');
+          const normalized = english.trim().toLowerCase();
+
+          const hasDuplicate = existingUnknown?.words.some((w) => w.english.toLowerCase() === normalized);
+          if (hasDuplicate) return state;
+
+          const newWord: Word = {
+            id: uuidv4(),
+            english: english.trim(),
+            turkish: turkish.trim(),
+            mastery: 0,
+            correctCount: 0,
+            incorrectCount: 0,
+            tags: source ? [source] : undefined,
+          };
+
+          if (existingUnknown) {
+            const updated: WordList = {
+              ...existingUnknown,
+              updatedAt: new Date(),
+              words: [...existingUnknown.words, newWord],
+            };
+            const lists = state.wordLists.map((l) => (l.id === 'unknown' ? updated : l));
+            // Fire and forget sync
+            get().syncList(updated);
+            return { ...state, wordLists: lists };
+          }
+
+          const newList: WordList = {
+            id: 'unknown',
+            title: 'Bilinmeyenler',
+            description: 'Ornek cumlelerden eklenen bilinmeyen kelimeler',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            words: [newWord],
+          };
+          get().syncList(newList);
+          return { ...state, wordLists: [...state.wordLists, newList] };
+        });
       },
     }),
     {

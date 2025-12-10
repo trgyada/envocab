@@ -52,6 +52,7 @@ type ExampleState = {
   translation?: string;
   loading?: boolean;
   error?: string;
+  lang?: 'en' | 'tr';
 };
 
 const modelForExamples = 'gemma-3-27b-it';
@@ -61,6 +62,7 @@ const getStoredExample = (word: Word, lang: 'en' | 'tr') => {
     return {
       sentence: word.exampleSentence,
       translation: word.exampleTranslation,
+      lang,
     };
   }
   return null;
@@ -154,7 +156,7 @@ const Quiz: React.FC = () => {
     if (stored?.sentence) {
       setExampleMap((prev) => ({
         ...prev,
-        [key]: { ...stored, loading: false, error: undefined },
+        [key]: { ...stored, loading: false, error: undefined, lang },
       }));
       return;
     }
@@ -177,7 +179,7 @@ const Quiz: React.FC = () => {
         }
         setExampleMap((prev) => ({
           ...prev,
-          [key]: { sentence: data.sentence, translation: data.translation, loading: false }
+          [key]: { sentence: data.sentence, translation: data.translation, loading: false, lang }
         }));
         updateWordExample(q.word.id, {
           sentence: data.sentence,
@@ -668,7 +670,7 @@ const Quiz: React.FC = () => {
         if (stored?.sentence) {
           setExampleMap((prev) => ({
             ...prev,
-            [exampleKey]: { ...stored, loading: false, error: undefined },
+            [exampleKey]: { ...stored, loading: false, error: undefined, lang },
           }));
           return;
         }
