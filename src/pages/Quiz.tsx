@@ -663,11 +663,11 @@ const Quiz: React.FC = () => {
       const exampleKey = `${currentQuestion.word.id}-${currentQuestion.direction}`;
       const exampleState = exampleMap[exampleKey];
 
-      const requestExample = async () => {
+      const requestExample = async (force = false) => {
         if (!showExamples) return;
         const lang = currentQuestion.direction === 'tr-to-en' ? 'tr' : 'en';
         const stored = getStoredExample(currentQuestion.word, lang);
-        if (stored?.sentence) {
+        if (stored?.sentence && !force) {
           setExampleMap((prev) => ({
             ...prev,
             [exampleKey]: { ...stored, loading: false, error: undefined, lang },
@@ -737,7 +737,7 @@ const Quiz: React.FC = () => {
             onAnswer={(isCorrect, word) => handleAnswer(isCorrect, word)}
             optionMeaning={getOptionMeaning}
             example={showExamples ? exampleState : undefined}
-            onRequestExample={showExamples ? requestExample : undefined}
+            onRequestExample={showExamples ? (force?: boolean) => requestExample(force ?? false) : undefined}
             debugInfo={showExamples ? exampleState?.error || null : null}
           />
 

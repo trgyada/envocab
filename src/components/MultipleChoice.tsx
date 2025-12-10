@@ -14,7 +14,7 @@ interface MultipleChoiceProps {
     error?: string;
     lang?: 'en' | 'tr';
   };
-  onRequestExample?: () => void;
+  onRequestExample?: (force?: boolean) => void;
   debugInfo?: string | null;
 }
 
@@ -50,8 +50,9 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [translationText, setTranslationText] = useState<string | null>(null);
   const [translateError, setTranslateError] = useState<string | null>(null);
-  const { addUnknownWord } = useWordListStore();
+  const { addUnknownWord, wordLists } = useWordListStore();
 
   useEffect(() => {
     setSelectedAnswer(null);
@@ -60,6 +61,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
     setSelectedWord(null);
     setIsModalOpen(false);
     setTranslateError(null);
+    setTranslationText(null);
   }, [question.id]);
 
   const handleOptionClick = (option: string) => {
@@ -100,6 +102,24 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
     setSelectedWord(word);
     setIsModalOpen(true);
     setTranslateError(null);
+    setTranslationText(null);
+    const lang = example?.lang || (question.direction === 'tr-to-en' ? 'tr' : 'en');
+    const target = lang === 'tr' ? 'en' : 'tr';
+    setIsTranslating(true);
+    fetch('/api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: word, from: lang, to: target })
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || 'Ceviri basarisiz');
+        setTranslationText(data.translation || '');
+      })
+      .catch((err: any) => {
+        setTranslateError(err?.message || 'Ceviri yapilamadi');
+      })
+      .finally(() => setIsTranslating(false));
   };
 
   const confirmAddUnknown = async () => {
@@ -108,16 +128,28 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
     setTranslateError(null);
     const lang = example?.lang || (question.direction === 'tr-to-en' ? 'tr' : 'en');
     const target = lang === 'tr' ? 'en' : 'tr';
+    // duplicate kontrol
+    const unknownList = wordLists.find((l) => l.id === 'unknown');
+    const normalized = (lang === 'en' ? selectedWord : translationText || selectedWord).trim().toLowerCase();
+    if (unknownList?.words.some((w) => w.english.trim().toLowerCase() === normalized)) {
+      setTranslateError('Bu kelime zaten Bilinmeyenler listesinde.');
+      setIsTranslating(false);
+      return;
+    }
     try {
-      const res = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: selectedWord, from: lang, to: target })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Ceviri basarisiz');
-      const english = lang === 'en' ? selectedWord : data.translation || selectedWord;
-      const turkish = lang === 'tr' ? selectedWord : data.translation || selectedWord;
+      let finalTranslation = translationText;
+      if (!finalTranslation) {
+        const res = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: selectedWord, from: lang, to: target })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || 'Ceviri basarisiz');
+        finalTranslation = data.translation || '';
+      }
+      const english = lang === 'en' ? selectedWord : finalTranslation || selectedWord;
+      const turkish = lang === 'tr' ? selectedWord : finalTranslation || selectedWord;
       addUnknownWord({ english, turkish, source: 'example' });
       setIsModalOpen(false);
     } catch (err: any) {
@@ -149,7 +181,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
         <div className="example-box">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
             <div className="example-title">Ornek cumle (Gemini)</div>
-            <button className="btn btn-outline btn-sm" onClick={onRequestExample} disabled={example?.loading}>
+            <button className="btn btn-outline btn-sm" onClick={() => onRequestExample?.(true)} disabled={example?.loading}>
               {example?.loading ? 'Yukleniyor...' : 'Yeniden getir'}
             </button>
           </div>
@@ -213,6 +245,11 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
             <p>
               <strong>{selectedWord}</strong> kelimesini “Bilinmeyenler” listesine eklemek ister misin?
             </p>
+            {translationText && (
+              <div style={{ marginBottom: 8, color: 'var(--text-secondary)' }}>
+                Ceviri: <strong>{translationText}</strong>
+              </div>
+            )}
             {translateError && <div className="example-error" style={{ marginBottom: 8 }}>{translateError}</div>}
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button className="btn btn-outline btn-sm" onClick={() => setIsModalOpen(false)} disabled={isTranslating}>

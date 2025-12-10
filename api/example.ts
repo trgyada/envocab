@@ -43,7 +43,12 @@ Yaniti su JSON formatinda ver:
           role: 'user',
           parts: [{ text: prompt }]
         }
-      ]
+      ],
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.9,
+        topK: 40,
+      }
     });
     const raw = result.response.text().trim();
     const clean = raw.replace(/```(json)?/gi, '').replace(/```/g, '').trim();
