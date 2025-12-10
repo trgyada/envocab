@@ -18,6 +18,11 @@ export interface Word {
   correctCount: number;
   incorrectCount: number;
   lastPracticed?: Date;
+  exampleSentence?: string;
+  exampleTranslation?: string;
+  exampleLang?: 'en' | 'tr';
+  exampleUpdatedAt?: Date;
+  exampleModel?: string;
   
   // SM-2 için ek alanlar
   difficultyLevel?: CEFRLevel; // Kelimenin zorluğu (A1-C2)

@@ -25,6 +25,10 @@ interface WordListState {
   removeWordFromList: (listId: string, wordId: string) => void;
   updateWord: (listId: string, wordId: string, english: string, turkish: string) => void;
   updateListTitle: (listId: string, newTitle: string) => void;
+  updateWordExample: (
+    wordId: string,
+    payload: { sentence?: string; translation?: string; lang?: 'en' | 'tr'; model?: string; updatedAt?: Date }
+  ) => void;
 }
 
 export const useWordListStore = create<WordListState>()(
@@ -229,6 +233,36 @@ export const useWordListStore = create<WordListState>()(
         }));
 
         if (updatedList) get().syncList(updatedList);
+      },
+
+      updateWordExample: (wordId, payload) => {
+        const updatedLists: WordList[] = [];
+        set((state) => ({
+          wordLists: state.wordLists.map((list) => {
+            const hasWord = list.words.some((w) => w.id === wordId);
+            if (!hasWord) return list;
+            const nextList = {
+              ...list,
+              updatedAt: new Date(),
+              words: list.words.map((w) =>
+                w.id === wordId
+                  ? {
+                      ...w,
+                      exampleSentence: payload.sentence ?? w.exampleSentence,
+                      exampleTranslation: payload.translation ?? w.exampleTranslation,
+                      exampleLang: payload.lang ?? w.exampleLang,
+                      exampleModel: payload.model ?? w.exampleModel,
+                      exampleUpdatedAt: payload.updatedAt ?? new Date(),
+                    }
+                  : w
+              ),
+            };
+            updatedLists.push(nextList);
+            return nextList;
+          }),
+        }));
+
+        updatedLists.forEach((list) => get().syncList(list));
       },
     }),
     {

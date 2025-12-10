@@ -461,9 +461,6 @@ const WordLists: React.FC = () => {
                     <span className="word-table-english">{word.english}</span>
                     <span className="word-table-turkish">{word.turkish}</span>
                     <div className="word-table-actions">
-                      <button className={`word-table-icon-btn star ${word.incorrectCount > 0 ? 'active' : ''}`} title="Isaretle">
-                        ★
-                      </button>
                       <button
                         className="word-table-icon-btn sound"
                         onClick={() => {

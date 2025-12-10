@@ -54,10 +54,22 @@ type ExampleState = {
   error?: string;
 };
 
+const modelForExamples = 'gemma-3-27b-it';
+
+const getStoredExample = (word: Word, lang: 'en' | 'tr') => {
+  if (word.exampleSentence && word.exampleLang === lang) {
+    return {
+      sentence: word.exampleSentence,
+      translation: word.exampleTranslation,
+    };
+  }
+  return null;
+};
+
 const Quiz: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { wordLists, selectedListId, selectWordList, updateWordMastery } = useWordListStore();
+  const { wordLists, selectedListId, selectWordList, updateWordMastery, updateWordExample } = useWordListStore();
   const { addQuizResult } = useUserProgressStore();
   const { cards, cardStates, createCardsFromWords, getCardByWordId, updateCardState } = useCardStore();
   const { startSession, endSession, addReviewLog, incrementCorrect, incrementIncorrect, incrementReviewed } =
@@ -137,10 +149,18 @@ const Quiz: React.FC = () => {
     if (currentIndex >= questions.length) return;
     const q = questions[currentIndex];
     const key = `${q.word.id}-${q.direction}`;
+    const lang = q.direction === 'tr-to-en' ? 'tr' : 'en';
+    const stored = getStoredExample(q.word, lang);
+    if (stored?.sentence) {
+      setExampleMap((prev) => ({
+        ...prev,
+        [key]: { ...stored, loading: false, error: undefined },
+      }));
+      return;
+    }
     const existing = exampleMap[key];
     if (existing?.sentence || existing?.loading) return;
     // fire and forget
-    const lang = q.direction === 'tr-to-en' ? 'tr' : 'en';
     setExampleMap((prev) => ({ ...prev, [key]: { ...prev[key], loading: true, error: undefined } }));
     fetch('/api/example', {
       method: 'POST',
@@ -159,6 +179,13 @@ const Quiz: React.FC = () => {
           ...prev,
           [key]: { sentence: data.sentence, translation: data.translation, loading: false }
         }));
+        updateWordExample(q.word.id, {
+          sentence: data.sentence,
+          translation: data.translation,
+          lang,
+          model: modelForExamples,
+          updatedAt: new Date(),
+        });
       })
       .catch((err) => {
         setExampleMap((prev) => ({
@@ -166,7 +193,7 @@ const Quiz: React.FC = () => {
           [key]: { loading: false, error: err instanceof Error ? err.message : 'Ornek alinamadi' }
         }));
       });
-  }, [showExamples, questions, currentIndex]);
+  }, [showExamples, questions, currentIndex, updateWordExample]);
 
 
   useEffect(() => {
@@ -209,6 +236,7 @@ const Quiz: React.FC = () => {
     questionStartTimeRef.current = Date.now();
     setCorrectCount(0);
     setWrongWords([]);
+    setExampleMap({});
     setCurrentIndex(0);
     totalQuestionsRef.current = count;
 
@@ -429,9 +457,9 @@ const Quiz: React.FC = () => {
             <label style={{ display: 'block', marginBottom: '15px', fontWeight: '600' }}>Quiz Tipi Sec</label>
             <div className="quiz-type-grid">
               {[
-                { type: 'multiple-choice' as QuizType, icon: '📝', label: 'Coktan Secmeli' },
-                { type: 'flashcard' as QuizType, icon: '🃏', label: 'Flashcard' },
-                { type: 'matching' as QuizType, icon: '🔗', label: 'Eslesme' }
+                { type: 'multiple-choice' as QuizType, icon: '??', label: 'Coktan Secmeli' },
+                { type: 'flashcard' as QuizType, icon: '??', label: 'Flashcard' },
+                { type: 'matching' as QuizType, icon: '??', label: 'Eslesme' }
               ].map(({ type, icon, label }) => (
                 <div
                   key={type}
@@ -635,9 +663,17 @@ const Quiz: React.FC = () => {
 
       const requestExample = async () => {
         if (!showExamples) return;
-        if (exampleState?.sentence && !exampleState.error) return;
-        setExampleMap((prev) => ({ ...prev, [exampleKey]: { ...prev[exampleKey], loading: true, error: undefined } }));
         const lang = currentQuestion.direction === 'tr-to-en' ? 'tr' : 'en';
+        const stored = getStoredExample(currentQuestion.word, lang);
+        if (stored?.sentence) {
+          setExampleMap((prev) => ({
+            ...prev,
+            [exampleKey]: { ...stored, loading: false, error: undefined },
+          }));
+          return;
+        }
+        if (exampleState?.loading) return;
+        setExampleMap((prev) => ({ ...prev, [exampleKey]: { ...prev[exampleKey], loading: true, error: undefined } }));
         try {
           const res = await fetch('/api/example', {
             method: 'POST',
@@ -649,16 +685,23 @@ const Quiz: React.FC = () => {
           });
           const data = await res.json();
           if (!res.ok) {
-            throw new Error(data?.error || 'İstek başarısız');
+            throw new Error(data?.error || 'Istek basarisiz');
           }
           setExampleMap((prev) => ({
             ...prev,
             [exampleKey]: { sentence: data.sentence, translation: data.translation, loading: false }
           }));
+          updateWordExample(currentQuestion.word.id, {
+            sentence: data.sentence,
+            translation: data.translation,
+            lang,
+            model: modelForExamples,
+            updatedAt: new Date(),
+          });
         } catch (err) {
           setExampleMap((prev) => ({
             ...prev,
-            [exampleKey]: { loading: false, error: err instanceof Error ? err.message : 'Örnek cümle alınamadı.' }
+            [exampleKey]: { loading: false, error: err instanceof Error ? err.message : 'Ornek cumle alinamadi.' }
           }));
         }
       };
@@ -723,6 +766,5 @@ const Quiz: React.FC = () => {
 };
 
 export default Quiz;
-
 
 

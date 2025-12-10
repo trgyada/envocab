@@ -48,6 +48,21 @@ const serializeWord = (word: Word) => {
   if (word.tags) {
     base.tags = word.tags;
   }
+  if (word.exampleSentence) {
+    base.exampleSentence = word.exampleSentence;
+  }
+  if (word.exampleTranslation) {
+    base.exampleTranslation = word.exampleTranslation;
+  }
+  if (word.exampleLang) {
+    base.exampleLang = word.exampleLang;
+  }
+  if (word.exampleModel) {
+    base.exampleModel = word.exampleModel;
+  }
+  if (word.exampleUpdatedAt) {
+    base.exampleUpdatedAt = toTimestamp(word.exampleUpdatedAt);
+  }
 
   return base;
 };
@@ -69,6 +84,11 @@ const deserializeWord = (raw: any): Word => ({
   correctCount: raw.correctCount ?? 0,
   incorrectCount: raw.incorrectCount ?? 0,
   lastPracticed: toDate(raw.lastPracticed),
+  exampleSentence: raw.exampleSentence,
+  exampleTranslation: raw.exampleTranslation,
+  exampleLang: raw.exampleLang,
+  exampleModel: raw.exampleModel,
+  exampleUpdatedAt: toDate(raw.exampleUpdatedAt),
 });
 
 const deserializeWordList = (id: string, data: any): WordList => ({
