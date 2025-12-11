@@ -83,6 +83,21 @@ export interface SM2Result {
   wasSuccessful: boolean;
 }
 
+const mapQualityTo05 = (quality: QualityResponse): number => {
+  switch (quality) {
+    case 0:
+      return 0;
+    case 1:
+      return 3;
+    case 2:
+      return 4;
+    case 3:
+      return 5;
+    default:
+      return 0;
+  }
+};
+
 /**
  * SM-2 algoritmasının ana fonksiyonu
  * 
@@ -96,7 +111,8 @@ export const processReview = (
   quality: QualityResponse,
   responseTimeMs: number
 ): SM2Result => {
-  const wasSuccessful = quality >= 2; // 2 veya 3 başarılı sayılır
+  const sm2Quality = mapQualityTo05(quality); // 0-5 skalasına çevir
+  const wasSuccessful = sm2Quality >= 3; // 3-5 başarı
   
   // Yeni state'i klonla
   const newState: UserCardState = {
@@ -138,8 +154,8 @@ export const processReview = (
   }
   
   // EF (Easiness Factor) güncellemesi
-  // EF' = EF + (0.1 - (3 - q) * (0.08 + (3 - q) * 0.02))
-  const efDelta = 0.1 - (3 - quality) * (0.08 + (3 - quality) * 0.02);
+  // EF' = EF + (0.1 - (3 - q) * (0.08 + (3 - q) * 0.02))  | q: 0-5 skalası
+  const efDelta = 0.1 - (3 - sm2Quality) * (0.08 + (3 - sm2Quality) * 0.02);
   newState.easinessFactor = Math.max(MIN_EF, Math.min(MAX_EF, currentState.easinessFactor + efDelta));
   
   // Zorluk skorunu güncelle
