@@ -1,0 +1,26 @@
+# -*- coding: latin-1 -*-
+from pathlib import Path
+p = Path('src/components/MultipleChoice.tsx')
+text = p.read_bytes().decode('latin-1')
+text = text.replace('esult-feedback }>', "result-feedback >")
+text = text.replace('Doßru!', 'Doru!')
+text = text.replace('iüaretlendi.', 'i˛aretlendi.')
+text = text.replace('Yanlçü!', 'Yanl˝˛!')
+text = text.replace('Doßru cevap', 'Doru cevap')
+text = text.replace('Äeviri:', '«eviri:')
+text = text.replace('Ceviri:', '«eviri:')
+text = text.replace('Iptal', '›ptal')
+# Normalize translation block manually
+text = text.replace("""
+              <div style={{ marginBottom: 8, color: 'var(--text-secondary)' }}>
+
+                «eviri: <strong>{translationText}</strong>
+                «eviri: <strong>{translationText}</strong>
+""", """
+              <div style={{ marginBottom: 8, color: 'var(--text-secondary)' }}>
+                «eviri: <strong>{translationText}</strong>
+""")
+# Ensure modal translation block wrapped conditionally
+text = text.replace('            <p>\n              <strong>{selectedWord}</strong> kelimesini Bilinmeyenler listesine eklemek ister misin?\n            </p>\n            {translationText && (\n              <div style={{ marginBottom: 8, color: \'var(--text-secondary)\' }}>',
+                       '            <p>\n              <strong>{selectedWord}</strong> kelimesini Bilinmeyenler listesine eklemek ister misin?\n            </p>\n            {translationText && (\n              <div style={{ marginBottom: 8, color: \'var(--text-secondary)\' }}>', 1)
+p.write_text(text, encoding='utf-8')
