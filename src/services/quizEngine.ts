@@ -3,14 +3,40 @@ import { v4 as uuidv4 } from 'uuid';
 import { prioritizeCards, getDueCards } from './sm2Algorithm';
 
 /**
- * Diziyi karıştırır (Fisher-Yates shuffle)
+ * Diziyi karıştırır (Fisher-Yates + rastgele kesme + ikinci hafif karıştırma)
+ * Böylece hep aynı başlangıç sıralaması hissi azalır.
  */
 export const shuffleArray = <T>(array: T[]): T[] => {
   const shuffled = [...array];
+
+  // Güçlü rastgelelik: crypto varsa kullan
+  const rand = (max: number) => {
+    if (typeof crypto !== 'undefined' && (crypto as any).getRandomValues) {
+      const buf = new Uint32Array(1);
+      (crypto as any).getRandomValues(buf);
+      return buf[0] % max;
+    }
+    return Math.floor(Math.random() * max);
+  };
+
   for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = rand(i + 1);
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
+
+  // Rastgele kesip başa alma (cut)
+  if (shuffled.length > 2) {
+    const cut = rand(shuffled.length);
+    const rotated = [...shuffled.slice(cut), ...shuffled.slice(0, cut)];
+    // Hafif ikinci karıştırma (komşu swap)
+    for (let k = 0; k < rotated.length - 1; k += 2) {
+      if (rand(2) === 0) {
+        [rotated[k], rotated[k + 1]] = [rotated[k + 1], rotated[k]];
+      }
+    }
+    return rotated;
+  }
+
   return shuffled;
 };
 
@@ -46,44 +72,61 @@ export const generateMultipleChoiceQuestion = (
   const question = isEnglishToTurkish ? word.english : word.turkish;
   const correctAnswer = isEnglishToTurkish ? word.turkish : word.english;
 
-  // Yanlış şıkları seç (doğru cevap hariç, tekrar yok, anlamca yakın olanlara öncelik)
+  // YanlZ�Y �YZ�klarZ� se�� (tier: POS + uzunluk > POS > uzunluk > rastgele)
   const otherWords = allWords.filter((w) => w.id !== word.id);
+  const correctLen = correctAnswer.length;
+  const correctPos = word.partOfSpeech || '';
 
-  const scoreCandidate = (candidate: Word, optionText: string) => {
-    let score = 0;
-    if (candidate.partOfSpeech && word.partOfSpeech && candidate.partOfSpeech === word.partOfSpeech) {
-      score += 3;
-    }
-    const lenDiff = Math.abs(optionText.length - correctAnswer.length);
-    if (lenDiff <= 2) score += 2;
-    if (optionText[0]?.toLowerCase() === correctAnswer[0]?.toLowerCase()) score += 1;
-    return score;
+  const candidates = otherWords
+    .map((w) => ({
+      option: isEnglishToTurkish ? w.turkish : w.english,
+      pos: w.partOfSpeech || '',
+    }))
+    .filter((c) => c.option && c.option.trim().length > 0);
+
+  const tierBuckets = {
+    tier1: [] as string[], // AynZ� POS + benzer uzunluk
+    tier2: [] as string[], // AynZ� POS
+    tier3: [] as string[], // Benzer uzunluk
+    tier4: [] as string[], // Di�Yerleri
   };
 
-  const ranked = otherWords
-    .map((w) => {
-      const option = isEnglishToTurkish ? w.turkish : w.english;
-      return { option, score: scoreCandidate(w, option) };
-    })
-    .filter((item) => item.option && item.option.trim().length > 0)
-    .sort((a, b) => b.score - a.score);
+  candidates.forEach((c) => {
+    const opt = c.option.trim();
+    const samePos = correctPos && c.pos && c.pos === correctPos;
+    const lenClose = Math.abs(opt.length - correctLen) <= 2;
 
-  const topCandidates = ranked.slice(0, 12);
-  const shuffledTop = shuffleArray(topCandidates);
+    if (samePos && lenClose) {
+      tierBuckets.tier1.push(opt);
+    } else if (samePos) {
+      tierBuckets.tier2.push(opt);
+    } else if (lenClose) {
+      tierBuckets.tier3.push(opt);
+    } else {
+      tierBuckets.tier4.push(opt);
+    }
+  });
 
   const usedAnswers = new Set<string>([correctAnswer.toLowerCase().trim()]);
   const wrongOptions: string[] = [];
-
-  for (const item of shuffledTop) {
-    const normalizedOption = item.option.toLowerCase().trim();
-    if (!usedAnswers.has(normalizedOption)) {
-      usedAnswers.add(normalizedOption);
-      wrongOptions.push(item.option);
-      if (wrongOptions.length >= 3) break;
+  const takeFromTier = (arr: string[]) => {
+    const shuffled = shuffleArray(arr);
+    for (const opt of shuffled) {
+      const norm = opt.toLowerCase().trim();
+      if (!usedAnswers.has(norm)) {
+        usedAnswers.add(norm);
+        wrongOptions.push(opt);
+        if (wrongOptions.length >= 3) break;
+      }
     }
-  }
+  };
 
-  // Hâlâ eksikse rastgele tamamla
+  takeFromTier(tierBuckets.tier1);
+  if (wrongOptions.length < 3) takeFromTier(tierBuckets.tier2);
+  if (wrongOptions.length < 3) takeFromTier(tierBuckets.tier3);
+  if (wrongOptions.length < 3) takeFromTier(tierBuckets.tier4);
+
+  // Hǽlǽ eksikse rastgele tamamla
   if (wrongOptions.length < 3) {
     const fallback = shuffleArray(otherWords);
     for (const w of fallback) {
