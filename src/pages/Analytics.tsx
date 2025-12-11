@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserProgressStore } from '../stores/userProgressStore';
 import { useWordListStore } from '../stores/wordListStore';
@@ -259,7 +259,7 @@ const Analytics: React.FC = () => {
               <div style={{ fontSize: '1.7rem', fontWeight: 'bold', color: 'var(--accent)' }}>
                 {Math.round(sm2Stats.totalStudyTimeMinutes)}
               </div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Dakika Çalışma</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Dakika Çalışma (bunda değişiklik olabilir)</div>
             </div>
           </div>
         </div>
