@@ -149,6 +149,11 @@ const Quiz: React.FC = () => {
     }
   }, [selectedList, createCardsFromWords]);
 
+  // Test modunda ornek cumle zorla kapali
+  useEffect(() => {
+    if (examMode) setShowExamples(false);
+  }, [examMode]);
+
   useEffect(() => {
     if (!showExamples) return;
     if (questions.length === 0) return;
@@ -219,6 +224,7 @@ const Quiz: React.FC = () => {
 
   const startQuiz = () => {
     if (!selectedList) return;
+    if (examMode) setShowExamples(false);
     let wordsToUse: Word[];
 
     if (onlyDifficultWords) {
@@ -382,8 +388,8 @@ const Quiz: React.FC = () => {
     finishQuiz(correct, total, wrong);
   };
 
-  const goNextQuestion = () => {
-    if (!hasAnswered) return;
+  const goNextQuestion = (force = false) => {
+    if (!force && !hasAnswered) return;
     const isLast = currentIndex >= questions.length - 1;
     if (isLast) {
       const total = totalQuestionsRef.current || questions.length;
@@ -394,6 +400,14 @@ const Quiz: React.FC = () => {
       setHasAnswered(false);
     }
   };
+
+  // Test modunda (sadece coktan secmeli) cevaplandiktan sonra otomatik gec
+  useEffect(() => {
+    if (examMode && quizType === 'multiple-choice' && hasAnswered) {
+      const id = setTimeout(() => goNextQuestion(true), 300);
+      return () => clearTimeout(id);
+    }
+  }, [examMode, quizType, hasAnswered]);
 
   const handleExitQuiz = () => {
     if (window.confirm('Quizden çıkmak istiyor musun? İlerlemen kaybolacak.')) {
@@ -546,10 +560,10 @@ const Quiz: React.FC = () => {
             </div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <div
-                className={`toggle-shell ${showExamples && quizType === 'multiple-choice' ? 'enabled' : 'disabled'}`}
-                style={{ cursor: quizType === 'multiple-choice' ? 'pointer' : 'not-allowed' }}
+                className={`toggle-shell ${showExamples && quizType === 'multiple-choice' && !examMode ? 'enabled' : 'disabled'}`}
+                style={{ cursor: quizType === 'multiple-choice' && !examMode ? 'pointer' : 'not-allowed', opacity: examMode ? 0.5 : 1 }}
                 onClick={() => {
-                  if (quizType !== 'multiple-choice') return;
+                  if (quizType !== 'multiple-choice' || examMode) return;
                   setShowExamples((v) => !v);
                 }}
               >
@@ -772,7 +786,12 @@ const Quiz: React.FC = () => {
           />
 
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
-            <button className="btn btn-primary" onClick={goNextQuestion} disabled={!hasAnswered}>
+            <button
+              className="btn btn-primary"
+              onClick={() => goNextQuestion()}
+              disabled={examMode || !hasAnswered}
+              style={examMode ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+            >
               {currentIndex >= questions.length - 1 ? 'Bitir' : 'Sonraki Soru'}
             </button>
           </div>
