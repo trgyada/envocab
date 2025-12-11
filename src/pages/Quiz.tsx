@@ -85,6 +85,9 @@ const Quiz: React.FC = () => {
   const [quizType, setQuizType] = useState<QuizType>('multiple-choice');
   const [quizDirection, setQuizDirection] = useState<'en-to-tr' | 'tr-to-en' | 'mixed'>('mixed');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [answerSheet, setAnswerSheet] = useState<
+    { word: Word; userAnswer: string; correctAnswer: string; isCorrect: boolean }[]
+  >([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [wrongWords, setWrongWords] = useState<Word[]>([]);
@@ -95,6 +98,7 @@ const Quiz: React.FC = () => {
   const [showExamples, setShowExamples] = useState(false);
   const [exampleMap, setExampleMap] = useState<Record<string, ExampleState>>({});
   const [hasAnswered, setHasAnswered] = useState(false);
+  const [examMode, setExamMode] = useState(false);
   const allDifficultWords = React.useMemo(() => {
     const map = new Map<string, Word>();
     wordLists.forEach((l) =>
@@ -240,6 +244,7 @@ const Quiz: React.FC = () => {
     setWrongWords([]);
     setExampleMap({});
     setCurrentIndex(0);
+    setAnswerSheet([]);
     totalQuestionsRef.current = count;
 
     if (quizType === 'matching') {
@@ -287,7 +292,9 @@ const Quiz: React.FC = () => {
         total: finalTotal,
         wrongWords: finalWrong,
         quizType,
-        duration
+        duration,
+        answerSheet,
+        examMode
       }
     });
   };
@@ -316,7 +323,12 @@ const Quiz: React.FC = () => {
     else incrementIncorrect();
   };
 
-  const handleAnswer = (isCorrect: boolean, word: Word) => {
+  const handleAnswer = (
+    isCorrect: boolean,
+    word: Word,
+    userAnswer: string,
+    direction: 'en-to-tr' | 'tr-to-en' | undefined
+  ) => {
     const responseTimeMs = Date.now() - questionStartTimeRef.current;
     if (selectedListId) updateWordMastery(selectedListId, word.id, isCorrect);
     updateSM2CardState(word, isCorrect, responseTimeMs);
@@ -325,6 +337,11 @@ const Quiz: React.FC = () => {
     const newWrong = isCorrect ? wrongWords : [...wrongWords, word];
     setCorrectCount(newCorrect);
     setWrongWords(newWrong);
+    const correctAnswer = direction === 'tr-to-en' ? word.english : word.turkish;
+    setAnswerSheet((prev) => [
+      ...prev,
+      { word, userAnswer, correctAnswer, isCorrect }
+    ]);
     setHasAnswered(true);
   };
 
@@ -459,9 +476,9 @@ const Quiz: React.FC = () => {
             <label style={{ display: 'block', marginBottom: '15px', fontWeight: '600' }}>Quiz Tipi Sec</label>
             <div className="quiz-type-grid">
               {[
-                { type: 'multiple-choice' as QuizType, icon: '??', label: 'Coktan Secmeli' },
-                { type: 'flashcard' as QuizType, icon: '??', label: 'Flashcard' },
-                { type: 'matching' as QuizType, icon: '??', label: 'Eslesme' }
+                { type: 'multiple-choice' as QuizType, icon: '📝', label: 'Coktan Secmeli' },
+                { type: 'flashcard' as QuizType, icon: '🃏', label: 'Flashcard' },
+                { type: 'matching' as QuizType, icon: '🔗', label: 'Eslesme' }
               ].map(({ type, icon, label }) => (
                 <div
                   key={type}
@@ -472,6 +489,18 @@ const Quiz: React.FC = () => {
                   <span className="quiz-type-label">{label}</span>
                 </div>
               ))}
+            </div>
+            <div style={{ marginTop: '10px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <div
+                className={`toggle-shell ${examMode ? 'enabled' : 'disabled'}`}
+                onClick={() => setExamMode(!examMode)}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="toggle-knob" />
+              </div>
+              <div style={{ color: 'var(--text-secondary)' }}>
+                Test modu (geri bildirim gizli, sonuc tablosu acik)
+              </div>
             </div>
           </div>
 
@@ -734,11 +763,12 @@ const Quiz: React.FC = () => {
 
           <MultipleChoice
             question={currentQuestion}
-            onAnswer={(isCorrect, word) => handleAnswer(isCorrect, word)}
+            onAnswer={(isCorrect, word, userAnswer, direction) => handleAnswer(isCorrect, word, userAnswer, direction)}
             optionMeaning={getOptionMeaning}
-            example={showExamples ? exampleState : undefined}
-            onRequestExample={showExamples ? (force?: boolean) => requestExample(force ?? false) : undefined}
-            debugInfo={showExamples ? exampleState?.error || null : null}
+            example={showExamples && !examMode ? exampleState : undefined}
+            onRequestExample={showExamples && !examMode ? (force?: boolean) => requestExample(force ?? false) : undefined}
+            debugInfo={showExamples && !examMode ? exampleState?.error || null : null}
+            examMode={examMode}
           />
 
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
@@ -747,18 +777,20 @@ const Quiz: React.FC = () => {
             </button>
           </div>
 
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '30px',
-              marginTop: '20px',
-              fontSize: '1rem'
-            }}
-          >
-            <div style={{ color: 'var(--success)' }}>Doğru: {correctCount}</div>
-            <div style={{ color: 'var(--danger)' }}>Yanlış: {wrongWords.length}</div>
-          </div>
+          {!examMode && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '30px',
+                marginTop: '20px',
+                fontSize: '1rem'
+              }}
+            >
+              <div style={{ color: 'var(--success)' }}>Dogru: {correctCount}</div>
+              <div style={{ color: 'var(--danger)' }}>Yanlis: {wrongWords.length}</div>
+            </div>
+          )}
         </div>
       );
     }

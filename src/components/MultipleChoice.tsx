@@ -5,7 +5,7 @@ import { useWordListStore } from '../stores/wordListStore';
 
 interface MultipleChoiceProps {
   question: QuizQuestion;
-  onAnswer: (isCorrect: boolean, word: Word) => void;
+  onAnswer: (isCorrect: boolean, word: Word, userAnswer: string, direction: 'en-to-tr' | 'tr-to-en' | undefined) => void;
   optionMeaning?: (option: string) => string;
   example?: {
     sentence?: string;
@@ -16,6 +16,7 @@ interface MultipleChoiceProps {
   };
   onRequestExample?: (force?: boolean) => void;
   debugInfo?: string | null;
+  examMode?: boolean;
 }
 
 const getPartOfSpeechLabel = (pos?: PartOfSpeech): string => {
@@ -42,7 +43,8 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
   optionMeaning,
   example,
   onRequestExample,
-  debugInfo
+  debugInfo,
+  examMode
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -65,24 +67,27 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
   }, [question.id]);
 
   const handleOptionClick = (option: string) => {
-    if (showResult || isTransitioning) return;
+    if ((!examMode && showResult) || isTransitioning) return;
     setSelectedAnswer(option);
-    setShowResult(true);
+    if (!examMode) setShowResult(true);
     setIsTransitioning(true);
     const isCorrect = option === question.correctAnswer;
-    setTimeout(() => onAnswer(isCorrect, question.word), 1);
+    setTimeout(() => onAnswer(isCorrect, question.word, option, question.direction), 1);
   };
 
   const handleUnknown = () => {
-    if (showResult || isTransitioning) return;
+    if ((!examMode && showResult) || isTransitioning) return;
     setSelectedAnswer('UNKNOWN');
-    setShowResult(true);
+    if (!examMode) setShowResult(true);
     setIsTransitioning(true);
-    setTimeout(() => onAnswer(false, question.word), 1);
+    setTimeout(() => onAnswer(false, question.word, 'UNKNOWN', question.direction), 1);
   };
 
   const getButtonClass = (option: string) => {
     const base = 'option-btn';
+    if (examMode) {
+      return `${base} ${selectedAnswer === option ? 'selected-neutral' : ''}`.trim();
+    }
     if (!showResult) return base;
     if (option === question.correctAnswer) return `${base} correct`;
     if (option === selectedAnswer && option !== question.correctAnswer) return `${base} incorrect`;
@@ -177,7 +182,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
         {isEnglishToTurkish ? 'Dogru Turkce karsiligini sec' : 'Dogru Ingilizce karsiligini sec'}
       </p>
 
-      {onRequestExample && (
+      {onRequestExample && !examMode && (
         <div className="example-box">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
             <div className="example-title">Ornek cumle (Gemini)</div>
@@ -225,7 +230,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
         </div>
       )}
 
-      {showResult && (
+      {!examMode && showResult && (
         <div className={`result-feedback ${selectedAnswer === question.correctAnswer ? 'correct' : 'incorrect'}`}>
           {selectedAnswer === question.correctAnswer ? (
             <>DoŽYru!</>
