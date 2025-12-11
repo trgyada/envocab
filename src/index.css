@@ -1244,6 +1244,33 @@ a {
   gap: 12px;
 }
 
+.results-table {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+.results-table-header,
+.results-table-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding: 10px 12px;
+  gap: 8px;
+}
+.results-table-header {
+  background: rgba(255, 255, 255, 0.06);
+  font-weight: 700;
+}
+.results-table-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.03);
+}
+.answer-correct {
+  color: var(--success-color);
+}
+.answer-wrong {
+  color: var(--danger-color);
+}
+
 .stat-item {
   background: #0f172a;
   border-radius: var(--radius-md);

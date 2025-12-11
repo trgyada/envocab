@@ -38,8 +38,7 @@ const Results: React.FC = () => {
     );
   }
 
-  const { score, correct, total, wrongWords, quizType, duration } = state;
-  const unknownList = wordLists.find((l) => l.id === 'unknown');
+  const { score, correct, total, wrongWords, quizType, duration, answerSheet, examMode } = state as any;
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -107,33 +106,11 @@ const Results: React.FC = () => {
           )}
         </div>
 
-        {unknownList && unknownList.words.length > 0 && (
-          <div className="wrong-words-section">
-            <h3>Bilinmeyenler ({unknownList.words.length})</h3>
-            <div className="word-preview" style={{ maxHeight: '160px', overflowY: 'auto' }}>
-              {unknownList.words.slice(0, 8).map((w) => (
-                <div key={w.id} className="wrong-word-item" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <div>
-                    <strong>{w.english}</strong>
-                    <span style={{ marginLeft: '10px', color: 'var(--text-secondary)' }}>{w.turkish}</span>
-                  </div>
-                </div>
-              ))}
-              {unknownList.words.length > 8 && (
-                <div className="word-preview-more">+ {unknownList.words.length - 8} kelime daha</div>
-              )}
-            </div>
-            <button className="btn btn-outline btn-sm" style={{ marginTop: '10px' }} onClick={() => navigate('/word-lists')}>
-              Listelere Git
-            </button>
-          </div>
-        )}
-
         {wrongWords && wrongWords.length > 0 && (
           <div className="wrong-words-section">
             <h3>Tekrar Edilmesi Gereken Kelimeler ({wrongWords.length})</h3>
             <div style={{ display: 'grid', gap: '10px' }}>
-              {wrongWords.map((word, idx) => {
+              {wrongWords.map((word: Word, idx: number) => {
                 const card = getCardByWordId(word.id);
                 const cardState = card ? cardStates[card.id] : null;
                 const masteryLevel = cardState?.masteryLevel ?? 0;
@@ -163,6 +140,26 @@ const Results: React.FC = () => {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {examMode && answerSheet && answerSheet.length > 0 && (
+          <div className="wrong-words-section" style={{ marginTop: '20px' }}>
+            <h3>Cevap Tablosu</h3>
+            <div className="results-table">
+              <div className="results-table-header">
+                <span>Soru</span>
+                <span>Cevabin</span>
+                <span>Dogru Cevap</span>
+              </div>
+              {answerSheet.map((item: any, idx: number) => (
+                <div key={idx} className="results-table-row">
+                  <span>{item.word?.english}</span>
+                  <span className={item.isCorrect ? 'answer-correct' : 'answer-wrong'}>{item.userAnswer}</span>
+                  <span>{item.correctAnswer}</span>
+                </div>
+              ))}
             </div>
           </div>
         )}
