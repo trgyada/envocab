@@ -47,6 +47,10 @@ const WordLists: React.FC = () => {
 
   const [editingTitle, setEditingTitle] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+  const [duplicateReport, setDuplicateReport] = useState<
+    { word: string; occurrences: { listId: string; listTitle: string; wordId: string }[] }[]
+  >([]);
+  const [isScanning, setIsScanning] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -208,6 +212,45 @@ const WordLists: React.FC = () => {
     const text = list.words.map((w) => `${w.english} - ${w.turkish}`).join('\n');
     navigator.clipboard.writeText(text);
     setMessage({ text: 'Liste panoya kopyalandi.', type: 'success' });
+  };
+
+  const scanDuplicates = () => {
+    setIsScanning(true);
+    const map = new Map<string, { listId: string; listTitle: string; wordId: string }[]>();
+    wordLists.forEach((list) => {
+      list.words.forEach((w) => {
+        const key = w.english.trim().toLowerCase();
+        if (!key) return;
+        const arr = map.get(key) || [];
+        arr.push({ listId: list.id, listTitle: list.title, wordId: w.id });
+        map.set(key, arr);
+      });
+    });
+    const dup = Array.from(map.entries())
+      .filter(([, occ]) => occ.length > 1)
+      .map(([word, occurrences]) => ({ word, occurrences }));
+    setDuplicateReport(dup);
+    setIsScanning(false);
+    setMessage(
+      dup.length > 0
+        ? { text: `Toplam ${dup.length} kelime birden fazla listede bulundu.`, type: 'success' }
+        : { text: 'Tekrar eden kelime bulunmadi.', type: 'success' }
+    );
+  };
+
+  const cleanDuplicatesKeepLargest = () => {
+    if (duplicateReport.length === 0) return;
+    // en bÃ¼yÃ¼k listeyi bul
+    const keepList = wordLists.reduce((acc, curr) => (acc && acc.words.length >= curr.words.length ? acc : curr));
+    if (!keepList) return;
+    duplicateReport.forEach((dup) => {
+      dup.occurrences.forEach((occ) => {
+        if (occ.listId !== keepList.id) {
+          removeWordFromList(occ.listId, occ.wordId);
+        }
+      });
+    });
+    scanDuplicates();
   };
 
   if (viewMode === 'add-manual') {
@@ -546,6 +589,41 @@ const WordLists: React.FC = () => {
 
         {isLoading && <div className="spinner" />}
         {message && <div className={`message message-${message.type}`}>{message.text}</div>}
+
+        <div style={{ marginTop: "16px", display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
+          <button className="btn btn-secondary" onClick={scanDuplicates} disabled={isScanning}>
+            {isScanning ? 'Taranýyor...' : 'Tekrarlari Tara'}
+          </button>
+          <button
+            className="btn btn-outline"
+            onClick={cleanDuplicatesKeepLargest}
+            disabled={duplicateReport.length === 0}
+          >
+            Tekrarlarý Temizle (en büyük listede kalsýn)
+          </button>
+        </div>
+
+        {duplicateReport.length > 0 && (
+          <div className="duplicate-panel">
+            <h3>Tekrar Eden Kelimeler ({duplicateReport.length})</h3>
+            <div className="duplicate-list">
+              {duplicateReport.map((dup) => (
+                <div key={dup.word} className="duplicate-item">
+                  <div className="duplicate-word">{dup.word}</div>
+                  <div className="duplicate-occ">
+                    {dup.occurrences.map((occ, idx) => (
+                      <span key={occ.wordId} className="duplicate-chip">
+                        {occ.listTitle}
+                        {idx < dup.occurrences.length - 1 ? "," : ""}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
 
       <h2 style={{ marginBottom: '16px', marginTop: '26px' }}>Mevcut Listeler ({wordLists.length})</h2>

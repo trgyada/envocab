@@ -1321,6 +1321,40 @@ a {
   font-size: 0.9rem;
 }
 
+.duplicate-panel {
+  margin-top: 16px;
+  padding: 14px;
+  background: #0f172a;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.duplicate-list {
+  display: grid;
+  gap: 8px;
+}
+.duplicate-item {
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+}
+.duplicate-word {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.duplicate-occ {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  color: var(--text-secondary);
+}
+.duplicate-chip {
+  background: rgba(255, 193, 7, 0.12);
+  border: 1px solid rgba(255, 193, 7, 0.35);
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+}
+
 .empty-state {
   text-align: center;
   padding: 50px 20px;
