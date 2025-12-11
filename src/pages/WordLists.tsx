@@ -592,14 +592,14 @@ const WordLists: React.FC = () => {
 
         <div style={{ marginTop: "16px", display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
           <button className="btn btn-secondary" onClick={scanDuplicates} disabled={isScanning}>
-            {isScanning ? 'Taranýyor...' : 'Tekrarlari Tara'}
+            {isScanning ? 'Taranï¿½yor...' : 'Tekrarlari Tara'}
           </button>
           <button
             className="btn btn-outline"
             onClick={cleanDuplicatesKeepLargest}
             disabled={duplicateReport.length === 0}
           >
-            Tekrarlarý Temizle (en büyük listede kalsýn)
+            TekrarlarÄ± Temizle (En Buyuk Listeyi Koru)
           </button>
         </div>
 

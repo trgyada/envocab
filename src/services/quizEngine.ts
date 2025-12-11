@@ -1,4 +1,4 @@
-import { Word, QuizQuestion, QuizType, MatchingCard, MatchingPair, UserCardState, Card } from '../types';
+﻿import { Word, QuizQuestion, QuizType, MatchingCard, MatchingPair, UserCardState, Card } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { prioritizeCards, getDueCards } from './sm2Algorithm';
 
@@ -72,7 +72,7 @@ export const generateMultipleChoiceQuestion = (
   const question = isEnglishToTurkish ? word.english : word.turkish;
   const correctAnswer = isEnglishToTurkish ? word.turkish : word.english;
 
-  // YanlZ�Y �YZ�klarZ� se�� (tier: POS + uzunluk > POS > uzunluk > rastgele)
+  // YanlZ�Y �YZ�klarZ� se�� (tier: POS + uzunluk > POS > uzunluk > rastgele)
   const otherWords = allWords.filter((w) => w.id !== word.id);
   const correctLen = correctAnswer.length;
   const correctPos = word.partOfSpeech || '';
@@ -85,10 +85,10 @@ export const generateMultipleChoiceQuestion = (
     .filter((c) => c.option && c.option.trim().length > 0);
 
   const tierBuckets = {
-    tier1: [] as string[], // AynZ� POS + benzer uzunluk
-    tier2: [] as string[], // AynZ� POS
+    tier1: [] as string[], // AynZ� POS + benzer uzunluk
+    tier2: [] as string[], // AynZ� POS
     tier3: [] as string[], // Benzer uzunluk
-    tier4: [] as string[], // Di�Yerleri
+    tier4: [] as string[], // Di�Yerleri
   };
 
   candidates.forEach((c) => {
@@ -412,42 +412,34 @@ export const selectWordsForReview = (
     return shuffle ? shuffleArray(dueWords) : dueWords;
   }
   
-  // Yeni kartları bul (hiç state'i olmayan veya totalReviews === 0)
+    // Yeni kartlar (hiç state'i olmayan veya totalReviews === 0)
   const seenWordIds = new Set(
     relevantStates
       .filter(s => s.totalReviews > 0)
       .map(s => cardToWordId.get(s.cardId))
   );
-  
   const newWords = words.filter(w => !seenWordIds.has(w.id));
-  const selectedNewWords = shuffle 
-    ? shuffleArray(newWords).slice(0, newCardLimit)
-    : newWords.slice(0, newCardLimit);
-  
-  // Due + Yeni kelimeleri birleştir
-  const selectedWordIds = new Set([
-    ...dueWords.map(w => w.id),
-    ...selectedNewWords.map(w => w.id),
-  ]);
-  
-  // Limit'e ulaşılmadıysa, diğer kartlardan ekle (zorluk sırasına göre)
-  if (selectedWordIds.size < limit) {
-    const allPrioritized = prioritizeCards(relevantStates);
-    
-    for (const state of allPrioritized) {
-      if (selectedWordIds.size >= limit) break;
-      
-      const wordId = cardToWordId.get(state.cardId);
-      if (wordId && !selectedWordIds.has(wordId)) {
-        selectedWordIds.add(wordId);
-      }
-    }
+
+  // Akıllı dağılım: %20 due (varsa), %80 yeni
+  const desiredDue = dueWords.length > 0 ? Math.max(1, Math.round(limit * 0.2)) : 0;
+  const takeDue = Math.min(desiredDue, dueWords.length);
+  const takeNew = Math.max(0, limit - takeDue);
+
+  const selectedDue = (shuffle ? shuffleArray(dueWords) : dueWords).slice(0, takeDue);
+  const selectedNew = (shuffle ? shuffleArray(newWords) : newWords).slice(0, Math.max(takeNew, newCardLimit));
+
+  let combined = [...selectedDue, ...selectedNew].slice(0, limit);
+
+  // Eksik kalırsa kalan yeni + seen havuzundan doldur
+  if (combined.length < limit) {
+    const chosenIds = new Set(combined.map(w => w.id));
+    const remainingNew = newWords.filter(w => !chosenIds.has(w.id));
+    const remainingSeen = words.filter(w => !chosenIds.has(w.id) && seenWordIds.has(w.id));
+    const pool = shuffle ? shuffleArray([...remainingNew, ...remainingSeen]) : [...remainingNew, ...remainingSeen];
+    combined = [...combined, ...pool.slice(0, limit - combined.length)];
   }
-  
-  // Seçilen kelimeleri döndür
-  const selectedWords = words.filter(w => selectedWordIds.has(w.id));
-  
-  return shuffle ? shuffleArray(selectedWords) : selectedWords;
+
+  return shuffle ? shuffleArray(combined).slice(0, limit) : combined.slice(0, limit);
 };
 
 /**
