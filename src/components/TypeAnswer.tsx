@@ -162,24 +162,10 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
             Doğru cevap: <strong>{correctAnswer}</strong>
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <button
-              className="btn btn-outline btn-sm"
-              onClick={handleHintClick}
-              disabled={loading}
-            >
-              İpucu (eş anlamlılar)
-            </button>
             <button className="btn btn-secondary btn-sm" onClick={handleSkip} disabled={!!result || hasSkipped}>
               Bilmiyorum / Listeye ekle
             </button>
           </div>
-          {showSynonyms && (result.synonyms?.length || hintSynonyms.length) ? (
-            <div className="type-synonyms">
-              Eş anlamlılar: {(result.synonyms || hintSynonyms).slice(0, 5).join(', ')}
-            </div>
-          ) : showSynonyms ? (
-            <div className="type-synonyms">Eş anlamlı bulunamadı.</div>
-          ) : null}
         </div>
       )}
       {!result && (
@@ -190,6 +176,11 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
           <button className="btn btn-outline btn-sm" onClick={handleHintClick}>
             İpucu (eş anlamlılar)
           </button>
+        </div>
+      )}
+      {!result && showSynonyms && (
+        <div className="type-synonyms" style={{ marginTop: 6 }}>
+          {(hintSynonyms.length > 0 && hintSynonyms.slice(0, 5).join(', ')) || 'Eş anlamlı bulunamadı.'}
         </div>
       )}
     </div>
