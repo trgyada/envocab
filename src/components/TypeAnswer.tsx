@@ -20,6 +20,7 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
   const [hasSkipped, setHasSkipped] = useState(false);
   const [showSynonyms, setShowSynonyms] = useState(false);
   const [hintSynonyms, setHintSynonyms] = useState<string[]>([]);
+  const [hintLoading, setHintLoading] = useState(false);
 
   const direction = question.direction === 'tr-to-en' ? 'tr-to-en' : 'en-to-tr';
   const correctAnswer =
@@ -34,21 +35,33 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
   }, [question.id]);
 
   const fetchHintSynonyms = async () => {
+    setHintLoading(true);
     try {
-      const res = await fetch('/api/validate-answer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: question.question,
-          correct: correctAnswer,
-          user: correctAnswer,
-          lang: direction === 'tr-to-en' ? 'tr' : 'en'
-        })
-      });
-      const data: ValidateResponse = await res.json();
-      if (data.synonyms) setHintSynonyms(data.synonyms);
-    } catch {
-      // ignore
+      for (let i = 0; i < 2; i++) {
+        try {
+          const res = await fetch('/api/validate-answer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: question.question,
+              correct: correctAnswer,
+              user: correctAnswer,
+              lang: direction === 'tr-to-en' ? 'tr' : 'en'
+            })
+          });
+          const data: ValidateResponse = await res.json();
+          if (data.synonyms && data.synonyms.length > 0) {
+            setHintSynonyms(data.synonyms);
+            return;
+          }
+        } catch {
+          // ignore this attempt and retry
+        }
+      }
+      // if both attempts failed or empty, keep empty list
+      setHintSynonyms([]);
+    } finally {
+      setHintLoading(false);
     }
   };
 
@@ -173,14 +186,16 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
           <button className="btn btn-secondary btn-sm" onClick={handleSkip} disabled={hasSkipped}>
             Bilmiyorum / Listeye ekle
           </button>
-          <button className="btn btn-outline btn-sm" onClick={handleHintClick}>
+          <button className="btn btn-outline btn-sm" onClick={handleHintClick} disabled={hintLoading}>
             İpucu (eş anlamlılar)
           </button>
         </div>
       )}
       {!result && showSynonyms && (
         <div className="type-synonyms" style={{ marginTop: 6 }}>
-          {(hintSynonyms.length > 0 && hintSynonyms.slice(0, 5).join(', ')) || 'Eş anlamlı bulunamadı.'}
+          {hintLoading
+            ? 'Yükleniyor...'
+            : (hintSynonyms.length > 0 && hintSynonyms.slice(0, 5).join(', ')) || 'Eş anlamlı bulunamadı.'}
         </div>
       )}
     </div>
