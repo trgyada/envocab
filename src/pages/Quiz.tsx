@@ -43,7 +43,7 @@ const Timer: React.FC<{ startTime: Date | null }> = ({ startTime }) => {
         fontWeight: 600
       }}
     >
-      ⏱️ {minutes}:{seconds}
+      Sure {minutes}:{seconds}
     </div>
   );
 };
@@ -491,10 +491,10 @@ const Quiz: React.FC = () => {
             <label style={{ display: 'block', marginBottom: '15px', fontWeight: '600' }}>Quiz Tipi Sec</label>
             <div className="quiz-type-grid">
               {[
-                { type: 'multiple-choice' as QuizType, icon: '??', label: 'Coktan Secmeli' },
-                { type: 'flashcard' as QuizType, icon: '??', label: 'Flashcard' },
-                { type: 'matching' as QuizType, icon: '??', label: 'Eslesme' },
-                { type: 'write' as QuizType, icon: '✍', label: 'Yazarak Cevap' }
+                { type: 'multiple-choice' as QuizType, icon: 'MC', label: 'Coktan Secmeli' },
+                { type: 'flashcard' as QuizType, icon: 'FC', label: 'Flashcard' },
+                { type: 'matching' as QuizType, icon: 'ES', label: 'Eslesme' },
+                { type: 'write' as QuizType, icon: 'YA', label: 'Yazarak Cevap' }
               ].map(({ type, icon, label }) => (
                 <div
                   key={type}

@@ -19,8 +19,10 @@ const WordLists: React.FC = () => {
     updateListTitle
   } = useWordListStore();
 
+  const listsWithoutUnknown = React.useMemo(() => wordLists.filter((l) => l.id !== 'unknown'), [wordLists]);
+
   const allWrong = new Map<string, Word>();
-  wordLists.forEach((l) => {
+  listsWithoutUnknown.forEach((l) => {
     l.words
       .filter((w) => w.incorrectCount > 0)
       .forEach((w) => {
@@ -29,6 +31,16 @@ const WordLists: React.FC = () => {
   });
   const wrongWords = Array.from(allWrong.values());
   const unknownList = wordLists.find((l) => l.id === 'unknown');
+  const combinedUnknown = React.useMemo(() => {
+    const map = new Map<string, Word>();
+    wrongWords.forEach((w) => map.set(w.english.trim().toLowerCase(), w));
+    if (unknownList) {
+      unknownList.words.forEach((w) => {
+        if (!map.has(w.english.trim().toLowerCase())) map.set(w.english.trim().toLowerCase(), w);
+      });
+    }
+    return Array.from(map.values());
+  }, [wrongWords, unknownList]);
 
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -224,6 +236,7 @@ const WordLists: React.FC = () => {
     setIsScanning(true);
     const map = new Map<string, { listId: string; listTitle: string; wordId: string }[]>();
     wordLists.forEach((list) => {
+      if (list.id === 'unknown') return; // bilinmeyenler tarama dÄ±ÅŸÄ±
       list.words.forEach((w) => {
         const key = w.english.trim().toLowerCase();
         if (!key) return;
@@ -319,7 +332,7 @@ const WordLists: React.FC = () => {
               style={{ flex: 1, minWidth: '220px' }}
             >
               <option value="new">Yeni liste olustur</option>
-              {wordLists.map((l) => (
+              {listsWithoutUnknown.map((l) => (
                 <option key={l.id} value={l.id}>
                   {l.title} ({l.words.length} kelime)
                 </option>
@@ -666,7 +679,7 @@ const WordLists: React.FC = () => {
             Az kelimeli listeleri tek bir listede topla. AynÄ± Ingilizce kelime tekrar eklenmez.
           </p>
           <div className="merge-list">
-            {wordLists.map((list) => (
+            {listsWithoutUnknown.map((list) => (
               <label key={`merge-${list.id}`} className="merge-item">
                 <input
                   type="checkbox"
@@ -702,56 +715,37 @@ const WordLists: React.FC = () => {
 
       </div>
 
-      <h2 style={{ marginBottom: '16px', marginTop: '26px' }}>Mevcut Listeler ({wordLists.length})</h2>
+      <h2 style={{ marginBottom: "16px", marginTop: "26px" }}>Mevcut Listeler ({listsWithoutUnknown.length})</h2>
 
-      {(wrongWords.length > 0 || unknownList) && (
+      {combinedUnknown.length > 0 && (
         <div className="wordlist-grid" style={{ marginBottom: '16px' }}>
-          {wrongWords.length > 0 && (
-            <div className="wordlist-card">
-              <h3>Bilemedigim Kelimeler</h3>
-              <p>{wrongWords.length} kelime</p>
-              <div className="word-preview" style={{ maxHeight: '180px', overflowY: 'auto' }}>
-                {wrongWords.slice(0, 12).map((w) => (
-                  <div key={w.id} className="word-preview-item">
-                    <div className="word-preview-term">{w.english}</div>
-                    <div className="word-preview-translation">{w.turkish}</div>
-                  </div>
-                ))}
-                {wrongWords.length > 12 && (
-                  <div className="word-preview-more">+ {wrongWords.length - 12} kelime daha</div>
-                )}
-              </div>
+          <div className="wordlist-card">
+            <h3>Zor / Bilinmeyenler</h3>
+            <p>{combinedUnknown.length} kelime</p>
+            <div className="word-preview" style={{ maxHeight: '180px', overflowY: 'auto' }}>
+              {combinedUnknown.slice(0, 12).map((w) => (
+                <div key={w.id} className="word-preview-item">
+                  <div className="word-preview-term">{w.english}</div>
+                  <div className="word-preview-translation">{w.turkish}</div>
+                </div>
+              ))}
+              {combinedUnknown.length > 12 && (
+                <div className="word-preview-more">+ {combinedUnknown.length - 12} kelime daha</div>
+              )}
             </div>
-          )}
-          {unknownList && (
-            <div className="wordlist-card">
-              <h3>Bilinmeyenler</h3>
-              <p>{unknownList.words.length} kelime</p>
-              <div className="word-preview" style={{ maxHeight: '180px', overflowY: 'auto' }}>
-                {unknownList.words.slice(0, 12).map((w) => (
-                  <div key={w.id} className="word-preview-item">
-                    <div className="word-preview-term">{w.english}</div>
-                    <div className="word-preview-translation">{w.turkish}</div>
-                  </div>
-                ))}
-                {unknownList.words.length > 12 && (
-                  <div className="word-preview-more">+ {unknownList.words.length - 12} kelime daha</div>
-                )}
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       )}
 
-      {wordLists.length === 0 ? (
+      {listsWithoutUnknown.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">ðŸ“­</div>
+          <div className="empty-state-icon">§Y"?</div>
           <p>Henuz kelime listesi yok.</p>
           <p style={{ fontSize: '0.9rem' }}>Dosya yukleyerek veya manuel ekleyerek baslayabilirsin.</p>
         </div>
       ) : (
         <div className="wordlist-grid">
-          {wordLists.map((list) => (
+          {listsWithoutUnknown.map((list) => (
             <div key={list.id} className={`wordlist-card ${selectedListId === list.id ? 'selected' : ''}`}>
               <div
                 style={{ cursor: 'pointer' }}
@@ -766,8 +760,8 @@ const WordLists: React.FC = () => {
                   {new Date(list.createdAt).toLocaleDateString('tr-TR')}
                 </p>
                 <div className="list-stats">
-                  <span className="stat-item">âœ… {list.words.filter((w) => w.correctCount > 0).length}</span>
-                  <span className="stat-item warning">âš ï¸ {list.words.filter((w) => w.incorrectCount > 0).length}</span>
+                  <span className="stat-item">ƒo	 {list.words.filter((w) => w.correctCount > 0).length}</span>
+                  <span className="stat-item warning">ƒsÿ‹÷? {list.words.filter((w) => w.incorrectCount > 0).length}</span>
                 </div>
               </div>
 
