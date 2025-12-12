@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { QuizQuestion, Word } from '../types';
 
 type Props = {
@@ -18,11 +18,12 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
   const [result, setResult] = useState<ValidateResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [showSynonyms, setShowSynonyms] = useState(false);
+
   const direction = question.direction === 'tr-to-en' ? 'tr-to-en' : 'en-to-tr';
   const correctAnswer =
     (question as any).correctAnswer || question.word[direction === 'tr-to-en' ? 'english' : 'turkish'];
 
-  React.useEffect(() => {
+  useEffect(() => {
     setValue('');
     setResult(null);
     setShowSynonyms(false);
@@ -46,11 +47,22 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
       const data: ValidateResponse = await res.json();
       setResult(data);
       onAnswer(data.accepted, question.word, value.trim(), direction === 'tr-to-en' ? 'tr-to-en' : 'en-to-tr');
-    } catch (err) {
+    } catch {
       onAnswer(false, question.word, value.trim(), direction === 'tr-to-en' ? 'tr-to-en' : 'en-to-tr');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSkip = () => {
+    setValue('');
+    setResult({
+      accepted: false,
+      score: 0,
+      verdict: 'wrong',
+      synonyms: []
+    });
+    onAnswer(false, question.word, 'UNKNOWN', direction === 'tr-to-en' ? 'tr-to-en' : 'en-to-tr');
   };
 
   const enterPress: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
@@ -83,7 +95,14 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
             Skor: <strong>{Math.round(result.score)}%</strong> {result.verdict !== 'exact' && `(${result.verdict})`}
           </div>
           <div style={{ fontSize: '0.95rem', color: 'var(--text-secondary)' }}>
-            Durum: {result.verdict === 'exact' ? 'Tam doğru' : result.verdict === 'synonym' ? 'Eş anlamlı kabul edildi' : result.verdict === 'typo' ? 'Küçük yazım hatası' : 'Yanlış'}
+            Durum:{' '}
+            {result.verdict === 'exact'
+              ? 'Tam doğru'
+              : result.verdict === 'synonym'
+              ? 'Eş anlamlı kabul edildi'
+              : result.verdict === 'typo'
+              ? 'Küçük yazım hatası'
+              : 'Yanlış'}
           </div>
           <div style={{ marginTop: 4 }}>
             Doğru cevap: <strong>{correctAnswer}</strong>
@@ -96,12 +115,7 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
             >
               İpucu (eş anlamlılar)
             </button>
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={() =>
-                onAnswer(false, question.word, value.trim(), direction === 'tr-to-en' ? 'tr-to-en' : 'en-to-tr')
-              }
-            >
+            <button className="btn btn-secondary btn-sm" onClick={handleSkip}>
               Bilmiyorum / Geç
             </button>
           </div>
@@ -114,13 +128,7 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
       )}
       {!result && (
         <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={() => {
-              setValue('');
-              onAnswer(false, question.word, '', direction === 'tr-to-en' ? 'tr-to-en' : 'en-to-tr');
-            }}
-          >
+          <button className="btn btn-secondary btn-sm" onClick={handleSkip}>
             Bilmiyorum / Geç
           </button>
         </div>
