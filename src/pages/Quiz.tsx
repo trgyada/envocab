@@ -507,13 +507,25 @@ const Quiz: React.FC = () => {
               ))}
             </div>
             <div style={{ marginTop: '10px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <div
-                className={`toggle-shell ${examMode ? 'enabled' : 'disabled'}`}
-                onClick={() => setExamMode(!examMode)}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="toggle-knob" />
-              </div>
+              {(() => {
+                const testToggleEnabled = quizType === 'multiple-choice';
+                return (
+                  <div
+                    className={`toggle-shell ${examMode ? 'enabled' : 'disabled'}`}
+                    onClick={() => {
+                      if (!testToggleEnabled) return;
+                      setExamMode(!examMode);
+                    }}
+                    style={{
+                      cursor: testToggleEnabled ? 'pointer' : 'not-allowed',
+                      opacity: testToggleEnabled ? 1 : 0.45,
+                      filter: testToggleEnabled ? 'none' : 'blur(0.3px)'
+                    }}
+                  >
+                    <div className="toggle-knob" />
+                  </div>
+                );
+              })()}
               <div style={{ color: 'var(--text-secondary)' }}>
                 Test modu (geri bildirim gizli, sonuc tablosu acik)
               </div>
@@ -732,9 +744,18 @@ const Quiz: React.FC = () => {
             question={currentQuestion}
             onAnswer={(isCorrect, word, userAnswer, direction) => {
               handleAnswer(isCorrect, word, userAnswer, direction);
-              setTimeout(() => goNextQuestion(true), 400);
             }}
           />
+
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => goNextQuestion()}
+              disabled={!hasAnswered}
+            >
+              {currentIndex >= questions.length - 1 ? 'Bitir' : 'Sonraki Soru'}
+            </button>
+          </div>
 
           {!examMode && (
             <div
