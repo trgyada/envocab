@@ -69,8 +69,14 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
         })
       });
       const data: ValidateResponse = await res.json();
-      setResult(data);
-      onAnswer(data.accepted, question.word, value.trim(), direction === 'tr-to-en' ? 'tr-to-en' : 'en-to-tr');
+      const accepted = data.accepted && data.score >= 60;
+      const normalized: ValidateResponse = {
+        ...data,
+        accepted,
+        verdict: accepted ? data.verdict : 'wrong'
+      };
+      setResult(normalized);
+      onAnswer(accepted, question.word, value.trim(), direction === 'tr-to-en' ? 'tr-to-en' : 'en-to-tr');
     } catch {
       onAnswer(false, question.word, value.trim(), direction === 'tr-to-en' ? 'tr-to-en' : 'en-to-tr');
     } finally {
@@ -141,7 +147,13 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
         </button>
       </div>
       {result && (
-        <div className="type-result">
+        <div
+          className="type-result"
+          style={{
+            background: result.accepted ? 'rgba(0, 128, 0, 0.12)' : 'rgba(200, 32, 32, 0.15)',
+            borderColor: result.accepted ? 'rgba(0, 200, 0, 0.25)' : 'rgba(220, 40, 40, 0.35)'
+          }}
+        >
           <div className="type-score">
             Skor: <strong>{Math.round(result.score)}%</strong> {result.verdict !== 'exact' && `(${result.verdict})`}
           </div>
@@ -153,11 +165,11 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
             <button
               className="btn btn-outline btn-sm"
               onClick={handleHintClick}
-              disabled={!result.synonyms && hintSynonyms.length === 0 && loading}
+              disabled={loading}
             >
               İpucu (eş anlamlılar)
             </button>
-            <button className="btn btn-secondary btn-sm" onClick={handleSkip} disabled={result.accepted || hasSkipped}>
+            <button className="btn btn-secondary btn-sm" onClick={handleSkip} disabled={!!result || hasSkipped}>
               Bilmiyorum / Listeye ekle
             </button>
           </div>
@@ -165,6 +177,8 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
             <div className="type-synonyms">
               Eş anlamlılar: {(result.synonyms || hintSynonyms).slice(0, 5).join(', ')}
             </div>
+          ) : showSynonyms ? (
+            <div className="type-synonyms">Eş anlamlı bulunamadı.</div>
           ) : null}
         </div>
       )}
