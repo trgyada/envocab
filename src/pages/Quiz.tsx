@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import MultipleChoice from '../components/MultipleChoice';
 import Matching from '../components/Matching';
+import TypeAnswer from '../components/TypeAnswer';
 import {
   calculateScore,
   generateQuiz,
@@ -490,9 +491,10 @@ const Quiz: React.FC = () => {
             <label style={{ display: 'block', marginBottom: '15px', fontWeight: '600' }}>Quiz Tipi Sec</label>
             <div className="quiz-type-grid">
               {[
-                { type: 'multiple-choice' as QuizType, icon: '📝', label: 'Coktan Secmeli' },
-                { type: 'flashcard' as QuizType, icon: '🃏', label: 'Flashcard' },
-                { type: 'matching' as QuizType, icon: '🔗', label: 'Eslesme' }
+                { type: 'multiple-choice' as QuizType, icon: '??', label: 'Coktan Secmeli' },
+                { type: 'flashcard' as QuizType, icon: '??', label: 'Flashcard' },
+                { type: 'matching' as QuizType, icon: '??', label: 'Eslesme' },
+                { type: 'write' as QuizType, icon: '✍', label: 'Yazarak Cevap' }
               ].map(({ type, icon, label }) => (
                 <div
                   key={type}
@@ -700,6 +702,58 @@ const Quiz: React.FC = () => {
       );
     }
 
+    if (quizType === 'write' && questions.length > 0 && currentIndex < questions.length) {
+      const currentQuestion = questions[currentIndex];
+      return (
+        <div className="quiz-container">
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <button className="quiz-exit-btn" onClick={handleExitQuiz} title="Quizden cik">
+              X
+            </button>
+            <button className="btn btn-outline btn-sm" onClick={handleFinishEarly}>
+              Testi Bitir
+            </button>
+          </div>
+
+          <div className="quiz-header">
+            <div className="quiz-progress">
+              <div className="quiz-progress-bar" style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }} />
+            </div>
+            <Timer startTime={startTime} />
+          </div>
+
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <span className="quiz-counter">
+              Soru {currentIndex + 1} / {questions.length}
+            </span>
+          </div>
+
+          <TypeAnswer
+            question={currentQuestion}
+            onAnswer={(isCorrect, word, userAnswer, direction) => {
+              handleAnswer(isCorrect, word, userAnswer, direction);
+              setTimeout(() => goNextQuestion(true), 400);
+            }}
+          />
+
+          {!examMode && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '30px',
+                marginTop: '20px',
+                fontSize: '1rem',
+              }}
+            >
+              <div style={{ color: 'var(--success)' }}>Dogru: {correctCount}</div>
+              <div style={{ color: 'var(--danger)' }}>Yanlis: {wrongWords.length}</div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
     // multiple choice
     if (questions.length > 0 && currentIndex < questions.length) {
       const currentQuestion = questions[currentIndex];
@@ -819,5 +873,3 @@ const Quiz: React.FC = () => {
 };
 
 export default Quiz;
-
-
