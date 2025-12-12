@@ -51,6 +51,8 @@ const WordLists: React.FC = () => {
     { word: string; occurrences: { listId: string; listTitle: string; wordId: string }[] }[]
   >([]);
   const [isScanning, setIsScanning] = useState(false);
+  const [mergeSelection, setMergeSelection] = useState<string[]>([]);
+  const [mergeName, setMergeName] = useState('Birlesik Liste');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -251,6 +253,38 @@ const WordLists: React.FC = () => {
       });
     });
     scanDuplicates();
+  };
+
+
+  const toggleMergeSelection = (id: string) => {
+    setMergeSelection((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const handleMergeLists = () => {
+    const selected = wordLists.filter((l) => mergeSelection.includes(l.id));
+    if (selected.length < 2) {
+      setMessage({ text: 'En az iki liste secmelisin.', type: 'error' });
+      return;
+    }
+    const mergedMap = new Map<string, { english: string; turkish: string }>();
+    selected.forEach((list) => {
+      list.words.forEach((w) => {
+        const key = w.english.trim().toLowerCase();
+        if (!key) return;
+        if (!mergedMap.has(key)) {
+          mergedMap.set(key, { english: w.english, turkish: w.turkish });
+        }
+      });
+    });
+    const mergedWords = Array.from(mergedMap.values());
+    const title = mergeName.trim() || 'Birlesik Liste';
+    addWordList(title, mergedWords);
+    setMessage({
+      text: `"${title}" olusturuldu. ${selected.length} liste birlestirildi, ${mergedWords.length} benzersiz kelime eklendi.`,
+      type: 'success',
+    });
+    setMergeSelection([]);
+    setMergeName('Birlesik Liste');
   };
 
   if (viewMode === 'add-manual') {
@@ -601,6 +635,44 @@ const WordLists: React.FC = () => {
           >
             Tekrarları Temizle (En Buyuk Listeyi Koru)
           </button>
+        </div>
+
+        <div className="merge-panel">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <h3 style={{ margin: 0 }}>Listeleri Birleştir</h3>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                value={mergeName}
+                onChange={(e) => setMergeName(e.target.value)}
+                className="input-field"
+                style={{ minWidth: '220px' }}
+                placeholder="Yeni liste adi"
+              />
+              <button
+                className="btn btn-primary"
+                onClick={handleMergeLists}
+                disabled={mergeSelection.length < 2}
+              >
+                {mergeSelection.length < 2 ? 'En az 2 liste sec' : 'Birleştir'}
+              </button>
+            </div>
+          </div>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '6px' }}>
+            Az kelimeli listeleri tek bir listede topla. Aynı Ingilizce kelime tekrar eklenmez.
+          </p>
+          <div className="merge-list">
+            {wordLists.map((list) => (
+              <label key={`merge-${list.id}`} className="merge-item">
+                <input
+                  type="checkbox"
+                  checked={mergeSelection.includes(list.id)}
+                  onChange={() => toggleMergeSelection(list.id)}
+                />
+                <span>{list.title} ({list.words.length} kelime)</span>
+              </label>
+            ))}
+          </div>
         </div>
 
         {duplicateReport.length > 0 && (
