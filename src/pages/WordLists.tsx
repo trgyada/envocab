@@ -199,15 +199,19 @@ const WordLists: React.FC = () => {
   const cancelEdit = () => setEditingWordId(null);
 
   const handleExportList = (list: typeof wordLists[0]) => {
-    const csvContent = list.words.map((w) => `${w.english};${w.turkish}`).join('\n');
-    const blob = new Blob([`English;Turkish\n${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+    // Basit bir Excel (xls) çıktısı için HTML tablo hack'i kullanılıyor.
+    const rows = list.words
+      .map((w) => `<tr><td>${w.english}</td><td>${w.turkish}</td></tr>`)
+      .join('');
+    const table = `<table><thead><tr><th>English</th><th>Turkce</th></tr></thead><tbody>${rows}</tbody></table>`;
+    const blob = new Blob([table], { type: 'application/vnd.ms-excel' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${list.title}.csv`;
+    link.download = `${list.title}.xls`;
     link.click();
     URL.revokeObjectURL(url);
-    setMessage({ text: `"${list.title}" indirildi.`, type: 'success' });
+    setMessage({ text: `"${list.title}" Excel olarak indirildi.`, type: 'success' });
   };
 
   const handleShareList = (list: typeof wordLists[0]) => {
