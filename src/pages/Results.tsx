@@ -28,8 +28,8 @@ const Results: React.FC = () => {
     return (
       <div className="results-container">
         <div className="results-card">
-          <h1>Sonuc Bulunamadi</h1>
-          <p>Quiz sonucu bulunamadi. Lutfen bir quiz tamamlayin.</p>
+          <h1>Sonuç Bulunamadı</h1>
+          <p>Quiz sonucu bulunamadı. Lütfen bir quiz tamamlayın.</p>
           <Link to="/quiz" className="btn btn-primary" style={{ marginTop: '20px' }}>
             Quiz'e Git
           </Link>
@@ -54,18 +54,18 @@ const Results: React.FC = () => {
   };
 
   const getMessage = () => {
-    if (score >= 90) return 'Mukemmel! Harika bir performans!';
-    if (score >= 70) return 'Cok iyi! Devam et!';
-    if (score >= 50) return 'Iyi gidiyorsun! Biraz daha calis!';
+    if (score >= 90) return 'Mükemmel! Harika bir performans!';
+    if (score >= 70) return 'Çok iyi! Devam et!';
+    if (score >= 50) return 'İyi gidiyorsun! Biraz daha çalış!';
     return 'Pratik yapmaya devam et!';
   };
 
   const getQuizTypeName = () => {
     switch (quizType) {
-      case 'multiple-choice': return 'Coktan Secmeli';
+      case 'multiple-choice': return 'Çoktan Seçmeli';
       case 'flashcard': return 'Flashcard';
-      case 'matching': return 'Eslesme';
-      case 'mixed': return 'Karisik';
+      case 'matching': return 'Eşleşme';
+      case 'mixed': return 'Karışık';
       default: return 'Quiz';
     }
   };
@@ -76,7 +76,7 @@ const Results: React.FC = () => {
         <div style={{ fontSize: '4rem', marginBottom: '10px' }}>{getEmoji()}</div>
         <h1 style={{ marginBottom: '10px' }}>{getMessage()}</h1>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
-          {getQuizTypeName()} tamamlandi!
+          {getQuizTypeName()} tamamlandı!
         </p>
 
         <div className="results-score">%{score}</div>
@@ -86,13 +86,13 @@ const Results: React.FC = () => {
             <div className="stat-value" style={{ color: 'var(--success-color)' }}>
               {correct}
             </div>
-            <div className="stat-label">Dogru</div>
+            <div className="stat-label">Doğru</div>
           </div>
           <div className="stat-item">
             <div className="stat-value" style={{ color: 'var(--danger-color)' }}>
               {total - correct}
             </div>
-            <div className="stat-label">Yanlis</div>
+            <div className="stat-label">Yanlış</div>
           </div>
           <div className="stat-item">
             <div className="stat-value">{total}</div>
@@ -101,7 +101,7 @@ const Results: React.FC = () => {
           {duration !== undefined && (
             <div className="stat-item">
               <div className="stat-value">⏱ {formatDuration(duration)}</div>
-              <div className="stat-label">Sure</div>
+              <div className="stat-label">Süre</div>
             </div>
           )}
         </div>
@@ -150,8 +150,8 @@ const Results: React.FC = () => {
             <div className="results-table">
               <div className="results-table-header">
                 <span>Soru</span>
-                <span>Cevabin</span>
-                <span>Dogru Cevap</span>
+                <span>Cevabın</span>
+                <span>Doğru Cevap</span>
               </div>
               {answerSheet.map((item: any, idx: number) => (
                 <div key={idx} className="results-table-row">
@@ -177,7 +177,7 @@ const Results: React.FC = () => {
                 🔥 {getStreakDays()}
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                Gunluk Seri
+                Günlük Seri
               </div>
             </div>
             <div>
@@ -194,7 +194,7 @@ const Results: React.FC = () => {
                   🎯 {Object.values(cardStates).filter(s => s.masteryLevel >= 3).length}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  Ogrenilen
+                  Öğrenilen
                 </div>
               </div>
             )}

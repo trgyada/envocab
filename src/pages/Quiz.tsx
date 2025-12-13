@@ -43,7 +43,7 @@ const Timer: React.FC<{ startTime: Date | null }> = ({ startTime }) => {
         fontWeight: 600
       }}
     >
-      Sure {minutes}:{seconds}
+      Süre {minutes}:{seconds}
     </div>
   );
 };
@@ -168,7 +168,7 @@ const Quiz: React.FC = () => {
     }
   }, [selectedList, createCardsFromWords]);
 
-  // Test modunda ornek cumle zorla kapali
+  // Test modunda örnek cümle zorla kapalı
   useEffect(() => {
     if (examMode) setShowExamples(false);
   }, [examMode]);
@@ -203,9 +203,9 @@ const Quiz: React.FC = () => {
         const data = await res.json();
         if (!res.ok) {
           if (res.status === 429) {
-            throw new Error('429: Rate limit asildi, lutfen biraz sonra tekrar dene.');
+            throw new Error('429: Rate limit aşıldı, lütfen biraz sonra tekrar dene.');
           }
-          throw new Error(data?.error || 'Ornek alinamadi');
+          throw new Error(data?.error || 'Örnek alınamadı');
         }
         setExampleMap((prev) => ({
           ...prev,
@@ -222,7 +222,7 @@ const Quiz: React.FC = () => {
       .catch((err) => {
         setExampleMap((prev) => ({
           ...prev,
-          [key]: { loading: false, error: err instanceof Error ? err.message : 'Ornek alinamadi' }
+          [key]: { loading: false, error: err instanceof Error ? err.message : 'Örnek alınamadı' }
         }));
       });
   }, [showExamples, questions, currentIndex, updateWordExample]);
@@ -246,7 +246,7 @@ const Quiz: React.FC = () => {
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) {
-          throw new Error(data?.error || 'Tanim alinamadi');
+          throw new Error(data?.error || 'Tanım alınamadı');
         }
         setDefinitionMap((prev) => ({
           ...prev,
@@ -256,7 +256,7 @@ const Quiz: React.FC = () => {
       .catch((err) => {
         setDefinitionMap((prev) => ({
           ...prev,
-          [defKey]: { loading: false, error: err instanceof Error ? err.message : 'Tanim alinamadi' }
+          [defKey]: { loading: false, error: err instanceof Error ? err.message : 'Tanım alınamadı' }
         }));
       });
   }, [showDefinitions, questions, currentIndex]);
@@ -460,7 +460,7 @@ const Quiz: React.FC = () => {
     }
   };
 
-  // Test modunda (sadece coktan secmeli) cevaplandiktan sonra otomatik gec
+  // Test modunda (sadece çoktan seçmeli) cevaplandıktan sonra otomatik geç
   useEffect(() => {
     if (examMode && quizType === 'multiple-choice' && hasAnswered) {
       const id = setTimeout(() => goNextQuestion(true), 300);
@@ -521,7 +521,7 @@ const Quiz: React.FC = () => {
     const maxQuestions = selectedList?.words.length || 10;
     return (
       <div className="quiz-container">
-        <h1 style={{ marginBottom: '10px', textAlign: 'center' }}>Quiz Ayarlari</h1>
+        <h1 style={{ marginBottom: '10px', textAlign: 'center' }}>Quiz Ayarları</h1>
         <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '30px' }}>
           {selectedList?.title} - {selectedList?.words.length} kelime
         </p>
@@ -529,7 +529,7 @@ const Quiz: React.FC = () => {
         <div style={{ maxWidth: '520px', margin: '0 auto' }}>
           <div style={{ marginBottom: '30px' }}>
             <label style={{ display: 'block', marginBottom: '10px', fontWeight: '600' }}>
-              Soru Sayisi: {questionCount}
+              Soru Sayısı: {questionCount}
             </label>
             <input
               type="range"
@@ -549,9 +549,9 @@ const Quiz: React.FC = () => {
             <label style={{ display: 'block', marginBottom: '15px', fontWeight: '600' }}>Quiz Tipi Sec</label>
             <div className="quiz-type-grid">
               {[
-                { type: 'multiple-choice' as QuizType, icon: '❓', label: 'Coktan Secmeli' },
+                { type: 'multiple-choice' as QuizType, icon: '❓', label: 'Çoktan Seçmeli' },
                 { type: 'flashcard' as QuizType, icon: '🃏', label: 'Flashcard' },
-                { type: 'matching' as QuizType, icon: '🔗', label: 'Eslesme' },
+                { type: 'matching' as QuizType, icon: '🔗', label: 'Eşleşme' },
                 { type: 'write' as QuizType, icon: '⌨️', label: 'Yazarak Cevap' }
               ].map(({ type, icon, label }) => (
                 <div
@@ -585,16 +585,16 @@ const Quiz: React.FC = () => {
                 );
               })()}
               <div style={{ color: 'var(--text-secondary)' }}>
-                Test modu (geri bildirim gizli, sonuc tablosu acik)
+                Test modu (geri bildirim gizli, sonuç tablosu açık)
               </div>
             </div>
           </div>
 
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600' }}>Soru yonu</label>
+            <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600' }}>Soru yönü</label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
               {[
-                { value: 'mixed' as const, label: 'Karisik' },
+                { value: 'mixed' as const, label: 'Karışık' },
                 { value: 'en-to-tr' as const, label: 'Ing -> Tr' },
                 { value: 'tr-to-en' as const, label: 'Tr -> Ing' }
               ].map((item) => (
@@ -644,9 +644,9 @@ const Quiz: React.FC = () => {
             }}
           >
             <div>
-              <div style={{ fontWeight: '700', marginBottom: '6px' }}>Ornek cumle (Gemini)</div>
+              <div style={{ fontWeight: '700', marginBottom: '6px' }}>Örnek cümle (Gemini)</div>
               <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                Quiz baslamadan ornek cumleler hazirlanir; ceviri yanit sonrasinda gosterilir.
+                Quiz başlamadan örnek cümleler hazırlanır; çeviri yanıt sonrasında gösterilir.
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -730,7 +730,7 @@ const Quiz: React.FC = () => {
             style={{ width: '100%', marginTop: '20px' }}
             disabled={onlyDifficultWords && (allDifficultWords.length === 0 && difficultWords.length === 0)}
           >
-            Quiz'i Baslat
+            Quiz'i Başlat
           </button>
 
           <button
@@ -742,7 +742,7 @@ const Quiz: React.FC = () => {
             }}
             style={{ width: '100%', marginTop: '12px' }}
           >
-            Farkli Liste Sec
+            Farklı Liste Seç
           </button>
         </div>
       </div>
@@ -879,8 +879,8 @@ const Quiz: React.FC = () => {
                 fontSize: '1rem',
               }}
             >
-              <div style={{ color: 'var(--success)' }}>Dogru: {correctCount}</div>
-              <div style={{ color: 'var(--danger)' }}>Yanlis: {wrongWords.length}</div>
+              <div style={{ color: 'var(--success)' }}>Doğru: {correctCount}</div>
+              <div style={{ color: 'var(--danger)' }}>Yanlış: {wrongWords.length}</div>
             </div>
           )}
         </div>
@@ -919,7 +919,7 @@ const Quiz: React.FC = () => {
           });
           const data = await res.json();
           if (!res.ok) {
-            throw new Error(data?.error || 'Istek basarisiz');
+            throw new Error(data?.error || 'İstek başarısız');
           }
           setExampleMap((prev) => ({
             ...prev,
@@ -935,7 +935,7 @@ const Quiz: React.FC = () => {
         } catch (err) {
           setExampleMap((prev) => ({
             ...prev,
-            [exampleKey]: { loading: false, error: err instanceof Error ? err.message : 'Ornek cumle alinamadi.' }
+            [exampleKey]: { loading: false, error: err instanceof Error ? err.message : 'Örnek cümle alınamadı.' }
           }));
         }
       };
@@ -1003,8 +1003,8 @@ const Quiz: React.FC = () => {
                 fontSize: '1rem'
               }}
             >
-              <div style={{ color: 'var(--success)' }}>Dogru: {correctCount}</div>
-              <div style={{ color: 'var(--danger)' }}>Yanlis: {wrongWords.length}</div>
+              <div style={{ color: 'var(--success)' }}>Doğru: {correctCount}</div>
+              <div style={{ color: 'var(--danger)' }}>Yanlış: {wrongWords.length}</div>
             </div>
           )}
         </div>

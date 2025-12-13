@@ -5,7 +5,7 @@ interface SelectableTextProps {
   onWordClick?: (word: string) => void;
 }
 
-// Basit tokenizasyon: kelime, bosluk, diger karakterler
+// Basit tokenizasyon: kelime, boşluk, diğer karakterler
 const tokenize = (input: string) => {
   const regex = /([A-Za-zÇÖÜĞİŞçöüğış]+)|(\s+)|([^\sA-Za-zÇÖÜĞİŞçöüğış]+)/g;
   const parts: string[] = [];
