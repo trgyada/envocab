@@ -99,7 +99,9 @@ const Quiz: React.FC = () => {
   const [showExamples, setShowExamples] = useState(false);
   const [showDefinitions, setShowDefinitions] = useState(false);
   const [exampleMap, setExampleMap] = useState<Record<string, ExampleState>>({});
-  const [definitionMap, setDefinitionMap] = useState<Record<string, { text?: string; loading?: boolean; error?: string }>>({});
+  const [definitionMap, setDefinitionMap] = useState<
+    Record<string, { text?: string; loading?: boolean; error?: string }>
+  >({});
   const [hasAnswered, setHasAnswered] = useState(false);
   const [examMode, setExamMode] = useState(false);
   const allDifficultWords = React.useMemo(() => {
@@ -629,6 +631,40 @@ const Quiz: React.FC = () => {
 
           <div
             style={{
+              marginBottom: '20px',
+              padding: '12px 14px',
+              background: '#0f172a',
+              border: '1px solid var(--border)',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px',
+              opacity: quizType === 'multiple-choice' ? 1 : 0.5
+            }}
+          >
+            <div>
+              <div style={{ fontWeight: '700', marginBottom: '6px' }}>🇬🇧 İngilizce Tanım</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                Kelimenin İngilizce açıklamasını (definition) göster.
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div
+                className={`toggle-shell ${showDefinitions && quizType === 'multiple-choice' && !examMode ? 'enabled' : 'disabled'}`}
+                style={{ cursor: quizType === 'multiple-choice' && !examMode ? 'pointer' : 'not-allowed', opacity: examMode ? 0.5 : 1 }}
+                onClick={() => {
+                  if (quizType !== 'multiple-choice' || examMode) return;
+                  setShowDefinitions((v) => !v);
+                }}
+              >
+                <div className="toggle-knob" />
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
               marginBottom: '30px',
               padding: '15px 20px',
               background: onlyDifficultWords ? 'rgba(239, 68, 68, 0.16)' : '#111a2d',
@@ -870,6 +906,36 @@ const Quiz: React.FC = () => {
         }
       };
 
+      const defKey = currentQuestion.word.id;
+      const defState = definitionMap[defKey];
+      const allowDefinition = showDefinitions && !examMode;
+
+      const requestDefinition = async () => {
+        if (!showDefinitions) return;
+        if (defState?.loading) return;
+        setDefinitionMap((prev) => ({ ...prev, [defKey]: { ...prev[defKey], loading: true, error: undefined } }));
+        try {
+          const res = await fetch('/api/definition', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ word: currentQuestion.word.english })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data?.error || 'Tanim alinamadi');
+          }
+          setDefinitionMap((prev) => ({
+            ...prev,
+            [defKey]: { text: data.definition, loading: false }
+          }));
+        } catch (err) {
+          setDefinitionMap((prev) => ({
+            ...prev,
+            [defKey]: { loading: false, error: err instanceof Error ? err.message : 'Tanim alinamadi.' }
+          }));
+        }
+      };
+
       return (
         <div className="quiz-container">
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
@@ -903,6 +969,8 @@ const Quiz: React.FC = () => {
             onRequestExample={
               allowExample ? (force?: boolean) => requestExample(force ?? false) : undefined
             }
+            definition={allowDefinition ? defState : undefined}
+            onRequestDefinition={allowDefinition ? requestDefinition : undefined}
             debugInfo={allowExample ? exampleState?.error || null : null}
             examMode={examMode}
           />

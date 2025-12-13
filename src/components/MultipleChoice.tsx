@@ -15,6 +15,12 @@ interface MultipleChoiceProps {
     lang?: 'en' | 'tr';
   };
   onRequestExample?: (force?: boolean) => void;
+  definition?: {
+    text?: string;
+    loading?: boolean;
+    error?: string;
+  };
+  onRequestDefinition?: () => void;
   debugInfo?: string | null;
   examMode?: boolean;
 }
@@ -43,6 +49,8 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
   optionMeaning,
   example,
   onRequestExample,
+  definition,
+  onRequestDefinition,
   debugInfo,
   examMode
 }) => {
@@ -198,9 +206,31 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
               )}
             </div>
           )}
-          {debugInfo && <div className="example-debug">{debugInfo}</div>}
         </div>
       )}
+
+      {onRequestDefinition && !examMode && (
+        <div className="example-box" style={{ marginTop: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+            <div className="example-title">🇬🇧 İngilizce Tanım</div>
+            <button 
+              className="btn btn-outline btn-sm" 
+              onClick={onRequestDefinition} 
+              disabled={definition?.loading}
+            >
+              {definition?.loading ? 'Yükleniyor...' : definition?.text ? 'Yeniden getir' : 'Tanım getir'}
+            </button>
+          </div>
+          {definition?.error && <div className="example-error">{definition.error}</div>}
+          {definition?.text && (
+            <div className="example-sentence" style={{ fontStyle: 'italic', color: 'var(--text-secondary)' }}>
+              {definition.text}
+            </div>
+          )}
+        </div>
+      )}
+
+      {debugInfo && <div className="example-debug">{debugInfo}</div>}
 
       <div className="options">
         {question.options?.map((option, index) => (
