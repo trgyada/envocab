@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState, lazy, Suspense } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-const MultipleChoice = lazy(() => import('../components/MultipleChoice'));
-const Matching = lazy(() => import('../components/Matching'));
-const TypeAnswer = lazy(() => import('../components/TypeAnswer'));
+import MultipleChoice from '../components/MultipleChoice';
+import Matching from '../components/Matching';
+import TypeAnswer from '../components/TypeAnswer';
 import {
   calculateScore,
   generateQuiz,
@@ -132,6 +132,14 @@ const Quiz: React.FC = () => {
     selectedList?.words.filter((w) => w.incorrectCount > 0 || (w.correctCount > 0 && w.mastery < 50)) || [];
 
   useEffect(() => {
+    if (selectedListId && !selectedList) {
+      // seçili liste bulunamadıysa yeniden seçim ekranına dön
+      setPhase('select-list');
+      selectWordList(null);
+    }
+  }, [selectedListId, selectedList, selectWordList]);
+
+  useEffect(() => {
     if (isDueReviewMode && dueWordIds.length > 0) {
       const allWords = wordLists.flatMap((l) => l.words);
       const dueWords = allWords.filter((w) => dueWordIds.includes(w.id));
@@ -230,7 +238,10 @@ const Quiz: React.FC = () => {
   };
 
   const startQuiz = () => {
-    if (!selectedList) return;
+    if (!selectedList || !selectedList.words.length) {
+      setPhase('select-list');
+      return;
+    }
     if (examMode) setShowExamples(false);
     let wordsToUse: Word[];
 

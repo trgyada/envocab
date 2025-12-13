@@ -95,7 +95,7 @@ const WordLists: React.FC = () => {
       const title = listTitle.trim() || file.name.replace(/\.[^/.]+$/, '');
       addWordList(title, result.words);
       setMessage({
-        text: `"${title}" basariyla yüklendi! ${result.words.length} kelime eklendi.`,
+        text: `"${title}" basariyla yÃ¼klendi! ${result.words.length} kelime eklendi.`,
         type: 'success'
       });
       setListTitle('');
@@ -103,7 +103,7 @@ const WordLists: React.FC = () => {
         fileInputRef.current.value = '';
       }
     } else {
-      setMessage({ text: result.error || 'Dosya yüklenirken hata olustu.', type: 'error' });
+      setMessage({ text: result.error || 'Dosya yÃ¼klenirken hata olustu.', type: 'error' });
     }
 
     setIsLoading(false);
@@ -211,7 +211,7 @@ const WordLists: React.FC = () => {
   const cancelEdit = () => setEditingWordId(null);
 
   const handleExportList = (list: typeof wordLists[0]) => {
-    // Basit bir Excel (xls) çıktısı için HTML tablo hack'i kullanılıyor.
+    // Basit bir Excel (xls) Ã§Ä±ktÄ±sÄ± iÃ§in HTML tablo hack'i kullanÄ±lÄ±yor.
     const rows = list.words
       .map((w) => `<tr><td>${w.english}</td><td>${w.turkish}</td></tr>`)
       .join('');
@@ -236,7 +236,7 @@ const WordLists: React.FC = () => {
     setIsScanning(true);
     const map = new Map<string, { listId: string; listTitle: string; wordId: string }[]>();
     wordLists.forEach((list) => {
-      if (list.id === 'unknown') return; // bilinmeyenler tarama dışı
+      if (list.id === 'unknown') return; // bilinmeyenler tarama dÄ±ÅŸÄ±
       list.words.forEach((w) => {
         const key = w.english.trim().toLowerCase();
         if (!key) return;
@@ -259,7 +259,7 @@ const WordLists: React.FC = () => {
 
   const cleanDuplicatesKeepLargest = () => {
     if (duplicateReport.length === 0) return;
-    // en büyük listeyi bul
+    // en bÃ¼yÃ¼k listeyi bul
     const keepList = wordLists.reduce((acc, curr) => (acc && acc.words.length >= curr.words.length ? acc : curr));
     if (!keepList) return;
     duplicateReport.forEach((dup) => {
@@ -454,7 +454,7 @@ const WordLists: React.FC = () => {
                 }}
                 title="Basligi duzenlemek icin tikla"
               >
-                <span className="word-list-icon">📑</span>
+                <span className="word-list-icon">ğŸ“‘</span>
                 {viewingList.title}
               </h1>
             )}
@@ -468,12 +468,12 @@ const WordLists: React.FC = () => {
             </div>
           </div>
           <p className="word-list-meta">
-            {viewingList.words.length} kelime • Olusturulma: {new Date(viewingList.createdAt).toLocaleDateString('tr-TR')}
+            {viewingList.words.length} kelime â€¢ Olusturulma: {new Date(viewingList.createdAt).toLocaleDateString('tr-TR')}
           </p>
         </div>
 
         <div className="word-list-search">
-          <span className="search-icon">🔍</span>
+          <span className="search-icon">ğŸ”�</span>
           <input
             type="text"
             value={searchQuery}
@@ -565,7 +565,7 @@ const WordLists: React.FC = () => {
                         }}
                         title="Sesli oku"
                       >
-                        🔊
+                        ğŸ”Š
                       </button>
                       <button className="word-table-icon-btn edit" onClick={() => startEditWord(word)} title="Duzenle">
                         Duzenle
@@ -599,7 +599,7 @@ const WordLists: React.FC = () => {
       <div className="upload-section">
         <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center' }}>
           <div className="upload-option">
-            <span className="upload-icon">📂</span>
+            <span className="upload-icon">??</span>
             <h3>Dosyadan Yukle</h3>
             <div className="file-input-wrapper">
               <input
@@ -626,7 +626,7 @@ const WordLists: React.FC = () => {
           </div>
 
           <div className="upload-option">
-            <span className="upload-icon">✍️</span>
+            <span className="upload-icon">??</span>
             <h3>Manuel Olustur</h3>
             <button className="btn btn-secondary" onClick={() => setViewMode('add-manual')}>
               Elle Kelime Ekle
@@ -635,7 +635,7 @@ const WordLists: React.FC = () => {
         </div>
 
         <p className="upload-hint" style={{ marginTop: '14px' }}>
-          Excel/CSV: 1. sutun Ingilizce, 2. sutun Turkce | Ayrac: virgul veya noktalı virgul
+          Excel/CSV: 1. sutun Ingilizce, 2. sutun Turkce | Ayrac: virgul veya noktalÄ± virgul
         </p>
 
         {isLoading && <div className="spinner" />}
@@ -643,20 +643,20 @@ const WordLists: React.FC = () => {
 
         <div style={{ marginTop: "16px", display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
           <button className="btn btn-secondary" onClick={scanDuplicates} disabled={isScanning}>
-            {isScanning ? 'Taran�yor...' : 'Tekrarlari Tara'}
+            {isScanning ? 'Taranï¿½yor...' : 'Tekrarlari Tara'}
           </button>
           <button
             className="btn btn-outline"
             onClick={cleanDuplicatesKeepLargest}
             disabled={duplicateReport.length === 0}
           >
-            Tekrarları Temizle (En Buyuk Listeyi Koru)
+            TekrarlarÄ± Temizle (En Buyuk Listeyi Koru)
           </button>
         </div>
 
         <div className="merge-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <h3 style={{ margin: 0 }}>Listeleri Birleştir</h3>
+            <h3 style={{ margin: 0 }}>Listeleri BirleÅŸtir</h3>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
               <input
                 type="text"
@@ -671,12 +671,12 @@ const WordLists: React.FC = () => {
                 onClick={handleMergeLists}
                 disabled={mergeSelection.length < 2}
               >
-                {mergeSelection.length < 2 ? 'En az 2 liste sec' : 'Birleştir'}
+                {mergeSelection.length < 2 ? 'En az 2 liste sec' : 'BirleÅŸtir'}
               </button>
             </div>
           </div>
           <p style={{ color: 'var(--text-secondary)', marginTop: '6px' }}>
-            Az kelimeli listeleri tek bir listede topla. Aynı Ingilizce kelime tekrar eklenmez.
+            Az kelimeli listeleri tek bir listede topla. AynÄ± Ingilizce kelime tekrar eklenmez.
           </p>
           <div className="merge-list">
             {listsWithoutUnknown.map((list) => (
@@ -739,7 +739,7 @@ const WordLists: React.FC = () => {
 
       {listsWithoutUnknown.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">�Y"?</div>
+          <div className="empty-state-icon">§Y"?</div>
           <p>Henuz kelime listesi yok.</p>
           <p style={{ fontSize: '0.9rem' }}>Dosya yukleyerek veya manuel ekleyerek baslayabilirsin.</p>
         </div>
@@ -760,8 +760,8 @@ const WordLists: React.FC = () => {
                   {new Date(list.createdAt).toLocaleDateString('tr-TR')}
                 </p>
                 <div className="list-stats">
-                  <span className="stat-item">�o	 {list.words.filter((w) => w.correctCount > 0).length}</span>
-                  <span className="stat-item warning">�s���? {list.words.filter((w) => w.incorrectCount > 0).length}</span>
+                  <span className="stat-item">? {list.words.filter((w) => w.correctCount > 0).length}</span>
+                  <span className="stat-item warning">?? {list.words.filter((w) => w.incorrectCount > 0).length}</span>
                 </div>
               </div>
 
