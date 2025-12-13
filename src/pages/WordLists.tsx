@@ -468,12 +468,12 @@ const WordLists: React.FC = () => {
             </div>
           </div>
           <p className="word-list-meta">
-            {viewingList.words.length} kelime â€¢ Olusturulma: {new Date(viewingList.createdAt).toLocaleDateString('tr-TR')}
+            {viewingList.words.length} kelime • Olusturulma: {new Date(viewingList.createdAt).toLocaleDateString('tr-TR')}
           </p>
         </div>
 
         <div className="word-list-search">
-          <span className="search-icon">ğŸ”�</span>
+          <span className="search-icon">🔍</span>
           <input
             type="text"
             value={searchQuery}
@@ -664,14 +664,14 @@ const WordLists: React.FC = () => {
                 onChange={(e) => setMergeName(e.target.value)}
                 className="input-field"
                 style={{ minWidth: '220px' }}
-                placeholder="Yeni liste adi"
+                placeholder="Yeni liste ad?"
               />
               <button
                 className="btn btn-primary"
                 onClick={handleMergeLists}
                 disabled={mergeSelection.length < 2}
               >
-                {mergeSelection.length < 2 ? 'En az 2 liste sec' : 'BirleÅŸtir'}
+                {mergeSelection.length < 2 ? 'En az 2 liste se?' : 'BirleÅŸtir'}
               </button>
             </div>
           </div>
