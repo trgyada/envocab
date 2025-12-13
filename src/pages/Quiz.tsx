@@ -174,8 +174,10 @@ const Quiz: React.FC = () => {
     if (questions.length === 0) return;
     if (currentIndex >= questions.length) return;
     const q = questions[currentIndex];
-    const key = `${q.word.id}-${q.direction}`;
-    const lang = q.direction === 'tr-to-en' ? 'tr' : 'en';
+    const dir = (q.direction as string) || 'en-to-tr';
+    if (dir === 'tr-to-en') return; // TR -> EN ise örnek cümle alma
+    const key = `${q.word.id}-${dir}`;
+    const lang = dir === 'tr-to-en' ? 'tr' : 'en';
     const stored = getStoredExample(q.word, lang);
     if (stored?.sentence) {
       setExampleMap((prev) => ({
@@ -796,12 +798,14 @@ const Quiz: React.FC = () => {
     // multiple choice
     if (questions.length > 0 && currentIndex < questions.length) {
       const currentQuestion = questions[currentIndex];
-      const exampleKey = `${currentQuestion.word.id}-${currentQuestion.direction}`;
+      const dir = (currentQuestion.direction as string) || 'en-to-tr';
+      const exampleKey = `${currentQuestion.word.id}-${dir}`;
       const exampleState = exampleMap[exampleKey];
+      const allowExample = showExamples && !examMode && dir !== 'tr-to-en';
 
       const requestExample = async (force = false) => {
-        if (!showExamples) return;
-        const lang = currentQuestion.direction === 'tr-to-en' ? 'tr' : 'en';
+        if (!showExamples || dir === 'tr-to-en') return;
+        const lang = dir === 'tr-to-en' ? 'tr' : 'en';
         const stored = getStoredExample(currentQuestion.word, lang);
         if (stored?.sentence && !force) {
           setExampleMap((prev) => ({
@@ -873,9 +877,11 @@ const Quiz: React.FC = () => {
             question={currentQuestion}
             onAnswer={(isCorrect, word, userAnswer, direction) => handleAnswer(isCorrect, word, userAnswer, direction)}
             optionMeaning={getOptionMeaning}
-            example={showExamples && !examMode ? exampleState : undefined}
-            onRequestExample={showExamples && !examMode ? (force?: boolean) => requestExample(force ?? false) : undefined}
-            debugInfo={showExamples && !examMode ? exampleState?.error || null : null}
+            example={allowExample ? exampleState : undefined}
+            onRequestExample={
+              allowExample ? (force?: boolean) => requestExample(force ?? false) : undefined
+            }
+            debugInfo={allowExample ? exampleState?.error || null : null}
             examMode={examMode}
           />
 
