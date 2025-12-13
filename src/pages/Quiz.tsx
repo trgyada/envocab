@@ -97,7 +97,9 @@ const Quiz: React.FC = () => {
   const [onlyDifficultWords, setOnlyDifficultWords] = useState(false);
   const [useSM2Selection, setUseSM2Selection] = useState(true);
   const [showExamples, setShowExamples] = useState(false);
+  const [showDefinitions, setShowDefinitions] = useState(false);
   const [exampleMap, setExampleMap] = useState<Record<string, ExampleState>>({});
+  const [definitionMap, setDefinitionMap] = useState<Record<string, { text?: string; loading?: boolean; error?: string }>>({});
   const [hasAnswered, setHasAnswered] = useState(false);
   const [examMode, setExamMode] = useState(false);
   const allDifficultWords = React.useMemo(() => {
@@ -269,6 +271,7 @@ const Quiz: React.FC = () => {
     setCorrectCount(0);
     setWrongWords([]);
     setExampleMap({});
+    setDefinitionMap({});
     setCurrentIndex(0);
     setAnswerSheet([]);
     totalQuestionsRef.current = count;
@@ -525,11 +528,11 @@ const Quiz: React.FC = () => {
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: '10px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-              {(() => {
-                const testToggleEnabled = quizType === 'multiple-choice';
-                return (
-                  <div
+        <div style={{ marginTop: '10px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+          {(() => {
+            const testToggleEnabled = quizType === 'multiple-choice';
+            return (
+              <div
                     className={`toggle-shell ${examMode ? 'enabled' : 'disabled'}`}
                     onClick={() => {
                       if (!testToggleEnabled) return;
@@ -569,6 +572,25 @@ const Quiz: React.FC = () => {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div style={{ marginBottom: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="checkbox"
+                checked={showExamples}
+                onChange={(e) => setShowExamples(e.target.checked)}
+              />
+              <span>Örnek cümle (Gemini)</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="checkbox"
+                checked={showDefinitions}
+                onChange={(e) => setShowDefinitions(e.target.checked)}
+              />
+              <span>İng-İng açıklama</span>
+            </label>
           </div>
 
           <div
