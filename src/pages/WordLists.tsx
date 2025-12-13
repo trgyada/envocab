@@ -64,7 +64,7 @@ const WordLists: React.FC = () => {
   >([]);
   const [isScanning, setIsScanning] = useState(false);
   const [mergeSelection, setMergeSelection] = useState<string[]>([]);
-  const [mergeName, setMergeName] = useState('Birlesik Liste');
+  const [mergeName, setMergeName] = useState('Birle?ik Liste');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -294,14 +294,14 @@ const WordLists: React.FC = () => {
       });
     });
     const mergedWords = Array.from(mergedMap.values());
-    const title = mergeName.trim() || 'Birlesik Liste';
+    const title = mergeName.trim() || 'Birle?ik Liste';
     addWordList(title, mergedWords);
     setMessage({
       text: `"${title}" olusturuldu. ${selected.length} liste birlestirildi, ${mergedWords.length} benzersiz kelime eklendi.`,
       type: 'success',
     });
     setMergeSelection([]);
-    setMergeName('Birlesik Liste');
+    setMergeName('Birle?ik Liste');
   };
 
   if (viewMode === 'add-manual') {
@@ -599,7 +599,7 @@ const WordLists: React.FC = () => {
       <div className="upload-section">
         <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center' }}>
           <div className="upload-option">
-            <span className="upload-icon">??</span>
+            <span className="upload-icon">📂</span>
             <h3>Dosyadan Yukle</h3>
             <div className="file-input-wrapper">
               <input
@@ -626,7 +626,7 @@ const WordLists: React.FC = () => {
           </div>
 
           <div className="upload-option">
-            <span className="upload-icon">??</span>
+            <span className="upload-icon">✏️</span>
             <h3>Manuel Olustur</h3>
             <button className="btn btn-secondary" onClick={() => setViewMode('add-manual')}>
               Elle Kelime Ekle
@@ -643,7 +643,7 @@ const WordLists: React.FC = () => {
 
         <div style={{ marginTop: "16px", display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
           <button className="btn btn-secondary" onClick={scanDuplicates} disabled={isScanning}>
-            {isScanning ? 'Taranï¿½yor...' : 'Tekrarlari Tara'}
+            {isScanning ? 'Taranï¿½yor...' : 'Tekrarlar? Tara'}
           </button>
           <button
             className="btn btn-outline"
@@ -760,8 +760,8 @@ const WordLists: React.FC = () => {
                   {new Date(list.createdAt).toLocaleDateString('tr-TR')}
                 </p>
                 <div className="list-stats">
-                  <span className="stat-item">? {list.words.filter((w) => w.correctCount > 0).length}</span>
-                  <span className="stat-item warning">?? {list.words.filter((w) => w.incorrectCount > 0).length}</span>
+                  <span className="stat-item">✅ {list.words.filter((w) => w.correctCount > 0).length}</span>
+                  <span className="stat-item warning">⚠️ {list.words.filter((w) => w.incorrectCount > 0).length}</span>
                 </div>
               </div>
 
