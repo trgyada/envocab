@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
 import React, { useEffect, useRef, useState, lazy, Suspense } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 const MultipleChoice = lazy(() => import('../components/MultipleChoice'));
 const Matching = lazy(() => import('../components/Matching'));
 const TypeAnswer = lazy(() => import('../components/TypeAnswer'));
@@ -103,13 +102,19 @@ const Quiz: React.FC = () => {
   const [examMode, setExamMode] = useState(false);
   const allDifficultWords = React.useMemo(() => {
     const map = new Map<string, Word>();
-    wordLists.forEach((l) =>
-      l.words
-        .filter((w) => w.incorrectCount > 0)
-        .forEach((w) => {
-          if (!map.has(w.id)) map.set(w.id, w);
-        })
-    );
+    const unknown = wordLists.find((l) => l.id === 'unknown');
+    wordLists
+      .filter((l) => l.id !== 'unknown')
+      .forEach((l) =>
+        l.words
+          .filter((w) => w.incorrectCount > 0)
+          .forEach((w) => {
+            if (!map.has(w.id)) map.set(w.id, w);
+          })
+      );
+    unknown?.words.forEach((w) => {
+      if (!map.has(w.id)) map.set(w.id, w);
+    });
     return Array.from(map.values());
   }, [wordLists]);
 
