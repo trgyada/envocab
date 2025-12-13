@@ -20,7 +20,6 @@ interface MultipleChoiceProps {
     loading?: boolean;
     error?: string;
   };
-  onRequestDefinition?: () => void;
   debugInfo?: string | null;
   examMode?: boolean;
 }
@@ -50,7 +49,6 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
   example,
   onRequestExample,
   definition,
-  onRequestDefinition,
   debugInfo,
   examMode
 }) => {
@@ -62,6 +60,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationText, setTranslationText] = useState<string | null>(null);
   const [translateError, setTranslateError] = useState<string | null>(null);
+  const [showDefinition, setShowDefinition] = useState(false);
   const { addUnknownWord, wordLists } = useWordListStore();
 
   useEffect(() => {
@@ -72,6 +71,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
     setIsModalOpen(false);
     setTranslateError(null);
     setTranslationText(null);
+    setShowDefinition(false);
   }, [question.id]);
 
   const handleOptionClick = (option: string) => {
@@ -209,20 +209,20 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
         </div>
       )}
 
-      {onRequestDefinition && !examMode && (
+      {definition && !examMode && (
         <div className="example-box" style={{ marginTop: '12px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
             <div className="example-title">🇬🇧 İngilizce Tanım</div>
             <button 
               className="btn btn-outline btn-sm" 
-              onClick={onRequestDefinition} 
+              onClick={() => setShowDefinition((v) => !v)} 
               disabled={definition?.loading}
             >
-              {definition?.loading ? 'Yükleniyor...' : definition?.text ? 'Yeniden getir' : 'Tanım getir'}
+              {definition?.loading ? 'Yükleniyor...' : showDefinition ? 'Gizle' : 'Göster'}
             </button>
           </div>
           {definition?.error && <div className="example-error">{definition.error}</div>}
-          {definition?.text && (
+          {showDefinition && definition?.text && (
             <div className="example-sentence" style={{ fontStyle: 'italic', color: 'var(--text-secondary)' }}>
               {definition.text}
             </div>

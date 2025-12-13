@@ -227,6 +227,40 @@ const Quiz: React.FC = () => {
       });
   }, [showExamples, questions, currentIndex, updateWordExample]);
 
+  // Definition otomatik yükleme (showDefinitions açıksa)
+  useEffect(() => {
+    if (!showDefinitions) return;
+    if (questions.length === 0) return;
+    if (currentIndex >= questions.length) return;
+    const q = questions[currentIndex];
+    const defKey = q.word.id;
+    const existing = definitionMap[defKey];
+    if (existing?.text || existing?.loading) return;
+    // fire and forget
+    setDefinitionMap((prev) => ({ ...prev, [defKey]: { ...prev[defKey], loading: true, error: undefined } }));
+    fetch('/api/definition', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ word: q.word.english })
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data?.error || 'Tanim alinamadi');
+        }
+        setDefinitionMap((prev) => ({
+          ...prev,
+          [defKey]: { text: data.definition, loading: false }
+        }));
+      })
+      .catch((err) => {
+        setDefinitionMap((prev) => ({
+          ...prev,
+          [defKey]: { loading: false, error: err instanceof Error ? err.message : 'Tanim alinamadi' }
+        }));
+      });
+  }, [showDefinitions, questions, currentIndex]);
+
 
   useEffect(() => {
     setHasAnswered(false);
@@ -910,32 +944,6 @@ const Quiz: React.FC = () => {
       const defState = definitionMap[defKey];
       const allowDefinition = showDefinitions && !examMode;
 
-      const requestDefinition = async () => {
-        if (!showDefinitions) return;
-        if (defState?.loading) return;
-        setDefinitionMap((prev) => ({ ...prev, [defKey]: { ...prev[defKey], loading: true, error: undefined } }));
-        try {
-          const res = await fetch('/api/definition', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ word: currentQuestion.word.english })
-          });
-          const data = await res.json();
-          if (!res.ok) {
-            throw new Error(data?.error || 'Tanim alinamadi');
-          }
-          setDefinitionMap((prev) => ({
-            ...prev,
-            [defKey]: { text: data.definition, loading: false }
-          }));
-        } catch (err) {
-          setDefinitionMap((prev) => ({
-            ...prev,
-            [defKey]: { loading: false, error: err instanceof Error ? err.message : 'Tanim alinamadi.' }
-          }));
-        }
-      };
-
       return (
         <div className="quiz-container">
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
@@ -970,7 +978,6 @@ const Quiz: React.FC = () => {
               allowExample ? (force?: boolean) => requestExample(force ?? false) : undefined
             }
             definition={allowDefinition ? defState : undefined}
-            onRequestDefinition={allowDefinition ? requestDefinition : undefined}
             debugInfo={allowExample ? exampleState?.error || null : null}
             examMode={examMode}
           />
