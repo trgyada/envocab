@@ -596,8 +596,9 @@ const WordLists: React.FC = () => {
     <div className="wordlists-container">
       <h1 style={{ marginBottom: '24px' }}>Kelime Listeleri</h1>
 
+      {/* Dosya Yükleme ve Manuel Ekleme */}
       <div className="upload-section">
-        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div className="upload-grid">
           <div className="upload-option">
             <span className="upload-icon">📂</span>
             <h3>Dosyadan Yükle</h3>
@@ -620,7 +621,7 @@ const WordLists: React.FC = () => {
                 style={{ display: 'none' }}
               />
               <label htmlFor="file-upload" className="file-label" style={{ cursor: 'pointer' }}>
-                Excel / CSV Sec
+                Excel / CSV Seç
               </label>
             </div>
           </div>
@@ -634,14 +635,18 @@ const WordLists: React.FC = () => {
           </div>
         </div>
 
-        <p className="upload-hint" style={{ marginTop: '14px' }}>
+        <p className="upload-hint">
           Excel/CSV: 1. sütun İngilizce, 2. sütun Türkçe | Ayraç: virgül veya noktalı virgül
         </p>
 
         {isLoading && <div className="spinner" />}
         {message && <div className={`message message-${message.type}`}>{message.text}</div>}
+      </div>
 
-        <div style={{ marginTop: "16px", display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
+      {/* Tekrar Tarama */}
+      <div className="tools-section">
+        <h3 className="section-title">🔍 Tekrar Tarama</h3>
+        <div className="tools-actions">
           <button className="btn btn-secondary" onClick={scanDuplicates} disabled={isScanning}>
             {isScanning ? 'Taranıyor...' : 'Tekrarları Tara'}
           </button>
@@ -654,47 +659,9 @@ const WordLists: React.FC = () => {
           </button>
         </div>
 
-        <div className="merge-panel">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <h3 style={{ margin: 0 }}>Listeleri Birleştir</h3>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <input
-                type="text"
-                value={mergeName}
-                onChange={(e) => setMergeName(e.target.value)}
-                className="input-field"
-                style={{ minWidth: '220px' }}
-                placeholder="Yeni liste adı"
-              />
-              <button
-                className="btn btn-primary"
-                onClick={handleMergeLists}
-                disabled={mergeSelection.length < 2}
-              >
-                {mergeSelection.length < 2 ? 'En az 2 liste seç' : 'Birleştir'}
-              </button>
-            </div>
-          </div>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '6px' }}>
-            Az kelimeli listeleri tek bir listede topla. Aynı İngilizce kelime tekrar eklenmez.
-          </p>
-          <div className="merge-list">
-            {listsWithoutUnknown.map((list) => (
-              <label key={`merge-${list.id}`} className="merge-item">
-                <input
-                  type="checkbox"
-                  checked={mergeSelection.includes(list.id)}
-                  onChange={() => toggleMergeSelection(list.id)}
-                />
-                <span>{list.title} ({list.words.length} kelime)</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
         {duplicateReport.length > 0 && (
           <div className="duplicate-panel">
-            <h3>Tekrar Eden Kelimeler ({duplicateReport.length})</h3>
+            <h4>Tekrar Eden Kelimeler ({duplicateReport.length})</h4>
             <div className="duplicate-list">
               {duplicateReport.map((dup) => (
                 <div key={dup.word} className="duplicate-item">
@@ -712,7 +679,42 @@ const WordLists: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
 
+      {/* Listeleri Birleştir */}
+      <div className="tools-section">
+        <h3 className="section-title">🔗 Listeleri Birleştir</h3>
+        <p className="section-desc">
+          Az kelimeli listeleri tek bir listede topla. Aynı İngilizce kelime tekrar eklenmez.
+        </p>
+        <div className="merge-header">
+          <input
+            type="text"
+            value={mergeName}
+            onChange={(e) => setMergeName(e.target.value)}
+            className="input-field"
+            placeholder="Birleşik liste adı"
+          />
+          <button
+            className="btn btn-primary"
+            onClick={handleMergeLists}
+            disabled={mergeSelection.length < 2}
+          >
+            {mergeSelection.length < 2 ? 'En az 2 liste seç' : `Birleştir (${mergeSelection.length})`}
+          </button>
+        </div>
+        <div className="merge-list">
+          {listsWithoutUnknown.map((list) => (
+            <label key={`merge-${list.id}`} className="merge-item">
+              <input
+                type="checkbox"
+                checked={mergeSelection.includes(list.id)}
+                onChange={() => toggleMergeSelection(list.id)}
+              />
+              <span>{list.title} ({list.words.length} kelime)</span>
+            </label>
+          ))}
+        </div>
       </div>
 
       <h2 style={{ marginBottom: "16px", marginTop: "26px" }}>Mevcut Listeler ({listsWithoutUnknown.length})</h2>

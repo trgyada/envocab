@@ -931,19 +931,26 @@ a {
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
   padding: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 16px;
   text-align: center;
   box-shadow: 
     var(--shadow-soft),
     inset 0 1px 0 var(--glass-highlight);
 }
 
+.upload-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
 .upload-option {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
-  padding: 18px;
-  min-width: 220px;
+  padding: 20px;
   box-shadow: var(--shadow-soft);
   transition: all 0.25s ease;
 }
@@ -953,8 +960,58 @@ a {
 }
 
 .upload-option h3 {
-  margin: 8px 0 6px;
+  margin: 10px 0 12px;
   color: #fff;
+  font-size: 1rem;
+}
+
+.upload-hint {
+  margin-top: 16px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Tools Section - Tekrar Tarama & Birleştir */
+.tools-section {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-soft);
+}
+
+.section-title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.section-desc {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0 0 14px;
+}
+
+.tools-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.merge-header {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.merge-header .input-field {
+  flex: 1;
+  min-width: 200px;
 }
 
 .upload-icon {
@@ -1485,13 +1542,22 @@ a {
 .duplicate-panel {
   margin-top: 16px;
   padding: 14px;
-  background: #0f172a;
-  border: 1px solid var(--border);
+  background: rgba(255, 193, 7, 0.05);
+  border: 1px solid rgba(255, 193, 7, 0.2);
   border-radius: var(--radius-md);
 }
+
+.duplicate-panel h4 {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  color: var(--warning);
+}
+
 .duplicate-list {
   display: grid;
   gap: 8px;
+  max-height: 250px;
+  overflow-y: auto;
 }
 .duplicate-item {
   padding: 10px;
@@ -1515,28 +1581,33 @@ a {
   border-radius: 12px;
   font-size: 0.85rem;
 }
-.merge-panel {
-  margin-top: 16px;
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-}
+
 .merge-list {
-  margin-top: 10px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
 }
 .merge-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border);
   border-radius: 10px;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.merge-item:hover {
+  border-color: var(--accent);
+  background: rgba(255, 55, 0, 0.05);
+}
+
+.merge-item input[type="checkbox"] {
+  accent-color: var(--accent);
 }
 
 .empty-state {
