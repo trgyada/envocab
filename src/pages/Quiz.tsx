@@ -610,25 +610,6 @@ const Quiz: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ marginBottom: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input
-                type="checkbox"
-                checked={showExamples}
-                onChange={(e) => setShowExamples(e.target.checked)}
-              />
-              <span>Örnek cümle (Gemini)</span>
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input
-                type="checkbox"
-                checked={showDefinitions}
-                onChange={(e) => setShowDefinitions(e.target.checked)}
-              />
-              <span>İng-İng açıklama</span>
-            </label>
-          </div>
-
           <div
             style={{
               marginBottom: '20px',
