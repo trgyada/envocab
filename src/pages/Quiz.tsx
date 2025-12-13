@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import MultipleChoice from '../components/MultipleChoice';
-import Matching from '../components/Matching';
-import TypeAnswer from '../components/TypeAnswer';
+import React, { useEffect, useRef, useState, lazy, Suspense } from 'react';
+const MultipleChoice = lazy(() => import('../components/MultipleChoice'));
+const Matching = lazy(() => import('../components/Matching'));
+const TypeAnswer = lazy(() => import('../components/TypeAnswer'));
 import {
   calculateScore,
   generateQuiz,

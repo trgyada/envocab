@@ -18,6 +18,7 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
   const [result, setResult] = useState<ValidateResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [hasSkipped, setHasSkipped] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const [showSynonyms, setShowSynonyms] = useState(false);
   const [hintSynonyms, setHintSynonyms] = useState<string[]>([]);
   const [hintLoading, setHintLoading] = useState(false);
@@ -30,6 +31,7 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
     setValue('');
     setResult(null);
     setHasSkipped(false);
+    setHasSubmitted(false);
     setShowSynonyms(false);
     setHintSynonyms([]);
   }, [question.id]);
@@ -66,7 +68,8 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
   };
 
   const handleSubmit = async () => {
-    if (!value.trim() || loading) return;
+    if (!value.trim() || loading || hasSubmitted || result || hasSkipped) return;
+    setHasSubmitted(true);
     setLoading(true);
     setResult(null);
     setHasSkipped(false);
@@ -98,8 +101,9 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
   };
 
   const handleSkip = () => {
-    if (result?.accepted || hasSkipped || loading) return;
+    if (result || hasSkipped || loading) return;
     setHasSkipped(true);
+    setHasSubmitted(true);
     setValue('');
     onAnswer(false, question.word, 'UNKNOWN', direction === 'tr-to-en' ? 'tr-to-en' : 'en-to-tr');
     setResult({
