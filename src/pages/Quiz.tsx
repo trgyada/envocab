@@ -227,12 +227,16 @@ const Quiz: React.FC = () => {
       });
   }, [showExamples, questions, currentIndex, updateWordExample]);
 
-  // Definition otomatik yükleme (showDefinitions açıksa)
+  // Definition otomatik yükleme (showDefinitions açıksa ve soru yönü en->tr ise)
   useEffect(() => {
     if (!showDefinitions) return;
     if (questions.length === 0) return;
     if (currentIndex >= questions.length) return;
     const q = questions[currentIndex];
+    // Soru yönü tr->en ise definition yükleme (İngilizce tanım sadece İngilizce soru için mantıklı)
+    const direction = (q.direction as string) || 'en-to-tr';
+    if (direction === 'tr-to-en') return;
+    
     const defKey = q.word.id;
     const existing = definitionMap[defKey];
     if (existing?.text || existing?.loading) return;
@@ -923,7 +927,8 @@ const Quiz: React.FC = () => {
 
       const defKey = currentQuestion.word.id;
       const defState = definitionMap[defKey];
-      const allowDefinition = showDefinitions && !examMode;
+      // İngilizce tanım sadece en->tr yönünde gösterilsin
+      const allowDefinition = showDefinitions && !examMode && dir === 'en-to-tr';
 
       return (
         <div className="quiz-container">
