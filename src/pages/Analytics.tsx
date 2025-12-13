@@ -112,7 +112,7 @@ const Analytics: React.FC = () => {
 
       <div className="analytics-grid" style={{ marginBottom: '24px' }}>
         <div className="analytics-card">
-          <h3 style={{ color: 'var(--primary)', marginBottom: '15px' }}>Genel Performans</h3>
+          <h3 style={{ color: '#FDF0D5', marginBottom: '15px' }}>Genel Performans</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
             <div>
               <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.totalQuizzes}</div>
@@ -241,7 +241,7 @@ const Analytics: React.FC = () => {
 
       {sm2Stats.totalSessions > 0 && (
         <div className="analytics-card" style={{ marginBottom: '24px' }}>
-          <h3 style={{ color: 'var(--primary)', marginBottom: '12px' }}>Spaced Repetition Özeti</h3>
+          <h3 style={{ color: '#FDF0D5', marginBottom: '12px' }}>Spaced Repetition Özeti</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
             <div style={{ textAlign: 'center', padding: '14px', background: 'rgba(41, 182, 246, 0.1)', borderRadius: '12px' }}>
               <div style={{ fontSize: '1.7rem', fontWeight: 'bold', color: 'var(--success)' }}>

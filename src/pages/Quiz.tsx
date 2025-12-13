@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import MultipleChoice from '../components/MultipleChoice';
 import Matching from '../components/Matching';
@@ -614,7 +614,7 @@ const Quiz: React.FC = () => {
             style={{
               marginBottom: '20px',
               padding: '12px 14px',
-              background: '#0f172a',
+              background: '#002035',
               border: '1px solid var(--border)',
               borderRadius: '12px',
               display: 'flex',
@@ -648,7 +648,7 @@ const Quiz: React.FC = () => {
             style={{
               marginBottom: '20px',
               padding: '12px 14px',
-              background: '#0f172a',
+              background: '#002035',
               border: '1px solid var(--border)',
               borderRadius: '12px',
               display: 'flex',

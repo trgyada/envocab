@@ -1,4 +1,4 @@
-/* VocabMaster - Navy Blue theme with Liquid Glass effects */
+﻿/* VocabMaster - Navy & Crimson theme with Liquid Glass effects */
 * {
   margin: 0;
   padding: 0;
@@ -7,22 +7,22 @@
 
 :root {
   /* Navy Blue - Ana Renk Paleti */
-  --primary: #3b5998;
-  --primary-light: #5a7fc2;
-  --primary-dark: #2a4373;
-  --primary-glow: rgba(59, 89, 152, 0.4);
+  --primary: #003049;
+  --primary-light: #669BBC;
+  --primary-dark: #002035;
+  --primary-glow: rgba(0, 48, 73, 0.5);
   
-  /* Turuncu-Kırmızı Accent */
-  --accent: rgb(255, 55, 0);
-  --accent-light: rgb(255, 100, 50);
-  --accent-dark: rgb(200, 40, 0);
-  --accent-glow: rgba(255, 55, 0, 0.35);
+  /* Crimson Red Accent */
+  --accent: #C1121F;
+  --accent-light: #e63946;
+  --accent-dark: #780000;
+  --accent-glow: rgba(193, 18, 31, 0.4);
   
   /* Durum Renkleri */
   --success: #22c55e;
   --success-glow: rgba(34, 197, 94, 0.3);
-  --danger: #ef4444;
-  --danger-glow: rgba(239, 68, 68, 0.3);
+  --danger: #C1121F;
+  --danger-glow: rgba(193, 18, 31, 0.3);
   --warning: #f59e0b;
   
   /* Legacy variable aliases */
@@ -34,28 +34,28 @@
   --warning-color: var(--warning);
   --accent-strong: var(--accent-light);
   
-  /* Arka Plan - Koyu Lacivert */
-  --bg: #0a0f1e;
-  --bg-elevated: #101829;
-  --surface: rgba(16, 24, 41, 0.7);
-  --surface-alt: rgba(26, 38, 64, 0.6);
+  /* Arka Plan - Koyu Navy */
+  --bg: #001523;
+  --bg-elevated: #002035;
+  --surface: rgba(0, 48, 73, 0.5);
+  --surface-alt: rgba(0, 32, 53, 0.6);
   
   /* Glass Effect */
-  --glass-bg: rgba(16, 24, 41, 0.65);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-highlight: rgba(255, 255, 255, 0.05);
+  --glass-bg: rgba(0, 32, 53, 0.7);
+  --glass-border: rgba(102, 155, 188, 0.15);
+  --glass-highlight: rgba(253, 240, 213, 0.05);
   --glass-blur: 20px;
   
   /* Border & Text */
-  --border: rgba(255, 255, 255, 0.08);
+  --border: rgba(102, 155, 188, 0.12);
   --border-color: var(--border);
-  --text-primary: #f0f4ff;
-  --text-secondary: #a8b4d4;
-  --text-muted: #6b7a9e;
+  --text-primary: #FDF0D5;
+  --text-secondary: #a8c4d4;
+  --text-muted: #669BBC;
   
   /* Shadows */
-  --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --shadow-strong: 0 16px 48px rgba(0, 0, 0, 0.5);
+  --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-strong: 0 16px 48px rgba(0, 0, 0, 0.6);
   --shadow-glow: 0 0 40px var(--primary-glow);
   
   /* Radius */
@@ -69,9 +69,9 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--bg);
   background-image: 
-    radial-gradient(ellipse at 20% 0%, rgba(59, 89, 152, 0.2) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 0%, rgba(59, 89, 152, 0.15) 0%, transparent 45%),
-    radial-gradient(ellipse at 50% 100%, rgba(255, 55, 0, 0.08) 0%, transparent 50%);
+    radial-gradient(ellipse at 20% 0%, rgba(0, 48, 73, 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 0%, rgba(102, 155, 188, 0.15) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 100%, rgba(193, 18, 31, 0.08) 0%, transparent 50%);
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.6;
@@ -84,9 +84,9 @@ body::before {
   position: fixed;
   inset: -30%;
   background: 
-    radial-gradient(circle at 25% 25%, rgba(59, 89, 152, 0.15), transparent 50%),
-    radial-gradient(circle at 75% 15%, rgba(90, 127, 194, 0.1), transparent 45%),
-    radial-gradient(circle at 50% 85%, rgba(255, 55, 0, 0.06), transparent 50%);
+    radial-gradient(circle at 25% 25%, rgba(0, 48, 73, 0.25), transparent 50%),
+    radial-gradient(circle at 75% 15%, rgba(102, 155, 188, 0.12), transparent 45%),
+    radial-gradient(circle at 50% 85%, rgba(193, 18, 31, 0.08), transparent 50%);
   filter: blur(60px);
   opacity: 0.8;
   z-index: -1;
@@ -167,7 +167,7 @@ a {
 
 .nav-link:hover,
 .nav-link.active {
-  background: rgba(255, 55, 0, 0.15);
+  background: rgba(193, 18, 31, 0.15);
   color: var(--accent-light);
 }
 
@@ -245,7 +245,7 @@ a {
 .btn-outline:hover {
   border-color: var(--accent);
   color: var(--accent-light);
-  box-shadow: 0 0 20px rgba(255, 55, 0, 0.15);
+  box-shadow: 0 0 20px rgba(193, 18, 31, 0.15);
 }
 
 .btn-sm {
@@ -304,10 +304,10 @@ a {
 }
 
 .stat-box:hover {
-  border-color: rgba(255, 55, 0, 0.3);
+  border-color: rgba(193, 18, 31, 0.3);
   box-shadow: 
     var(--shadow-soft),
-    0 0 30px rgba(255, 55, 0, 0.1);
+    0 0 30px rgba(193, 18, 31, 0.1);
 }
 
 .stat-box .stat-icon {
@@ -355,17 +355,17 @@ a {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255, 55, 0, 0.1), transparent 60%);
+  background: linear-gradient(135deg, rgba(193, 18, 31, 0.1), transparent 60%);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
 .nav-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(255, 55, 0, 0.4);
+  border-color: rgba(193, 18, 31, 0.4);
   box-shadow: 
     var(--shadow-strong),
-    0 0 40px rgba(255, 55, 0, 0.15);
+    0 0 40px rgba(193, 18, 31, 0.15);
 }
 
 .nav-card:hover::before {
@@ -394,7 +394,7 @@ a {
   display: inline-block;
   margin-top: 12px;
   padding: 6px 12px;
-  background: rgba(255, 55, 0, 0.15);
+  background: rgba(193, 18, 31, 0.15);
   color: var(--accent-light);
   border-radius: 999px;
   font-size: 0.85rem;
@@ -512,7 +512,7 @@ a {
 .question-badge {
   display: inline-block;
   padding: 8px 14px;
-  background: rgba(255, 55, 0, 0.15);
+  background: rgba(193, 18, 31, 0.15);
   color: var(--accent-light);
   border-radius: 999px;
   font-weight: 700;
@@ -552,7 +552,7 @@ a {
 
 .option-btn:hover:not(:disabled) {
   border-color: var(--accent);
-  background: rgba(255, 55, 0, 0.1);
+  background: rgba(193, 18, 31, 0.1);
   transform: translateX(4px);
 }
 
@@ -607,7 +607,7 @@ a {
 .option-meaning-panel {
   margin-top: 18px;
   padding: 14px 16px;
-  background: #0f172a;
+  background: #002035;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   text-align: left;
@@ -678,7 +678,7 @@ a {
 .example-box {
   margin-bottom: 16px;
   padding: 12px;
-  background: #0f172a;
+  background: #002035;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   text-align: left;
@@ -747,15 +747,15 @@ a {
   transform: translateY(-3px);
   box-shadow: 
     var(--shadow-soft),
-    0 0 30px rgba(255, 55, 0, 0.15);
+    0 0 30px rgba(193, 18, 31, 0.15);
 }
 
 .quiz-type-card.selected {
   border-color: var(--accent);
   box-shadow: 
     var(--shadow-strong),
-    0 0 40px rgba(255, 55, 0, 0.2);
-  background: rgba(255, 55, 0, 0.08);
+    0 0 40px rgba(193, 18, 31, 0.2);
+  background: rgba(193, 18, 31, 0.08);
 }
 
 .quiz-type-card .type-icon {
@@ -900,12 +900,12 @@ a {
 .matching-card:hover:not(.matched) {
   border-color: var(--accent);
   transform: scale(1.03);
-  box-shadow: 0 0 20px rgba(255, 55, 0, 0.15);
+  box-shadow: 0 0 20px rgba(193, 18, 31, 0.15);
 }
 
 .matching-card.selected {
   border-color: var(--accent);
-  background: rgba(255, 55, 0, 0.1);
+  background: rgba(193, 18, 31, 0.1);
 }
 
 .matching-card.matched {
@@ -956,7 +956,7 @@ a {
 }
 
 .upload-option:hover {
-  border-color: rgba(255, 55, 0, 0.3);
+  border-color: rgba(193, 18, 31, 0.3);
 }
 
 .upload-option h3 {
@@ -1023,7 +1023,7 @@ a {
 .input-field {
   width: 100%;
   padding: 12px 14px;
-  background: #0f172a;
+  background: #002035;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-primary);
@@ -1032,7 +1032,7 @@ a {
 
 .input-field:focus,
 .file-input-wrapper input[type='text']:focus {
-  outline: 2px solid rgba(255, 55, 0, 0.3);
+  outline: 2px solid rgba(193, 18, 31, 0.3);
   border-color: var(--accent);
 }
 
@@ -1131,14 +1131,14 @@ a {
   border-color: var(--accent);
   box-shadow: 
     var(--shadow-strong),
-    0 0 30px rgba(255, 55, 0, 0.12);
+    0 0 30px rgba(193, 18, 31, 0.12);
 }
 
 .wordlist-card.selected {
   border-color: var(--accent);
   box-shadow: 
     var(--shadow-strong),
-    0 0 40px rgba(255, 55, 0, 0.15);
+    0 0 40px rgba(193, 18, 31, 0.15);
 }
 
 .wordlist-actions {
@@ -1202,7 +1202,7 @@ a {
 
 .word-card-edit-input {
   padding: 12px;
-  background: #0f172a;
+  background: #002035;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-primary);
@@ -1219,7 +1219,7 @@ a {
 }
 
 .word-card-icon-btn {
-  background: #0f172a;
+  background: #002035;
   border: 1px solid var(--border);
   padding: 10px;
   border-radius: var(--radius-md);
@@ -1264,7 +1264,7 @@ a {
 }
 
 .word-list-action-btn {
-  background: #0f172a;
+  background: #002035;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 8px 12px;
@@ -1281,7 +1281,7 @@ a {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #0f172a;
+  background: #002035;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 10px 14px;
@@ -1345,7 +1345,7 @@ a {
 
 .word-table-input {
   padding: 10px 12px;
-  background: #0f172a;
+  background: #002035;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-primary);
@@ -1393,7 +1393,7 @@ a {
 }
 
 .word-table-icon-btn {
-  background: #0f172a;
+  background: #002035;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 6px;
@@ -1490,7 +1490,7 @@ a {
 }
 
 .stat-item {
-  background: #0f172a;
+  background: #002035;
   border-radius: var(--radius-md);
   padding: 14px;
 }
@@ -1524,7 +1524,7 @@ a {
 .analytics-stat {
   text-align: center;
   padding: 12px;
-  background: #0f172a;
+  background: #002035;
   border-radius: var(--radius-md);
 }
 
@@ -1603,7 +1603,7 @@ a {
 
 .merge-item:hover {
   border-color: var(--accent);
-  background: rgba(255, 55, 0, 0.05);
+  background: rgba(193, 18, 31, 0.05);
 }
 
 .merge-item input[type="checkbox"] {
@@ -1613,7 +1613,7 @@ a {
 .empty-state {
   text-align: center;
   padding: 50px 20px;
-  background: #0f172a;
+  background: #002035;
   border: 1px dashed var(--border);
   border-radius: var(--radius-lg);
 }
@@ -1638,7 +1638,7 @@ a {
 .select-wrapper select {
   width: 100%;
   padding: 12px 14px;
-  background: #0f172a;
+  background: #002035;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-primary);
@@ -1779,7 +1779,7 @@ a {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #002035;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -1909,7 +1909,7 @@ a {
   transition: background 0.15s ease, color 0.15s ease;
 }
 .selectable-word:hover {
-  background: rgba(255, 55, 0, 0.15);
+  background: rgba(193, 18, 31, 0.15);
   color: var(--accent-light);
 }
 
