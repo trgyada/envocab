@@ -89,6 +89,14 @@ export interface UserCardState {
   
   // Son N cevabın geçmişi (difficulty hesaplama için)
   recentResponses: ResponseRecord[];
+  
+  // YENİ: SM-2+ Gelişmiş Alanlar
+  consecutiveCorrect?: number; // Ardışık doğru sayısı (streak)
+  consecutiveWrong?: number; // Ardışık yanlış sayısı
+  isLeech?: boolean; // Sürekli unutulan kart mı?
+  confidenceScore?: number; // Güven skoru (0-1)
+  bestStudyHour?: number | null; // En iyi çalışma saati (0-23)
+  lastStudyHour?: number | null; // Son çalışma saati
 }
 
 // Mastery seviyeleri
