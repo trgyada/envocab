@@ -240,7 +240,17 @@ const Quiz: React.FC = () => {
     const defKey = q.word.id;
     const existing = definitionMap[defKey];
     if (existing?.text || existing?.loading) return;
-    // fire and forget
+    
+    // Excel'den gelen englishDefinition varsa onu kullan (API'ye gitme)
+    if (q.word.englishDefinition) {
+      setDefinitionMap((prev) => ({
+        ...prev,
+        [defKey]: { text: q.word.englishDefinition, loading: false }
+      }));
+      return;
+    }
+    
+    // API'den definition al
     setDefinitionMap((prev) => ({ ...prev, [defKey]: { ...prev[defKey], loading: true, error: undefined } }));
     fetch('/api/definition', {
       method: 'POST',

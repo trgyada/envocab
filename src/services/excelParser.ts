@@ -5,6 +5,9 @@ export interface RawWordEntry {
   english: string;
   turkish: string;
   partOfSpeech?: PartOfSpeech;
+  exampleSentence?: string;      // 3. sütun: İngilizce örnek cümle
+  exampleTranslation?: string;   // 4. sütun: Türkçe çeviri
+  englishDefinition?: string;    // 5. sütun: İngilizce tanım (EN→EN)
 }
 
 export interface ParsedExcelResult {
@@ -58,7 +61,10 @@ const normalizePartOfSpeech = (pos: string): PartOfSpeech => {
 
 /**
  * CSV dosyasını parse eder (;  veya , ile ayrılmış)
- * Format: İngilizce;Türkçe;Tür (3. sütun opsiyonel)
+ * Format: 
+ *   2 sütun: İngilizce;Türkçe
+ *   3 sütun: İngilizce;Türkçe;Tür
+ *   5 sütun: İngilizce;Türkçe;ÖrnekCümle;TürkçeÇeviri;İngilizceTanım
  */
 const parseCSVContent = (content: string): RawWordEntry[] => {
   const lines = content.split('\n').filter(line => line.trim());
@@ -74,7 +80,6 @@ const parseCSVContent = (content: string): RawWordEntry[] => {
     if (parts.length >= 2) {
       const english = parts[0].trim();
       const turkish = parts[1].trim();
-      const partOfSpeech = parts.length >= 3 ? normalizePartOfSpeech(parts[2]) : '';
       
       // Başlık satırını atla
       if (
@@ -88,7 +93,25 @@ const parseCSVContent = (content: string): RawWordEntry[] => {
       }
       
       if (english && turkish) {
-        words.push({ english, turkish, partOfSpeech: partOfSpeech || undefined });
+        const entry: RawWordEntry = { english, turkish };
+        
+        // 5 sütunlu format: Eng, Tr, Example, ExampleTr, Definition
+        if (parts.length >= 5) {
+          const exampleSentence = parts[2]?.trim();
+          const exampleTranslation = parts[3]?.trim();
+          const englishDefinition = parts[4]?.trim();
+          
+          if (exampleSentence) entry.exampleSentence = exampleSentence;
+          if (exampleTranslation) entry.exampleTranslation = exampleTranslation;
+          if (englishDefinition) entry.englishDefinition = englishDefinition;
+        }
+        // 3 sütunlu format: Eng, Tr, PartOfSpeech
+        else if (parts.length === 3) {
+          const partOfSpeech = normalizePartOfSpeech(parts[2]);
+          if (partOfSpeech) entry.partOfSpeech = partOfSpeech;
+        }
+        
+        words.push(entry);
       }
     }
   }
@@ -98,8 +121,10 @@ const parseCSVContent = (content: string): RawWordEntry[] => {
 
 /**
  * Excel veya CSV dosyasını parse eder
- * İlk sütun: İngilizce (ENG)
- * İkinci sütun: Türkçe (TR)
+ * Desteklenen formatlar:
+ *   2 sütun: İngilizce | Türkçe
+ *   3 sütun: İngilizce | Türkçe | Tür
+ *   5 sütun: İngilizce | Türkçe | Örnek Cümle | Türkçe Çeviri | İngilizce Tanım
  */
 export const parseExcelFile = (file: File): Promise<ParsedExcelResult> => {
   return new Promise((resolve) => {
@@ -129,12 +154,16 @@ export const parseExcelFile = (file: File): Promise<ParsedExcelResult> => {
 
           // Başlık satırını kontrol et ve atla
           let startIndex = 0;
+          let hasExtendedFormat = false; // 5 sütunlu format mı?
+          
           if (rawData.length > 0) {
             const firstRow = rawData[0];
             if (Array.isArray(firstRow)) {
               const firstCell = String(firstRow[0] || '').toLowerCase().trim();
               const secondCell = String(firstRow[1] || '').toLowerCase().trim();
+              const thirdCell = String(firstRow[2] || '').toLowerCase().trim();
               
+              // Başlık satırı mı kontrol et
               if (
                 firstCell.includes('eng') || 
                 firstCell.includes('english') || 
@@ -145,6 +174,17 @@ export const parseExcelFile = (file: File): Promise<ParsedExcelResult> => {
               ) {
                 startIndex = 1;
               }
+              
+              // 5 sütunlu format mı kontrol et (örnek cümle sütunu var mı)
+              if (
+                thirdCell.includes('example') ||
+                thirdCell.includes('sentence') ||
+                thirdCell.includes('örnek') ||
+                thirdCell.includes('cümle') ||
+                (firstRow.length >= 5)
+              ) {
+                hasExtendedFormat = true;
+              }
             }
           }
 
@@ -154,10 +194,27 @@ export const parseExcelFile = (file: File): Promise<ParsedExcelResult> => {
             if (Array.isArray(row) && row.length >= 2) {
               const english = String(row[0] || '').trim();
               const turkish = String(row[1] || '').trim();
-              const partOfSpeech = row.length >= 3 ? normalizePartOfSpeech(String(row[2] || '')) : '';
               
               if (english && turkish) {
-                words.push({ english, turkish, partOfSpeech: partOfSpeech || undefined });
+                const entry: RawWordEntry = { english, turkish };
+                
+                // 5 sütunlu format: Eng, Tr, Example, ExampleTr, Definition
+                if (hasExtendedFormat || row.length >= 5) {
+                  const exampleSentence = String(row[2] || '').trim();
+                  const exampleTranslation = String(row[3] || '').trim();
+                  const englishDefinition = String(row[4] || '').trim();
+                  
+                  if (exampleSentence) entry.exampleSentence = exampleSentence;
+                  if (exampleTranslation) entry.exampleTranslation = exampleTranslation;
+                  if (englishDefinition) entry.englishDefinition = englishDefinition;
+                }
+                // 3 sütunlu format: Eng, Tr, PartOfSpeech
+                else if (row.length === 3) {
+                  const partOfSpeech = normalizePartOfSpeech(String(row[2] || ''));
+                  if (partOfSpeech) entry.partOfSpeech = partOfSpeech;
+                }
+                
+                words.push(entry);
               }
             }
           }

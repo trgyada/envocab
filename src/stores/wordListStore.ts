@@ -69,6 +69,11 @@ export const useWordListStore = create<WordListState>()(
             mastery: 0,
             correctCount: 0,
             incorrectCount: 0,
+            // Excel'den gelen ek alanlar (varsa)
+            exampleSentence: (w as any).exampleSentence || undefined,
+            exampleTranslation: (w as any).exampleTranslation || undefined,
+            exampleLang: (w as any).exampleSentence ? 'en' : undefined,
+            englishDefinition: (w as any).englishDefinition || undefined,
           });
         });
 

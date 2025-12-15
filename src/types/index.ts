@@ -23,6 +23,7 @@ export interface Word {
   exampleLang?: 'en' | 'tr';
   exampleUpdatedAt?: Date;
   exampleModel?: string;
+  englishDefinition?: string; // İngilizce tanım (EN→EN) - Excel'den veya AI'dan
   
   // SM-2 için ek alanlar
   difficultyLevel?: CEFRLevel; // Kelimenin zorluğu (A1-C2)
