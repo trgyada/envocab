@@ -10,7 +10,8 @@ import {
   selectWordsSimple,
   shuffleArray,
   prioritizeUnseenWords,
-  selectBalancedMix
+  selectBalancedMix,
+  QuestionSourceTag
 } from '../services/quizEngine';
 import { estimateQualityFromResponse } from '../services/sm2Algorithm';
 import { useCardStore } from '../stores/cardStore';
@@ -107,6 +108,7 @@ const Quiz: React.FC = () => {
   const [definitionMap, setDefinitionMap] = useState<
     Record<string, { text?: string; loading?: boolean; error?: string }>
   >({});
+  const sourceTagMapRef = useRef<Map<string, QuestionSourceTag>>(new Map());
   const [hasAnswered, setHasAnswered] = useState(false);
   const [examMode, setExamMode] = useState(false);
   const allDifficultWords = React.useMemo(() => {
@@ -317,8 +319,13 @@ const Quiz: React.FC = () => {
     }
 
     // Dengeli dağılım: %20 en az sorulan, %20 yanlış yapılan, %60 rastgele
-    wordsToUse = selectBalancedMix(wordsToUse, questionCount);
-    const count = Math.min(questionCount, wordsToUse.length);
+    const balanced = selectBalancedMix(wordsToUse, questionCount);
+    const sourceMap = new Map<string, QuestionSourceTag>();
+    balanced.forEach((b) => sourceMap.set(b.word.id, b.source));
+    sourceTagMapRef.current = sourceMap;
+    const wordsOnly = balanced.map((b) => b.word);
+
+    const count = Math.min(questionCount, wordsOnly.length);
     quizStartedRef.current = true;
     startSession(selectedListId || '', count);
     setStartTime(new Date());
@@ -327,6 +334,7 @@ const Quiz: React.FC = () => {
     setWrongWords([]);
     setExampleMap({});
     setDefinitionMap({});
+    sourceTagMapRef.current = new Map();
     setCurrentIndex(0);
     setAnswerSheet([]);
     totalQuestionsRef.current = count;
@@ -346,7 +354,10 @@ const Quiz: React.FC = () => {
       return;
     }
 
-    const generated = generateQuiz(wordsToUse, quizType, count, quizDirection);
+    const generated = generateQuiz(wordsOnly, quizType, count, quizDirection).map((q) => ({
+      ...q,
+      sourceTag: sourceMap.get(q.word.id)
+    })) as any;
     setQuestions(generated);
     totalQuestionsRef.current = generated.length;
     setPhase('quiz');

@@ -541,7 +541,13 @@ export const prepareQuizWords = (
  * %20 yanlış yapılmış (incorrectCount > 0)
  * %60 rastgele kalan havuz
  */
-export const selectBalancedMix = (words: Word[], limit: number): Word[] => {
+export type QuestionSourceTag = 'least' | 'difficult' | 'random';
+export interface BalancedPick {
+  word: Word;
+  source: QuestionSourceTag;
+}
+
+export const selectBalancedMix = (words: Word[], limit: number): BalancedPick[] => {
   const uniqueMap = new Map<string, Word>();
   words.forEach((w) => uniqueMap.set(w.id, w));
   const pool = Array.from(uniqueMap.values());
@@ -558,32 +564,32 @@ export const selectBalancedMix = (words: Word[], limit: number): Word[] => {
   const needLeast = takeCount(0.2);
   const needDifficult = takeCount(0.2);
 
-  const chosen = new Map<string, Word>();
+  const chosen = new Map<string, BalancedPick>();
 
   // En az sorulanlar
   for (const w of leastSeenSorted) {
     if (chosen.size >= needLeast) break;
-    chosen.set(w.id, w);
+    chosen.set(w.id, { word: w, source: 'least' });
   }
 
   // Zor/yanlış yapılanlar
   const diffShuffled = shuffleArray(difficult);
   for (const w of diffShuffled) {
     if (chosen.size >= needLeast + needDifficult) break;
-    if (!chosen.has(w.id)) chosen.set(w.id, w);
+    if (!chosen.has(w.id)) chosen.set(w.id, { word: w, source: 'difficult' });
   }
 
   // Kalan %60 rastgele
   const remainingNeeded = Math.max(0, limit - chosen.size);
   if (remainingNeeded > 0) {
     const rem = shuffleArray(remainingPool(new Set(chosen.keys())));
-    rem.slice(0, remainingNeeded).forEach((w) => chosen.set(w.id, w));
+    rem.slice(0, remainingNeeded).forEach((w) => chosen.set(w.id, { word: w, source: 'random' }));
   }
 
   // Eğer hala eksikse (havuz küçükse), mevcutlardan doldur
   if (chosen.size < limit) {
     leastSeenSorted.forEach((w) => {
-      if (chosen.size < limit) chosen.set(w.id, w);
+      if (chosen.size < limit) chosen.set(w.id, { word: w, source: 'random' });
     });
   }
 
