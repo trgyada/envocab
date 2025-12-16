@@ -48,6 +48,10 @@ const Timer: React.FC<{ startTime: Date | null }> = ({ startTime }) => {
   );
 };
 
+
+
+
+
 type ExampleState = {
   sentence?: string;
   translation?: string;
