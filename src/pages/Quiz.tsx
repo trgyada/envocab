@@ -9,7 +9,8 @@ import {
   selectWordsForReview,
   selectWordsSimple,
   shuffleArray,
-  prioritizeUnseenWords
+  prioritizeUnseenWords,
+  selectBalancedMix
 } from '../services/quizEngine';
 import { estimateQualityFromResponse } from '../services/sm2Algorithm';
 import { useCardStore } from '../stores/cardStore';
@@ -315,8 +316,8 @@ const Quiz: React.FC = () => {
       wordsToUse = selectWordsSimple(selectedList.words, { limit: questionCount, prioritizeDifficult: true });
     }
 
-    wordsToUse = shuffleArray(prioritizeUnseenWords(wordsToUse));
-
+    // Dengeli dağılım: %20 en az sorulan, %20 yanlış yapılan, %60 rastgele
+    wordsToUse = selectBalancedMix(wordsToUse, questionCount);
     const count = Math.min(questionCount, wordsToUse.length);
     quizStartedRef.current = true;
     startSession(selectedListId || '', count);

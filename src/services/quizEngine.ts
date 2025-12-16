@@ -534,3 +534,58 @@ export const prepareQuizWords = (
     reviewCount,
   };
 };
+
+/**
+ * Karışık seçim içinde tekrar riskini azaltmak ve dağılımı dengelemek için:
+ * %20 en az sorulmuş (seen = correct+incorrect en düşük)
+ * %20 yanlış yapılmış (incorrectCount > 0)
+ * %60 rastgele kalan havuz
+ */
+export const selectBalancedMix = (words: Word[], limit: number): Word[] => {
+  const uniqueMap = new Map<string, Word>();
+  words.forEach((w) => uniqueMap.set(w.id, w));
+  const pool = Array.from(uniqueMap.values());
+  if (pool.length === 0) return [];
+
+  const seenCount = (w: Word) => (w.correctCount || 0) + (w.incorrectCount || 0);
+
+  const leastSeenSorted = [...pool].sort((a, b) => seenCount(a) - seenCount(b));
+  const difficult = pool.filter((w) => (w.incorrectCount || 0) > 0);
+  const remainingPool = (exclude: Set<string>) =>
+    pool.filter((w) => !exclude.has(w.id));
+
+  const takeCount = (pct: number) => Math.max(1, Math.floor(limit * pct));
+  const needLeast = takeCount(0.2);
+  const needDifficult = takeCount(0.2);
+
+  const chosen = new Map<string, Word>();
+
+  // En az sorulanlar
+  for (const w of leastSeenSorted) {
+    if (chosen.size >= needLeast) break;
+    chosen.set(w.id, w);
+  }
+
+  // Zor/yanlış yapılanlar
+  const diffShuffled = shuffleArray(difficult);
+  for (const w of diffShuffled) {
+    if (chosen.size >= needLeast + needDifficult) break;
+    if (!chosen.has(w.id)) chosen.set(w.id, w);
+  }
+
+  // Kalan %60 rastgele
+  const remainingNeeded = Math.max(0, limit - chosen.size);
+  if (remainingNeeded > 0) {
+    const rem = shuffleArray(remainingPool(new Set(chosen.keys())));
+    rem.slice(0, remainingNeeded).forEach((w) => chosen.set(w.id, w));
+  }
+
+  // Eğer hala eksikse (havuz küçükse), mevcutlardan doldur
+  if (chosen.size < limit) {
+    leastSeenSorted.forEach((w) => {
+      if (chosen.size < limit) chosen.set(w.id, w);
+    });
+  }
+
+  return shuffleArray(Array.from(chosen.values())).slice(0, limit);
+};
