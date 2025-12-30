@@ -82,7 +82,7 @@ const WordLists: React.FC = () => {
     if (!file) return;
 
     if (!isValidExcelFile(file)) {
-      setMessage({ text: 'ütfen geçerli bir Excel veya CSV dosyası seçin.', type: 'error' });
+      setMessage({ text: 'Lütfen geçerli bir Excel veya CSV dosyası seçin.', type: 'error' });
       return;
     }
 
@@ -210,21 +210,32 @@ const WordLists: React.FC = () => {
   };
   const cancelEdit = () => setEditingWordId(null);
 
-  const handleExportList = (list: typeof wordLists[0]) => {
+  const escapeHtml = (value: string) =>
+    value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+  const handleExportWords = (title: string, words: Word[]) => {
     // Basit bir Excel (xls) çıktısı için HTML tablo hack'i kullanılıyor.
-    const rows = list.words
-      .map((w) => `<tr><td>${w.english}</td><td>${w.turkish}</td></tr>`)
+    const rows = words
+      .map((w) => `<tr><td>${escapeHtml(w.english)}</td><td>${escapeHtml(w.turkish)}</td></tr>`)
       .join('');
     const table = `<table><thead><tr><th>English</th><th>Türkçe</th></tr></thead><tbody>${rows}</tbody></table>`;
     const blob = new Blob([table], { type: 'application/vnd.ms-excel' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${list.title}.xls`;
+    const safeTitle = title.trim().replace(/[<>:"/\|?*]+/g, '') || 'liste';
+    link.download = `${safeTitle}.xls`;
     link.click();
     URL.revokeObjectURL(url);
-    setMessage({ text: `"${list.title}" Excel olarak indirildi.`, type: 'success' });
+    setMessage({ text: `"${title}" Excel olarak indirildi.`, type: 'success' });
   };
+
+  const handleExportList = (list: typeof wordLists[0]) => handleExportWords(list.title, list.words);
 
   const handleShareList = (list: typeof wordLists[0]) => {
     const text = list.words.map((w) => `${w.english} - ${w.turkish}`).join('\n');
@@ -339,7 +350,7 @@ const WordLists: React.FC = () => {
               ))}
             </select>
             <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', alignSelf: 'center' }}>
-              Mevcut liste secersen ad alani pasif olur.
+              Mevcut liste seçersen ad alanı pasif olur.
             </span>
           </div>
 
@@ -460,7 +471,7 @@ const WordLists: React.FC = () => {
             )}
             <div className="word-list-actions">
               <button className="word-list-action-btn" onClick={() => handleExportList(viewingList)}>
-                Indir
+                İndir
               </button>
               <button className="word-list-action-btn" onClick={() => handleShareList(viewingList)}>
                 Kopyala
@@ -513,7 +524,7 @@ const WordLists: React.FC = () => {
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleAddWordToList();
             }}
-            placeholder="Cevirisi..."
+            placeholder="Çevirisi..."
             className="word-table-input"
           />
           <button className="word-table-add-btn" onClick={handleAddWordToList} title="Ekle">
@@ -734,6 +745,14 @@ const WordLists: React.FC = () => {
               {combinedUnknown.length > 12 && (
                 <div className="word-preview-more">+ {combinedUnknown.length - 12} kelime daha</div>
               )}
+            </div>
+            <div className="wordlist-actions" style={{ marginTop: '12px' }}>
+              <button
+                className="btn btn-outline"
+                onClick={() => handleExportWords('Zor-Bilinmeyenler', combinedUnknown)}
+              >
+                Excel indir
+              </button>
             </div>
           </div>
         </div>
