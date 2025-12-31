@@ -1263,6 +1263,18 @@ a {
   color: var(--text-secondary);
 }
 
+.synonym-progress {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.synonym-error {
+  margin-top: 6px;
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
 .word-list-action-btn {
   background: #002035;
   border: 1px solid var(--border);
@@ -1327,7 +1339,7 @@ a {
 .word-table-row,
 .word-table-add-row {
   display: grid;
-  grid-template-columns: 2fr 2fr 120px;
+  grid-template-columns: 2fr 2fr 2fr 120px;
   align-items: center;
   gap: 10px;
   padding: 12px 0;
@@ -1349,6 +1361,17 @@ a {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-primary);
+}
+
+.word-table-synonyms {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.word-table-placeholder {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 0 4px;
 }
 
 .word-table-input.editing {

@@ -63,6 +63,10 @@ const serializeWord = (word: Word) => {
   if (word.exampleUpdatedAt) {
     base.exampleUpdatedAt = toTimestamp(word.exampleUpdatedAt);
   }
+  if (word.synonyms && word.synonyms.length) {
+    base.synonyms = word.synonyms;
+  }
+
 
   return base;
 };
@@ -89,6 +93,7 @@ const deserializeWord = (raw: any): Word => ({
   exampleLang: raw.exampleLang,
   exampleModel: raw.exampleModel,
   exampleUpdatedAt: toDate(raw.exampleUpdatedAt),
+  synonyms: Array.isArray(raw.synonyms) ? raw.synonyms : undefined,
 });
 
 const deserializeWordList = (id: string, data: any): WordList => ({

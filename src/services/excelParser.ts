@@ -8,6 +8,7 @@ export interface RawWordEntry {
   exampleSentence?: string;      // 3. sütun: İngilizce örnek cümle
   exampleTranslation?: string;   // 4. sütun: Türkçe çeviri
   englishDefinition?: string;    // 5. sütun: İngilizce tanım (EN→EN)
+  synonyms?: string[];           // Synonyms sütunu (opsiyonel)
 }
 
 export interface ParsedExcelResult {
@@ -155,6 +156,7 @@ export const parseExcelFile = (file: File): Promise<ParsedExcelResult> => {
           // Başlık satırını kontrol et ve atla
           let startIndex = 0;
           let hasExtendedFormat = false; // 5 sütunlu format mı?
+          let hasSynonymColumn = false;
           
           if (rawData.length > 0) {
             const firstRow = rawData[0];
@@ -185,6 +187,14 @@ export const parseExcelFile = (file: File): Promise<ParsedExcelResult> => {
               ) {
                 hasExtendedFormat = true;
               }
+
+              if (
+                thirdCell.includes('synonym') ||
+                thirdCell.includes('eş') ||
+                thirdCell.includes('es')
+              ) {
+                hasSynonymColumn = true;
+              }
             }
           }
 
@@ -203,10 +213,20 @@ export const parseExcelFile = (file: File): Promise<ParsedExcelResult> => {
                   const exampleSentence = String(row[2] || '').trim();
                   const exampleTranslation = String(row[3] || '').trim();
                   const englishDefinition = String(row[4] || '').trim();
-                  
+
                   if (exampleSentence) entry.exampleSentence = exampleSentence;
                   if (exampleTranslation) entry.exampleTranslation = exampleTranslation;
                   if (englishDefinition) entry.englishDefinition = englishDefinition;
+                }
+                // 3 sütunlu format: Eng, Tr, Synonyms
+                else if (hasSynonymColumn && row.length >= 3) {
+                  const synonymsRaw = String(row[2] || '').trim();
+                  if (synonymsRaw) {
+                    entry.synonyms = synonymsRaw
+                      .split(',')
+                      .map((s) => s.trim())
+                      .filter(Boolean);
+                  }
                 }
                 // 3 sütunlu format: Eng, Tr, PartOfSpeech
                 else if (row.length === 3) {

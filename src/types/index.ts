@@ -23,7 +23,9 @@ export interface Word {
   exampleLang?: 'en' | 'tr';
   exampleUpdatedAt?: Date;
   exampleModel?: string;
-  englishDefinition?: string; // İngilizce tanım (EN→EN) - Excel'den veya AI'dan
+  englishDefinition?: string; // ?ngilizce tan?m (EN-EN) - Excel'den veya AI'dan
+  synonyms?: string[]; // ?ngilizce e? anlaml?lar (Synonym Quiz i?in)
+ // İngilizce tanım (EN→EN) - Excel'den veya AI'dan
   
   // SM-2 için ek alanlar
   difficultyLevel?: CEFRLevel; // Kelimenin zorluğu (A1-C2)
@@ -194,7 +196,7 @@ export type QuizDirection = 'en-to-tr' | 'tr-to-en' | 'mixed';
 export interface QuizQuestion {
   id: string;
   word: Word;
-  questionType: 'multiple-choice' | 'matching' | 'flashcard' | 'write';
+  questionType: 'multiple-choice' | 'matching' | 'flashcard' | 'write' | 'synonym';
   question: string;
   options?: string[];
   correctAnswer: string;
@@ -216,7 +218,7 @@ export interface QuizSession {
 }
 
 // Quiz tipleri
-export type QuizType = 'multiple-choice' | 'matching' | 'flashcard' | 'write';
+export type QuizType = 'multiple-choice' | 'matching' | 'flashcard' | 'write' | 'synonym';
 
 // Quiz sonucu
 export interface QuizResult {

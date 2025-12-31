@@ -175,6 +175,18 @@ const Quiz: React.FC = () => {
     }
   }, [selectedList, createCardsFromWords]);
 
+  useEffect(() => {
+    if (quizType === 'synonym') {
+      setQuizDirection('en-to-tr');
+    }
+  }, [quizType]);
+
+  useEffect(() => {
+    if (quizType !== 'multiple-choice' && examMode) {
+      setExamMode(false);
+    }
+  }, [quizType, examMode]);
+
   // Test modunda örnek cümle zorla kapalı
   useEffect(() => {
     if (examMode) setShowExamples(false);
@@ -182,6 +194,7 @@ const Quiz: React.FC = () => {
 
   useEffect(() => {
     if (!showExamples) return;
+    if (quizType !== 'multiple-choice') return;
     if (questions.length === 0) return;
     if (currentIndex >= questions.length) return;
     const q = questions[currentIndex];
@@ -237,6 +250,7 @@ const Quiz: React.FC = () => {
   // Definition otomatik yükleme (showDefinitions açıksa ve soru yönü en->tr ise)
   useEffect(() => {
     if (!showDefinitions) return;
+    if (quizType !== 'multiple-choice') return;
     if (questions.length === 0) return;
     if (currentIndex >= questions.length) return;
     const q = questions[currentIndex];
@@ -318,8 +332,17 @@ const Quiz: React.FC = () => {
       wordsToUse = selectWordsSimple(selectedList.words, { limit: questionCount, prioritizeDifficult: true });
     }
 
+    if (quizType === 'synonym') {
+      const eligible = wordsToUse.filter((w) => (w.synonyms || []).length > 0);
+      if (eligible.length === 0) {
+        window.alert('Bu listede eş anlamlı bulunamadı. Önce eş anlamlıları üretmelisin.');
+        return;
+      }
+      wordsToUse = eligible;
+    }
+
     // Dengeli dağılım: %20 en az sorulan, %20 yanlış yapılan, %60 rastgele
-    const balanced = selectBalancedMix(wordsToUse, questionCount);
+    const balanced = selectBalancedMix(wordsToUse, Math.min(questionCount, wordsToUse.length));
     const sourceMap = new Map<string, QuestionSourceTag>();
     balanced.forEach((b) => sourceMap.set(b.word.id, b.source));
     sourceTagMapRef.current = sourceMap;
@@ -354,7 +377,8 @@ const Quiz: React.FC = () => {
       return;
     }
 
-    const generated = generateQuiz(wordsOnly, quizType, count, quizDirection).map((q) => ({
+    const allWordsPool = quizType === 'synonym' ? selectedList.words : wordsToUse;
+    const generated = generateQuiz(wordsOnly, quizType, count, quizDirection, allWordsPool).map((q) => ({
       ...q,
       sourceTag: sourceMap.get(q.word.id)
     })) as any;
@@ -432,7 +456,8 @@ const Quiz: React.FC = () => {
     const newWrong = isCorrect ? wrongWords : [...wrongWords, word];
     setCorrectCount(newCorrect);
     setWrongWords(newWrong);
-    const correctAnswer = direction === 'tr-to-en' ? word.english : word.turkish;
+    const currentQuestion = questions[currentIndex];
+    const correctAnswer = currentQuestion?.correctAnswer || (direction === 'tr-to-en' ? word.english : word.turkish);
     setAnswerSheet((prev) => [
       ...prev,
       { word, userAnswer, correctAnswer, isCorrect }
@@ -549,6 +574,7 @@ const Quiz: React.FC = () => {
   // select type/settings
   if (phase === 'select-type') {
     const maxQuestions = selectedList?.words.length || 10;
+    const directionDisabled = quizType === 'synonym';
     return (
       <div className="quiz-container">
         <h1 style={{ marginBottom: '10px', textAlign: 'center' }}>Quiz Ayarları</h1>
@@ -576,13 +602,14 @@ const Quiz: React.FC = () => {
           </div>
 
           <div style={{ marginBottom: '30px' }}>
-            <label style={{ display: 'block', marginBottom: '15px', fontWeight: '600' }}>Quiz Tipi Sec</label>
+            <label style={{ display: 'block', marginBottom: '15px', fontWeight: '600' }}>Quiz Tipi Seç</label>
             <div className="quiz-type-grid">
               {[
                 { type: 'multiple-choice' as QuizType, icon: '❓', label: 'Çoktan Seçmeli' },
                 { type: 'flashcard' as QuizType, icon: '🃏', label: 'Flashcard' },
                 { type: 'matching' as QuizType, icon: '🔗', label: 'Eşleşme' },
-                { type: 'write' as QuizType, icon: '⌨️', label: 'Yazarak Cevap' }
+                { type: 'write' as QuizType, icon: '⌨️', label: 'Yazarak Cevap' },
+                { type: 'synonym' as QuizType, icon: '🔁', label: 'Eş Anlamlı' }
               ].map(({ type, icon, label }) => (
                 <div
                   key={type}
@@ -625,14 +652,23 @@ const Quiz: React.FC = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
               {[
                 { value: 'mixed' as const, label: 'Karışık' },
-                { value: 'en-to-tr' as const, label: 'Ing -> Tr' },
-                { value: 'tr-to-en' as const, label: 'Tr -> Ing' }
+                { value: 'en-to-tr' as const, label: 'İng → Tr' },
+                { value: 'tr-to-en' as const, label: 'Tr → İng' }
               ].map((item) => (
                 <button
                   key={item.value}
-                  onClick={() => setQuizDirection(item.value)}
+                  onClick={() => {
+                    if (directionDisabled) return;
+                    setQuizDirection(item.value);
+                  }}
                   className={`btn ${quizDirection === item.value ? 'btn-primary' : 'btn-outline'}`}
-                  style={{ width: '100%', padding: '10px 12px' }}
+                  disabled={directionDisabled}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    cursor: directionDisabled ? 'not-allowed' : 'pointer',
+                    opacity: directionDisabled ? 0.5 : 1
+                  }}
                 >
                   {item.label}
                 </button>
@@ -901,10 +937,11 @@ const Quiz: React.FC = () => {
     // multiple choice
     if (questions.length > 0 && currentIndex < questions.length) {
       const currentQuestion = questions[currentIndex];
+      const isSynonymQuestion = currentQuestion.questionType === 'synonym';
       const dir = (currentQuestion.direction as string) || 'en-to-tr';
       const exampleKey = `${currentQuestion.word.id}-${dir}`;
       const exampleState = exampleMap[exampleKey];
-      const allowExample = showExamples && !examMode && dir !== 'tr-to-en';
+      const allowExample = showExamples && !examMode && dir !== 'tr-to-en' && !isSynonymQuestion;
 
       const requestExample = async (force = false) => {
         if (!showExamples || dir === 'tr-to-en') return;
@@ -954,7 +991,7 @@ const Quiz: React.FC = () => {
       const defKey = currentQuestion.word.id;
       const defState = definitionMap[defKey];
       // İngilizce tanım sadece en->tr yönünde gösterilsin
-      const allowDefinition = showDefinitions && !examMode && dir === 'en-to-tr';
+      const allowDefinition = showDefinitions && !examMode && dir === 'en-to-tr' && !isSynonymQuestion;
 
       return (
         <div className="quiz-container">
@@ -984,7 +1021,7 @@ const Quiz: React.FC = () => {
             key={currentQuestion.id}
             question={currentQuestion}
             onAnswer={(isCorrect, word, userAnswer, direction) => handleAnswer(isCorrect, word, userAnswer, direction)}
-            optionMeaning={getOptionMeaning}
+            optionMeaning={!isSynonymQuestion ? getOptionMeaning : undefined}
             example={allowExample ? exampleState : undefined}
             onRequestExample={
               allowExample ? (force?: boolean) => requestExample(force ?? false) : undefined

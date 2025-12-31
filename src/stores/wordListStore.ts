@@ -23,7 +23,8 @@ interface WordListState {
   getWordsByMastery: (listId: string, maxMastery: number) => Word[];
   addWordToList: (listId: string, english: string, turkish: string) => void;
   removeWordFromList: (listId: string, wordId: string) => void;
-  updateWord: (listId: string, wordId: string, english: string, turkish: string) => void;
+  updateWord: (listId: string, wordId: string, english: string, turkish: string, synonyms?: string[]) => void;
+  updateWordsSynonyms: (listId: string, updates: { wordId: string; synonyms: string[] }[]) => void;
   updateListTitle: (listId: string, newTitle: string) => void;
   updateWordExample: (
     wordId: string,
@@ -74,6 +75,7 @@ export const useWordListStore = create<WordListState>()(
             exampleTranslation: (w as any).exampleTranslation || undefined,
             exampleLang: (w as any).exampleSentence ? 'en' : undefined,
             englishDefinition: (w as any).englishDefinition || undefined,
+            synonyms: (w as any).synonyms || undefined,
           });
         });
 
@@ -145,6 +147,32 @@ export const useWordListStore = create<WordListState>()(
         if (updatedList) get().syncList(updatedList);
       },
 
+
+
+      updateWordsSynonyms: (listId, updates) => {
+        if (!updates.length) return;
+        let updatedList: WordList | null = null;
+        const updateMap = new Map(updates.map((u) => [u.wordId, u.synonyms]));
+        set((state) => ({
+          wordLists: state.wordLists.map((list) => {
+            if (list.id !== listId) return list;
+            const nextList = {
+              ...list,
+              updatedAt: new Date(),
+              words: list.words.map((word) => {
+                const nextSynonyms = updateMap.get(word.id);
+                if (!nextSynonyms) return word;
+                return { ...word, synonyms: nextSynonyms };
+              }),
+            };
+            updatedList = nextList;
+            return nextList;
+          }),
+        }));
+
+        if (updatedList) get().syncList(updatedList);
+      },
+
       getWordsByMastery: (listId, maxMastery) => {
         const list = get().wordLists.find((l) => l.id === listId);
         if (!list) return [];
@@ -205,7 +233,7 @@ export const useWordListStore = create<WordListState>()(
         if (updatedList) get().syncList(updatedList);
       },
 
-      updateWord: (listId, wordId, english, turkish) => {
+      updateWord: (listId, wordId, english, turkish, synonyms) => {
         let updatedList: WordList | null = null;
         set((state) => ({
           wordLists: state.wordLists.map((list) => {
@@ -216,7 +244,7 @@ export const useWordListStore = create<WordListState>()(
               updatedAt: new Date(),
               words: list.words.map((word) => {
                 if (word.id !== wordId) return word;
-                return { ...word, english, turkish };
+                return { ...word, english, turkish, ...(synonyms !== undefined ? { synonyms } : {}) };
               }),
             };
             updatedList = nextList;

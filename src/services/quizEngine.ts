@@ -247,6 +247,74 @@ export const generateWriteQuiz = (
   }));
 };
 
+const normalizeOption = (value: string) => value.toLowerCase().trim();
+
+const pickUniqueOptions = (pool: string[], used: Set<string>, needed: number) => {
+  const picked: string[] = [];
+  for (const opt of shuffleArray(pool)) {
+    const normalized = normalizeOption(opt);
+    if (!normalized || used.has(normalized)) continue;
+    used.add(normalized);
+    picked.push(opt);
+    if (picked.length >= needed) break;
+  }
+  return picked;
+};
+
+const generateSynonymQuestion = (word: Word, allWords: Word[]): QuizQuestion => {
+  const rawSynonyms = word.synonyms || [];
+  const cleanedSynonyms = rawSynonyms
+    .map((s) => s.trim())
+    .filter((s) => s && normalizeOption(s) !== normalizeOption(word.english));
+
+  const correctAnswer = cleanedSynonyms[Math.floor(Math.random() * cleanedSynonyms.length)] || word.english;
+
+  const used = new Set<string>([
+    normalizeOption(correctAnswer),
+    normalizeOption(word.english),
+  ]);
+
+  const synonymPool = allWords
+    .filter((w) => w.id !== word.id)
+    .flatMap((w) => (w.synonyms || []).map((s) => s.trim()))
+    .filter(Boolean);
+  const englishPool = allWords
+    .filter((w) => w.id !== word.id)
+    .map((w) => w.english)
+    .filter(Boolean);
+
+  const distractors = [
+    ...pickUniqueOptions(synonymPool, used, 3),
+    ...pickUniqueOptions(englishPool, used, 3),
+  ].slice(0, 3);
+
+  const options = shuffleArray([correctAnswer, ...distractors]).slice(0, 4);
+
+  return {
+    id: uuidv4(),
+    word,
+    questionType: 'synonym' as const,
+    question: word.english,
+    options,
+    correctAnswer,
+    direction: 'en-to-tr',
+  };
+};
+
+/**
+ * Synonym quiz soruları oluşturur (İngilizce -> İngilizce)
+ */
+export const generateSynonymQuiz = (words: Word[], count?: number, allWords?: Word[]): QuizQuestion[] => {
+  const eligible = words.filter(
+    (w) => (w.synonyms || []).some((s) => normalizeOption(s) !== normalizeOption(w.english))
+  );
+  const shuffledWords = shuffleArray(eligible);
+  const quizWords = count ? shuffledWords.slice(0, count) : shuffledWords;
+  const pool = allWords && allWords.length > 0 ? allWords : words;
+
+  return quizWords.map((word) => generateSynonymQuestion(word, pool));
+};
+
 /**
  * Karışık quiz oluşturur
  */
@@ -315,7 +383,8 @@ export const generateQuiz = (
   words: Word[],
   type: QuizType,
   count?: number,
-  direction: 'en-to-tr' | 'tr-to-en' | 'mixed' = 'mixed'
+  direction: 'en-to-tr' | 'tr-to-en' | 'mixed' = 'mixed',
+  allWords?: Word[]
 ): QuizQuestion[] => {
   switch (type) {
     case 'multiple-choice':
@@ -327,6 +396,8 @@ export const generateQuiz = (
     case 'matching':
       // Matching için multiple-choice kullan (matching component kendi içinde yönetiyor)
       return generateMultipleChoiceQuiz(words, count, direction);
+    case 'synonym':
+      return generateSynonymQuiz(words, count, allWords);
     default:
       return generateMultipleChoiceQuiz(words, count, direction);
   }

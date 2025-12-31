@@ -60,7 +60,6 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationText, setTranslationText] = useState<string | null>(null);
   const [translateError, setTranslateError] = useState<string | null>(null);
-  const [showDefinition, setShowDefinition] = useState(false);
   const { addUnknownWord, wordLists } = useWordListStore();
 
   useEffect(() => {
@@ -71,7 +70,6 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
     setIsModalOpen(false);
     setTranslateError(null);
     setTranslationText(null);
-    setShowDefinition(false);
   }, [question.id]);
 
   const handleOptionClick = (option: string) => {
@@ -102,8 +100,9 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
     return base;
   };
 
-  const isEnglishToTurkish = question.direction !== 'tr-to-en';
-  const directionLabel = isEnglishToTurkish ? 'İngilizce -> Türkçe' : 'Türkçe -> İngilizce';
+  const isSynonymMode = question.questionType === 'synonym';
+  const isEnglishToTurkish = isSynonymMode ? true : question.direction !== 'tr-to-en';
+  const directionLabel = isSynonymMode ? 'İngilizce → İngilizce' : (isEnglishToTurkish ? 'İngilizce → Türkçe' : 'Türkçe → İngilizce');
   const speakCurrent = () => {
     const text = isEnglishToTurkish ? question.word.english : question.word.turkish;
     const utter = new SpeechSynthesisUtterance(text);
@@ -186,7 +185,9 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
         </button>
       </div>
       <p className="question-hint">
-        {isEnglishToTurkish ? 'Doğru Türkçe karşılığını seç' : 'Doğru İngilizce karşılığını seç'}
+        {isSynonymMode
+          ? 'Doğru eş anlamlıyı seç'
+          : (isEnglishToTurkish ? 'Doğru Türkçe karşılığını seç' : 'Doğru İngilizce karşılığını seç')}
       </p>
 
       {onRequestExample && !examMode && (
@@ -211,18 +212,10 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
 
       {definition && !examMode && (
         <div className="example-box" style={{ marginTop: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
-            <div className="example-title">🇬🇧 İngilizce Tanım</div>
-            <button 
-              className="btn btn-outline btn-sm" 
-              onClick={() => setShowDefinition((v) => !v)} 
-              disabled={definition?.loading}
-            >
-              {definition?.loading ? 'Yükleniyor...' : showDefinition ? 'Gizle' : 'Göster'}
-            </button>
-          </div>
+          <div className="example-title">🇬🇧 İngilizce Tanım</div>
+          {definition?.loading && <div className="example-sentence">Yükleniyor...</div>}
           {definition?.error && <div className="example-error">{definition.error}</div>}
-          {showDefinition && definition?.text && (
+          {!definition?.loading && definition?.text && (
             <div className="example-sentence" style={{ fontStyle: 'italic', color: 'var(--text-secondary)' }}>
               {definition.text}
             </div>

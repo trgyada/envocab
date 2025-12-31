@@ -17,6 +17,7 @@ const WordLists: React.FC = () => {
     addWordToList,
     removeWordFromList,
     updateWord,
+    updateWordsSynonyms,
     updateListTitle
   } = useWordListStore();
 
@@ -57,6 +58,10 @@ const WordLists: React.FC = () => {
   const [editingWordId, setEditingWordId] = useState<string | null>(null);
   const [editEnglish, setEditEnglish] = useState('');
   const [editTurkish, setEditTurkish] = useState('');
+  const [editSynonyms, setEditSynonyms] = useState('');
+  const [isGeneratingSynonyms, setIsGeneratingSynonyms] = useState(false);
+  const [synonymProgress, setSynonymProgress] = useState<{ current: number; total: number } | null>(null);
+  const [synonymError, setSynonymError] = useState<string | null>(null);
 
   const [editingTitle, setEditingTitle] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -71,11 +76,13 @@ const WordLists: React.FC = () => {
 
   const viewingList = wordLists.find((l) => l.id === viewingListId);
 
+  const normalizedQuery = searchQuery.toLowerCase();
   const filteredWords =
     viewingList?.words.filter(
       (word) =>
-        word.english.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        word.turkish.toLowerCase().includes(searchQuery.toLowerCase())
+        word.english.toLowerCase().includes(normalizedQuery) ||
+        word.turkish.toLowerCase().includes(normalizedQuery) ||
+        (word.synonyms || []).some((syn) => syn.toLowerCase().includes(normalizedQuery))
     ) || [];
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -130,6 +137,19 @@ const WordLists: React.FC = () => {
     updated[index][field] = value;
     setManualWords(updated);
   };
+
+  const normalizeSynonymsInput = (value: string) => {
+    const items = value
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const unique = Array.from(new Set(items.map((s) => s.toLowerCase())))
+      .map((lower) => items.find((s) => s.toLowerCase() === lower) as string)
+      .filter(Boolean);
+    return unique.slice(0, 4);
+  };
+
+  const normalizeSynonymList = (items: string[]) => normalizeSynonymsInput(items.join(', '));
 
   const handleCreateManualList = () => {
     const validWords = manualWords.filter((w) => w.english.trim() && w.turkish.trim());
@@ -202,20 +222,26 @@ const WordLists: React.FC = () => {
     setEditingWordId(word.id);
     setEditEnglish(word.english);
     setEditTurkish(word.turkish);
+    setEditSynonyms((word.synonyms || []).join(', '));
   };
   const saveEditWord = () => {
     if (!viewingListId || !editingWordId) return;
-    updateWord(viewingListId, editingWordId, editEnglish.trim(), editTurkish.trim());
+    const normalizedSynonyms = normalizeSynonymsInput(editSynonyms);
+    updateWord(viewingListId, editingWordId, editEnglish.trim(), editTurkish.trim(), normalizedSynonyms);
     setEditingWordId(null);
+    setEditSynonyms('');
     setMessage({ text: 'Kelime güncellendi!', type: 'success' });
   };
-  const cancelEdit = () => setEditingWordId(null);
+  const cancelEdit = () => {
+    setEditingWordId(null);
+    setEditSynonyms('');
+  };
 
   const handleExportWords = (title: string, words: Word[]) => {
     const safeTitle = title.trim().replace(/[<>:"/\\|?*]+/g, '') || 'liste';
     const data = [
-      ['English', 'Türkçe'],
-      ...words.map((w) => [w.english, w.turkish]),
+      ['English', 'Türkçe', 'Eş Anlamlılar'],
+      ...words.map((w) => [w.english, w.turkish, (w.synonyms || []).join(', ')]),
     ];
     const worksheet = XLSX.utils.aoa_to_sheet(data);
     const workbook = XLSX.utils.book_new();
@@ -302,6 +328,60 @@ const WordLists: React.FC = () => {
     });
     setMergeSelection([]);
     setMergeName('Birleşik Liste');
+  };
+
+  const handleGenerateSynonyms = async () => {
+    if (!viewingListId || !viewingList) return;
+    if (isGeneratingSynonyms) return;
+
+    const targets = viewingList.words.filter((w) => !w.synonyms || w.synonyms.length < 4);
+    if (targets.length === 0) {
+      setMessage({ text: 'Bu listedeki tüm kelimelerin eş anlamlıları mevcut.', type: 'success' });
+      return;
+    }
+
+    setIsGeneratingSynonyms(true);
+    setSynonymError(null);
+    setSynonymProgress({ current: 0, total: targets.length });
+
+    let pending: { wordId: string; synonyms: string[] }[] = [];
+
+    for (let i = 0; i < targets.length; i++) {
+      const word = targets[i];
+      setSynonymProgress({ current: i + 1, total: targets.length });
+
+      try {
+        const res = await fetch('/api/synonyms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ word: word.english, count: 4 }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || 'Eş anlamlı alınamadı');
+
+        const synonyms = Array.isArray(data?.synonyms) ? normalizeSynonymList(data.synonyms) : [];
+        if (synonyms.length) {
+          pending.push({ wordId: word.id, synonyms });
+        }
+      } catch (err: any) {
+        setSynonymError(err?.message || 'Eş anlamlı alınamadı');
+      }
+
+      if (pending.length >= 10) {
+        updateWordsSynonyms(viewingListId, pending);
+        pending = [];
+      }
+
+      // Basit throttling
+      if (targets.length > 5) {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+    }
+
+    if (pending.length) updateWordsSynonyms(viewingListId, pending);
+    setSynonymProgress(null);
+    setIsGeneratingSynonyms(false);
+    setMessage({ text: 'Eş anlamlılar güncellendi.', type: 'success' });
   };
 
   if (viewMode === 'add-manual') {
@@ -465,11 +545,24 @@ const WordLists: React.FC = () => {
               <button className="word-list-action-btn" onClick={() => handleShareList(viewingList)}>
                 Kopyala
               </button>
+              <button
+                className="word-list-action-btn"
+                onClick={handleGenerateSynonyms}
+                disabled={isGeneratingSynonyms}
+              >
+                {isGeneratingSynonyms ? 'Üretiliyor...' : 'Eş anlamlıları üret'}
+              </button>
             </div>
           </div>
           <p className="word-list-meta">
             {viewingList.words.length} kelime • Oluşturulma: {new Date(viewingList.createdAt).toLocaleDateString('tr-TR')}
           </p>
+          {synonymProgress && (
+            <div className="synonym-progress">
+              Eş anlamlılar üretiliyor: {synonymProgress.current}/{synonymProgress.total}
+            </div>
+          )}
+          {synonymError && <div className="synonym-error">{synonymError}</div>}
         </div>
 
         <div className="word-list-search">
@@ -492,6 +585,7 @@ const WordLists: React.FC = () => {
         <div className="word-table-header">
           <span className="word-table-col">English</span>
           <span className="word-table-col">Türkçe</span>
+          <span className="word-table-col">Eş Anlamlılar</span>
           <span className="word-table-col-actions"></span>
         </div>
 
@@ -516,6 +610,7 @@ const WordLists: React.FC = () => {
             placeholder="Çevirisi..."
             className="word-table-input"
           />
+          <div className="word-table-placeholder">Eş anlamlılar (opsiyonel)</div>
           <button className="word-table-add-btn" onClick={handleAddWordToList} title="Ekle">
             +
           </button>
@@ -542,6 +637,13 @@ const WordLists: React.FC = () => {
                       onChange={(e) => setEditTurkish(e.target.value)}
                       className="word-table-input editing"
                     />
+                    <input
+                      type="text"
+                      value={editSynonyms}
+                      onChange={(e) => setEditSynonyms(e.target.value)}
+                      className="word-table-input editing"
+                      placeholder="Eş anlamlılar (virgülle)"
+                    />
                     <div className="word-table-actions">
                       <button onClick={saveEditWord} className="word-table-icon-btn save" title="Kaydet">
                         Kaydet
@@ -555,6 +657,9 @@ const WordLists: React.FC = () => {
                   <>
                     <span className="word-table-english">{word.english}</span>
                     <span className="word-table-turkish">{word.turkish}</span>
+                    <span className="word-table-synonyms">
+                      {word.synonyms && word.synonyms.length > 0 ? word.synonyms.join(', ') : '—'}
+                    </span>
                     <div className="word-table-actions">
                       <button
                         className="word-table-icon-btn sound"
