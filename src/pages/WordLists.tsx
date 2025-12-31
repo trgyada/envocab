@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import * as XLSX from 'xlsx';
 import { useWordListStore } from '../stores/wordListStore';
 import { useUserProgressStore } from '../stores/userProgressStore';
 import { parseExcelFile, isValidExcelFile } from '../services/excelParser';
@@ -210,28 +211,16 @@ const WordLists: React.FC = () => {
   };
   const cancelEdit = () => setEditingWordId(null);
 
-  const escapeHtml = (value: string) =>
-    value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-
   const handleExportWords = (title: string, words: Word[]) => {
-    // Basit bir Excel (xls) çıktısı için HTML tablo hack'i kullanılıyor.
-    const rows = words
-      .map((w) => `<tr><td>${escapeHtml(w.english)}</td><td>${escapeHtml(w.turkish)}</td></tr>`)
-      .join('');
-    const table = `<table><thead><tr><th>English</th><th>Türkçe</th></tr></thead><tbody>${rows}</tbody></table>`;
-    const blob = new Blob([table], { type: 'application/vnd.ms-excel' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    const safeTitle = title.trim().replace(/[<>:"/\|?*]+/g, '') || 'liste';
-    link.download = `${safeTitle}.xls`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const safeTitle = title.trim().replace(/[<>:"/\\|?*]+/g, '') || 'liste';
+    const data = [
+      ['English', 'Türkçe'],
+      ...words.map((w) => [w.english, w.turkish]),
+    ];
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Kelimeler');
+    XLSX.writeFile(workbook, `${safeTitle}.xlsx`);
     setMessage({ text: `"${title}" Excel olarak indirildi.`, type: 'success' });
   };
 
