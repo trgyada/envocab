@@ -1,7 +1,3 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const modelName = 'gemma-3-27b-it';
-
 const normalize = (value: string) => value.toLowerCase().trim();
 
 const sanitizeSynonyms = (synonyms: string[], original: string, maxCount: number) => {
@@ -26,53 +22,32 @@ const sanitizeSynonyms = (synonyms: string[], original: string, maxCount: number
   return cleaned;
 };
 
-const parseSynonymResponse = (raw: string) => {
-  const cleaned = raw.replace(/```(json)?/gi, '').replace(/```/g, '').trim();
-  try {
-    const data = JSON.parse(cleaned);
-    if (Array.isArray(data?.synonyms)) {
-      return data.synonyms.map((s) => String(s));
-    }
-  } catch {
-    // fall through
-  }
-
-  if (cleaned.includes('[') && cleaned.includes(']')) {
-    const bracket = cleaned.slice(cleaned.indexOf('[') + 1, cleaned.lastIndexOf(']'));
-    return bracket
-      .split(',')
-      .map((s) => s.replace(/["'`]/g, '').trim())
-      .filter(Boolean);
-  }
-
-  return cleaned
-    .split(/\n|;|,/)
-    .map((s) => s.replace(/^[\-\*\d\.\)]\s*/, '').trim())
-    .filter(Boolean);
+type NinjaResponse = {
+  word?: string;
+  synonyms?: string[];
+  antonyms?: string[];
 };
 
-const buildPrompt = (word: string, count: number) => `
-Word: "${word}"
-Task: Provide ${count} English synonyms.
-Rules:
-- English only
-- No explanations
-- No duplicates
-- Do not include the original word
-Return JSON only in this format:
-{
-  "synonyms": ["syn1", "syn2", "syn3", "syn4"]
-}
-`;
+const fetchSynonyms = async (word: string, apiKey: string): Promise<string[]> => {
+  const url = `https://api.api-ninjas.com/v1/thesaurus?word=${encodeURIComponent(word)}`;
+  const res = await fetch(url, {
+    headers: { 'X-Api-Key': apiKey },
+  });
+  const data = (await res.json()) as NinjaResponse;
+  if (!res.ok) {
+    throw new Error(data?.word ? `API error for "${data.word}"` : 'API error');
+  }
+  return Array.isArray(data?.synonyms) ? data.synonyms.map((s) => String(s)) : [];
+};
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.NINJAS_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'Missing GEMINI_API_KEY' });
+    return res.status(500).json({ error: 'Missing NINJAS_API_KEY' });
   }
 
   const { word, count } = req.body as { word?: string; count?: number };
@@ -83,26 +58,11 @@ export default async function handler(req: any, res: any) {
   const targetCount = Math.max(1, Math.min(Number(count) || 4, 6));
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey, { apiVersion: 'v1' });
-    const model = genAI.getGenerativeModel({ model: modelName });
-
-    const generateOnce = async () => {
-      const result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: buildPrompt(word, targetCount) }] }],
-        generationConfig: {
-          temperature: 0.7,
-          topP: 0.9,
-          topK: 40,
-        },
-      });
-      return parseSynonymResponse(result.response.text() || '');
-    };
-
-    let rawSynonyms = await generateOnce();
+    let rawSynonyms = await fetchSynonyms(word, apiKey);
     let synonyms = sanitizeSynonyms(rawSynonyms, word, targetCount);
 
     if (synonyms.length === 0) {
-      rawSynonyms = await generateOnce();
+      rawSynonyms = await fetchSynonyms(word, apiKey);
       synonyms = sanitizeSynonyms(rawSynonyms, word, targetCount);
     }
 
@@ -111,7 +71,7 @@ export default async function handler(req: any, res: any) {
     console.error('synonyms error', error?.message || error);
     const status = error?.status || 500;
     return res.status(status).json({
-      error: error?.message || 'Synonym generation failed',
+      error: error?.message || 'Synonym fetch failed',
       status,
     });
   }
