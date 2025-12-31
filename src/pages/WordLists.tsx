@@ -836,108 +836,122 @@ const WordLists: React.FC = () => {
 
         <div className="word-list-header">
           <div className="word-list-title-section">
-            {editingTitle ? (
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <input
-                  type="text"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  className="input-field"
-                  style={{ fontSize: '1.25rem', fontWeight: 'bold', padding: '8px 12px' }}
-                  autoFocus
-                />
-                <button
-                  className="btn btn-primary btn-sm"
+            <div className="word-list-title-block">
+              {editingTitle ? (
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    className="input-field"
+                    style={{ fontSize: '1.25rem', fontWeight: 'bold', padding: '8px 12px' }}
+                    autoFocus
+                  />
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => {
+                      if (newTitle.trim()) {
+                        updateListTitle(viewingListId!, newTitle.trim());
+                        setEditingTitle(false);
+                        setMessage({ text: 'Başlık güncellendi!', type: 'success' });
+                      }
+                    }}
+                  >
+                    Kaydet
+                  </button>
+                  <button className="btn btn-outline btn-sm" onClick={() => setEditingTitle(false)}>
+                    İptal
+                  </button>
+                </div>
+              ) : (
+                <h1
+                  className="word-list-title"
                   onClick={() => {
-                    if (newTitle.trim()) {
-                      updateListTitle(viewingListId!, newTitle.trim());
-                      setEditingTitle(false);
-                      setMessage({ text: 'Başlık güncellendi!', type: 'success' });
-                    }
+                    setNewTitle(viewingList.title);
+                    setEditingTitle(true);
                   }}
+                  title="Başlığı düzenlemek için tıkla"
                 >
-                  Kaydet
+                  <span className="word-list-icon">📖</span>
+                  {viewingList.title}
+                </h1>
+              )}
+              <p className="word-list-meta">
+                {viewingList.words.length} kelime • Oluşturulma:{' '}
+                {new Date(viewingList.createdAt).toLocaleDateString('tr-TR')}
+              </p>
+            </div>
+
+            <div className="word-list-toolbar">
+              <div className="word-list-actions">
+                <button className="word-list-action-btn" onClick={() => handleExportList(viewingList)}>
+                  İndir
                 </button>
-                <button className="btn btn-outline btn-sm" onClick={() => setEditingTitle(false)}>
-                  İptal
+                <button className="word-list-action-btn" onClick={() => handleShareList(viewingList)}>
+                  Kopyala
                 </button>
               </div>
-            ) : (
-              <h1
-                className="word-list-title"
-                onClick={() => {
-                  setNewTitle(viewingList.title);
-                  setEditingTitle(true);
-                }}
-                title="Başlığı düzenlemek için tıkla"
-              >
-                <span className="word-list-icon">📖</span>
-                {viewingList.title}
-              </h1>
-            )}
-            <div className="word-list-actions">
-              <button className="word-list-action-btn" onClick={() => handleExportList(viewingList)}>
-                İndir
-              </button>
-              <button className="word-list-action-btn" onClick={() => handleShareList(viewingList)}>
-                Kopyala
-              </button>
-              <button
-                className="word-list-action-btn"
-                onClick={handleTranslateAll}
-                disabled={isTranslatingAll}
-              >
-                {isTranslatingAll ? 'Çeviriliyor...' : 'Tüm Türkçeleri düzelt'}
-              </button>
-              <button
-                className="word-list-action-btn"
-                onClick={handleGenerateSynonyms}
-                disabled={isGeneratingSynonyms}
-              >
-                {isGeneratingSynonyms ? 'Üretiliyor...' : 'Eş anlamlıları üret'}
-              </button>
-              <button
-                className="word-list-action-btn"
-                onClick={handleGenerateExamples}
-                disabled={isGeneratingExamples}
-              >
-                {isGeneratingExamples ? 'Üretiliyor...' : 'Örnek cümleleri üret'}
-              </button>
-              <button
-                className="word-list-action-btn"
-                onClick={handleGenerateDefinitions}
-                disabled={isGeneratingDefinitions}
-              >
-                {isGeneratingDefinitions ? 'Üretiliyor...' : 'İngilizce tanımları üret'}
-              </button>
+              <details className="word-list-bulk">
+                <summary>Toplu işlemler</summary>
+                <div className="word-list-actions bulk-actions">
+                  <button
+                    className="word-list-action-btn"
+                    onClick={handleTranslateAll}
+                    disabled={isTranslatingAll}
+                  >
+                    {isTranslatingAll ? 'Çeviriliyor...' : 'Tüm Türkçeleri düzelt'}
+                  </button>
+                  <button
+                    className="word-list-action-btn"
+                    onClick={handleGenerateSynonyms}
+                    disabled={isGeneratingSynonyms}
+                  >
+                    {isGeneratingSynonyms ? 'Üretiliyor...' : 'Eş anlamlıları üret'}
+                  </button>
+                  <button
+                    className="word-list-action-btn"
+                    onClick={handleGenerateExamples}
+                    disabled={isGeneratingExamples}
+                  >
+                    {isGeneratingExamples ? 'Üretiliyor...' : 'Örnek cümleleri üret'}
+                  </button>
+                  <button
+                    className="word-list-action-btn"
+                    onClick={handleGenerateDefinitions}
+                    disabled={isGeneratingDefinitions}
+                  >
+                    {isGeneratingDefinitions ? 'Üretiliyor...' : 'İngilizce tanımları üret'}
+                  </button>
+                </div>
+              </details>
             </div>
           </div>
-          <p className="word-list-meta">
-            {viewingList.words.length} kelime • Oluşturulma: {new Date(viewingList.createdAt).toLocaleDateString('tr-TR')}
-          </p>
-          {synonymProgress && (
-            <div className="synonym-progress">
-              Eş anlamlılar üretiliyor: {synonymProgress.current}/{synonymProgress.total}
-            </div>
-          )}
-          {translateProgress && (
-            <div className="translate-progress">
-              Türkçe çeviriler güncelleniyor: {translateProgress.current}/{translateProgress.total}
-            </div>
-          )}
-          {exampleProgress && (
-            <div className="example-progress">
-              Örnek cümleler üretiliyor: {exampleProgress.current}/{exampleProgress.total}
-            </div>
-          )}
-          {definitionProgress && (
-            <div className="definition-progress">
-              İngilizce tanımlar üretiliyor: {definitionProgress.current}/{definitionProgress.total}
-            </div>
-          )}
-          {synonymError && <div className="synonym-error">{synonymError}</div>}
-          {exampleError && <div className="example-error">{exampleError}</div>}
-          {definitionError && <div className="definition-error">{definitionError}</div>}
+
+          <div className="word-list-status">
+            {synonymProgress && (
+              <div className="synonym-progress">
+                Eş anlamlılar üretiliyor: {synonymProgress.current}/{synonymProgress.total}
+              </div>
+            )}
+            {translateProgress && (
+              <div className="translate-progress">
+                Türkçe çeviriler güncelleniyor: {translateProgress.current}/{translateProgress.total}
+              </div>
+            )}
+            {exampleProgress && (
+              <div className="example-progress">
+                Örnek cümleler üretiliyor: {exampleProgress.current}/{exampleProgress.total}
+              </div>
+            )}
+            {definitionProgress && (
+              <div className="definition-progress">
+                İngilizce tanımlar üretiliyor: {definitionProgress.current}/{definitionProgress.total}
+              </div>
+            )}
+            {synonymError && <div className="synonym-error">{synonymError}</div>}
+            {exampleError && <div className="example-error">{exampleError}</div>}
+            {definitionError && <div className="definition-error">{definitionError}</div>}
+          </div>
         </div>
 
         <div className="word-list-search">
@@ -987,7 +1001,7 @@ const WordLists: React.FC = () => {
           />
           <div className="word-table-placeholder">Eş anlamlılar (opsiyonel)</div>
           <button className="word-table-add-btn" onClick={handleAddWordToList} title="Ekle">
-            +
+            Ekle
           </button>
         </div>
 
@@ -1027,33 +1041,35 @@ const WordLists: React.FC = () => {
                         İptal
                       </button>
                     </div>
-                    <div className="word-table-details">
-                      <div className="word-table-detail">
-                        <label>Örnek cümle</label>
-                        <textarea
-                          className="word-table-textarea"
-                          rows={3}
-                          value={editExampleSentence}
-                          onChange={(e) => setEditExampleSentence(e.target.value)}
-                        />
-                      </div>
-                      <div className="word-table-detail">
-                        <label>Örnek çeviri</label>
-                        <textarea
-                          className="word-table-textarea"
-                          rows={3}
-                          value={editExampleTranslation}
-                          onChange={(e) => setEditExampleTranslation(e.target.value)}
-                        />
-                      </div>
-                      <div className="word-table-detail">
-                        <label>İngilizce tanım</label>
-                        <textarea
-                          className="word-table-textarea"
-                          rows={3}
-                          value={editEnglishDefinition}
-                          onChange={(e) => setEditEnglishDefinition(e.target.value)}
-                        />
+                    <div className="word-table-details is-edit">
+                      <div className="word-table-details-grid">
+                        <div className="word-table-detail">
+                          <label>Örnek cümle</label>
+                          <textarea
+                            className="word-table-textarea"
+                            rows={3}
+                            value={editExampleSentence}
+                            onChange={(e) => setEditExampleSentence(e.target.value)}
+                          />
+                        </div>
+                        <div className="word-table-detail">
+                          <label>Örnek çeviri</label>
+                          <textarea
+                            className="word-table-textarea"
+                            rows={3}
+                            value={editExampleTranslation}
+                            onChange={(e) => setEditExampleTranslation(e.target.value)}
+                          />
+                        </div>
+                        <div className="word-table-detail">
+                          <label>İngilizce tanım</label>
+                          <textarea
+                            className="word-table-textarea"
+                            rows={3}
+                            value={editEnglishDefinition}
+                            onChange={(e) => setEditEnglishDefinition(e.target.value)}
+                          />
+                        </div>
                       </div>
                     </div>
                   </>
@@ -1116,23 +1132,26 @@ const WordLists: React.FC = () => {
                       </button>
                     </div>
                     {(word.exampleSentence || word.exampleTranslation || word.englishDefinition) && (
-                      <div className="word-table-details">
-                        {word.exampleSentence && (
-                          <div className="word-table-detail">
-                            <label>Örnek cümle</label>
-                            <div className="word-table-detail-text">{word.exampleSentence}</div>
-                            {word.exampleTranslation && (
-                              <div className="word-table-detail-sub">Çeviri: {word.exampleTranslation}</div>
-                            )}
-                          </div>
-                        )}
-                        {word.englishDefinition && (
-                          <div className="word-table-detail">
-                            <label>İngilizce tanım</label>
-                            <div className="word-table-detail-text">{word.englishDefinition}</div>
-                          </div>
-                        )}
-                      </div>
+                      <details className="word-table-details">
+                        <summary>Örnek cümle ve tanım</summary>
+                        <div className="word-table-details-grid">
+                          {word.exampleSentence && (
+                            <div className="word-table-detail">
+                              <label>Örnek cümle</label>
+                              <div className="word-table-detail-text">{word.exampleSentence}</div>
+                              {word.exampleTranslation && (
+                                <div className="word-table-detail-sub">Çeviri: {word.exampleTranslation}</div>
+                              )}
+                            </div>
+                          )}
+                          {word.englishDefinition && (
+                            <div className="word-table-detail">
+                              <label>İngilizce tanım</label>
+                              <div className="word-table-detail-text">{word.englishDefinition}</div>
+                            </div>
+                          )}
+                        </div>
+                      </details>
                     )}
                   </>
                 )}
