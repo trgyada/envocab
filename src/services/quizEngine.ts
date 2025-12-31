@@ -72,7 +72,7 @@ export const generateMultipleChoiceQuestion = (
   const question = isEnglishToTurkish ? word.english : word.turkish;
   const correctAnswer = isEnglishToTurkish ? word.turkish : word.english;
 
-  // YanlZ�Y �YZ�klarZ� se�� (tier: POS + uzunluk > POS > uzunluk > rastgele)
+  // Wrong choices selection (tier: POS + length > POS > length > random)
   const otherWords = allWords.filter((w) => w.id !== word.id);
   const correctLen = correctAnswer.length;
   const correctPos = word.partOfSpeech || '';
@@ -85,10 +85,10 @@ export const generateMultipleChoiceQuestion = (
     .filter((c) => c.option && c.option.trim().length > 0);
 
   const tierBuckets = {
-    tier1: [] as string[], // AynZ� POS + benzer uzunluk
-    tier2: [] as string[], // AynZ� POS
+    tier1: [] as string[], // Same POS + similar length
+    tier2: [] as string[], // Same POS
     tier3: [] as string[], // Benzer uzunluk
-    tier4: [] as string[], // Di�Yerleri
+    tier4: [] as string[], // Others
   };
 
   candidates.forEach((c) => {

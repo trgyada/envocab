@@ -23,7 +23,21 @@ interface WordListState {
   getWordsByMastery: (listId: string, maxMastery: number) => Word[];
   addWordToList: (listId: string, english: string, turkish: string) => void;
   removeWordFromList: (listId: string, wordId: string) => void;
-  updateWord: (listId: string, wordId: string, english: string, turkish: string, synonyms?: string[]) => void;
+  updateWord: (
+    listId: string,
+    wordId: string,
+    payload: {
+      english: string;
+      turkish: string;
+      synonyms?: string[];
+      exampleSentence?: string;
+      exampleTranslation?: string;
+      exampleLang?: 'en' | 'tr';
+      exampleModel?: string;
+      exampleUpdatedAt?: Date;
+      englishDefinition?: string;
+    }
+  ) => void;
   updateWordsSynonyms: (listId: string, updates: { wordId: string; synonyms: string[] }[]) => void;
   updateListTitle: (listId: string, newTitle: string) => void;
   updateWordExample: (
@@ -233,7 +247,7 @@ export const useWordListStore = create<WordListState>()(
         if (updatedList) get().syncList(updatedList);
       },
 
-      updateWord: (listId, wordId, english, turkish, synonyms) => {
+      updateWord: (listId, wordId, payload) => {
         let updatedList: WordList | null = null;
         set((state) => ({
           wordLists: state.wordLists.map((list) => {
@@ -244,7 +258,34 @@ export const useWordListStore = create<WordListState>()(
               updatedAt: new Date(),
               words: list.words.map((word) => {
                 if (word.id !== wordId) return word;
-                return { ...word, english, turkish, ...(synonyms !== undefined ? { synonyms } : {}) };
+                const nextWord: Word = {
+                  ...word,
+                  english: payload.english,
+                  turkish: payload.turkish,
+                };
+                if ('synonyms' in payload) nextWord.synonyms = payload.synonyms;
+                if ('exampleSentence' in payload) {
+                  const value = payload.exampleSentence?.trim();
+                  nextWord.exampleSentence = value || undefined;
+                }
+                if ('exampleTranslation' in payload) {
+                  const value = payload.exampleTranslation?.trim();
+                  nextWord.exampleTranslation = value || undefined;
+                }
+                if ('exampleLang' in payload) {
+                  nextWord.exampleLang = payload.exampleLang;
+                }
+                if ('exampleModel' in payload) {
+                  nextWord.exampleModel = payload.exampleModel;
+                }
+                if ('exampleUpdatedAt' in payload) {
+                  nextWord.exampleUpdatedAt = payload.exampleUpdatedAt || new Date();
+                }
+                if ('englishDefinition' in payload) {
+                  const value = payload.englishDefinition?.trim();
+                  nextWord.englishDefinition = value || undefined;
+                }
+                return nextWord;
               }),
             };
             updatedList = nextList;

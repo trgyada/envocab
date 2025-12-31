@@ -28,6 +28,8 @@ export default async function handler(req: any, res: any) {
 Kelime: "${word}"
 Dil: ${lang === 'en' ? 'Ingilizce' : 'Turkce'}
 Gorev: YDS-YOKDIL tipinde B2-C1 seviyesinde tek cumle kur. Kelimeyi dogal baglamda kullan.
+Kural: Cumlede dogru tense/voice (aktif-pasif) kullan; mumkunse gerund/infinitive yapisini dogal sekilde kullan.
+Tarz: Akademik ama akici, sozluk kalitesinde.
 Ceviri: Cevap verildikten sonra gostermek icin karsi dilde bir ceviri de uret.
 
 Yaniti su JSON formatinda ver:
@@ -72,9 +74,13 @@ Yaniti su JSON formatinda ver:
   } catch (error: any) {
     console.error('Gemini error', error?.message || error);
     const status = error?.status || 500;
+    const raw = error?.message || '';
+    const retryMatch = raw.match(/retryDelay\":\"(\d+)s\"/i);
+    const retryAfterMs = retryMatch ? Number(retryMatch[1]) * 1000 : undefined;
     return res.status(status).json({
       error: error?.message || 'Example generation failed',
-      status
+      status,
+      retryAfterMs
     });
   }
 }

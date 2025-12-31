@@ -23,7 +23,10 @@ export default async function handler(req: any, res: any) {
 
     const prompt = `
 Word: "${word}"
-Task: Provide a concise English definition (max 20 words). No translation, no examples, just the definition.
+Task: Provide a concise English definition (max 20 words).
+Guidelines:
+- Dictionary-grade (Oxford/Cambridge/Merriam-Webster style).
+- No translation, no examples, no synonyms list.
 Return plain text only.`;
 
     const result = await model.generateContent({
@@ -32,13 +35,20 @@ Return plain text only.`;
     });
 
     const text = (result.response.text() || '').replace(/```/g, '').trim();
+    if (!text) {
+      return res.status(500).json({ error: 'Definition generation failed', status: 500 });
+    }
     return res.status(200).json({ definition: text });
   } catch (error: any) {
     console.error('definition error', error?.message || error);
     const status = error?.status || 500;
+    const raw = error?.message || '';
+    const retryMatch = raw.match(/retryDelay\":\"(\d+)s\"/i);
+    const retryAfterMs = retryMatch ? Number(retryMatch[1]) * 1000 : undefined;
     return res.status(status).json({
       error: error?.message || 'Definition generation failed',
-      status
+      status,
+      retryAfterMs
     });
   }
 }

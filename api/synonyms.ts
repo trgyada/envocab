@@ -107,9 +107,13 @@ export default async function handler(req: any, res: any) {
   } catch (error: any) {
     console.error('synonyms error', error?.message || error);
     const status = error?.status || 500;
+    const raw = error?.message || '';
+    const retryMatch = raw.match(/retryDelay\":\"(\d+)s\"/i);
+    const retryAfterMs = retryMatch ? Number(retryMatch[1]) * 1000 : undefined;
     return res.status(status).json({
       error: error?.message || 'Synonym generation failed',
       status,
+      retryAfterMs
     });
   }
 }

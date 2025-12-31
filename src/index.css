@@ -1281,6 +1281,20 @@ a {
   font-size: 0.9rem;
 }
 
+.example-progress,
+.definition-progress {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.example-error,
+.definition-error {
+  margin-top: 6px;
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
 .word-list-action-btn {
   background: #002035;
   border: 1px solid var(--border);
@@ -1405,6 +1419,50 @@ a {
   margin-top: 6px;
 }
 
+.word-table-details {
+  grid-column: 1 / -1;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #0b1224;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.word-table-detail label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.word-table-detail-text {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.word-table-detail-sub {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-top: 6px;
+  white-space: pre-wrap;
+}
+
+.word-table-textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 10px 12px;
+  background: #001a2d;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
 .word-table-row {
   border-bottom: 1px solid var(--border);
 }
@@ -1455,6 +1513,12 @@ a {
 .word-table-icon-btn.translate {
   color: var(--accent);
   border-color: rgba(255, 152, 0, 0.35);
+}
+
+.word-table-icon-btn.example,
+.word-table-icon-btn.definition {
+  color: var(--accent);
+  border-color: rgba(41, 182, 246, 0.35);
 }
 
 .results-container {

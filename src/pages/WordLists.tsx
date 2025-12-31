@@ -59,9 +59,20 @@ const WordLists: React.FC = () => {
   const [editEnglish, setEditEnglish] = useState('');
   const [editTurkish, setEditTurkish] = useState('');
   const [editSynonyms, setEditSynonyms] = useState('');
+  const [editExampleSentence, setEditExampleSentence] = useState('');
+  const [editExampleTranslation, setEditExampleTranslation] = useState('');
+  const [editEnglishDefinition, setEditEnglishDefinition] = useState('');
   const [isGeneratingSynonyms, setIsGeneratingSynonyms] = useState(false);
   const [synonymProgress, setSynonymProgress] = useState<{ current: number; total: number } | null>(null);
   const [synonymError, setSynonymError] = useState<string | null>(null);
+  const [isGeneratingExamples, setIsGeneratingExamples] = useState(false);
+  const [exampleProgress, setExampleProgress] = useState<{ current: number; total: number } | null>(null);
+  const [exampleError, setExampleError] = useState<string | null>(null);
+  const [generatingExampleId, setGeneratingExampleId] = useState<string | null>(null);
+  const [isGeneratingDefinitions, setIsGeneratingDefinitions] = useState(false);
+  const [definitionProgress, setDefinitionProgress] = useState<{ current: number; total: number } | null>(null);
+  const [definitionError, setDefinitionError] = useState<string | null>(null);
+  const [generatingDefinitionId, setGeneratingDefinitionId] = useState<string | null>(null);
   const [translatingWordId, setTranslatingWordId] = useState<string | null>(null);
   const [isTranslatingAll, setIsTranslatingAll] = useState(false);
   const [translateProgress, setTranslateProgress] = useState<{ current: number; total: number } | null>(null);
@@ -154,6 +165,119 @@ const WordLists: React.FC = () => {
 
   const normalizeSynonymList = (items: string[]) => normalizeSynonymsInput(items.join(', '));
 
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const RATE_LIMIT = {
+    perRequestMs: 2200,
+    batchSize: 5,
+    batchPauseMs: 4000,
+    retryFallbackMs: 15000,
+  };
+
+  const requestExample = async (english: string) => {
+    const attempt = async () => {
+      const res = await fetch('/api/example', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ word: english, lang: 'en' })
+      });
+      const data = await res.json();
+      return { res, data };
+    };
+
+    let { res, data } = await attempt();
+    if (res.status === 429) {
+      const waitMs = Number(data?.retryAfterMs) || RATE_LIMIT.retryFallbackMs;
+      await sleep(waitMs);
+      ({ res, data } = await attempt());
+    }
+    if (!res.ok) throw new Error(data?.error || 'Örnek cümle alınamadı');
+
+    let sentence = (data.sentence || '').trim();
+    let translation = (data.translation || '').trim();
+    if (!sentence) {
+      ({ res, data } = await attempt());
+      if (!res.ok) throw new Error(data?.error || 'Örnek cümle alınamadı');
+      sentence = (data.sentence || '').trim();
+      translation = (data.translation || '').trim();
+    }
+    if (!sentence) throw new Error('Örnek cümle alınamadı');
+    return { sentence, translation };
+  };
+
+  const requestDefinition = async (english: string) => {
+    const attempt = async () => {
+      const res = await fetch('/api/definition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ word: english })
+      });
+      const data = await res.json();
+      return { res, data };
+    };
+
+    let { res, data } = await attempt();
+    if (res.status === 429) {
+      const waitMs = Number(data?.retryAfterMs) || RATE_LIMIT.retryFallbackMs;
+      await sleep(waitMs);
+      ({ res, data } = await attempt());
+    }
+    if (!res.ok) throw new Error(data?.error || 'Tanım alınamadı');
+
+    let definition = (data.definition || '').trim();
+    if (!definition) {
+      ({ res, data } = await attempt());
+      if (!res.ok) throw new Error(data?.error || 'Tanım alınamadı');
+      definition = (data.definition || '').trim();
+    }
+    if (!definition) throw new Error('Tanım alınamadı');
+    return definition;
+  };
+
+  const requestTranslation = async (english: string) => {
+    const attempt = async () => {
+      const res = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: english, from: 'en', to: 'tr' })
+      });
+      const data = await res.json();
+      return { res, data };
+    };
+
+    let { res, data } = await attempt();
+    if (res.status === 429) {
+      const waitMs = Number(data?.retryAfterMs) || RATE_LIMIT.retryFallbackMs;
+      await sleep(waitMs);
+      ({ res, data } = await attempt());
+    }
+    if (!res.ok) throw new Error(data?.error || 'Çeviri alınamadı');
+    const translation = (data.translation || '').trim();
+    if (!translation) throw new Error('Çeviri alınamadı');
+    return translation;
+  };
+
+  const requestSynonyms = async (english: string, count: number) => {
+    const attempt = async () => {
+      const res = await fetch('/api/synonyms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ word: english, count })
+      });
+      const data = await res.json();
+      return { res, data };
+    };
+
+    let { res, data } = await attempt();
+    if (res.status === 429) {
+      const waitMs = Number(data?.retryAfterMs) || RATE_LIMIT.retryFallbackMs;
+      await sleep(waitMs);
+      ({ res, data } = await attempt());
+    }
+    if (!res.ok) throw new Error(data?.error || 'Eş anlamlı alınamadı');
+    return Array.isArray(data?.synonyms) ? data.synonyms : [];
+  };
+
   const handleCreateManualList = () => {
     const validWords = manualWords.filter((w) => w.english.trim() && w.turkish.trim());
     if (validWords.length === 0) {
@@ -231,16 +355,8 @@ const WordLists: React.FC = () => {
     if (translatingWordId === word.id) return;
     setTranslatingWordId(word.id);
     try {
-      const res = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: english, from: 'en', to: 'tr' })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Çeviri alınamadı');
-      const translation = (data.translation || '').trim();
-      if (!translation) throw new Error('Çeviri alınamadı');
-      updateWord(viewingListId, word.id, word.english, translation, word.synonyms);
+      const translation = await requestTranslation(english);
+      updateWord(viewingListId, word.id, { english: word.english, turkish: translation });
       setMessage({ text: 'Türkçe çeviri güncellendi.', type: 'success' });
     } catch (err: any) {
       setMessage({ text: err?.message || 'Çeviri alınamadı.', type: 'error' });
@@ -270,23 +386,18 @@ const WordLists: React.FC = () => {
       setTranslateProgress({ current: i + 1, total });
 
       try {
-        const res = await fetch('/api/translate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: word.english, from: 'en', to: 'tr' })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || 'Çeviri alınamadı');
-        const translation = (data.translation || '').trim();
-        if (!translation) throw new Error('Çeviri alınamadı');
-        updateWord(viewingListId, word.id, word.english, translation, word.synonyms);
+        const translation = await requestTranslation(word.english);
+        updateWord(viewingListId, word.id, { english: word.english, turkish: translation });
         successCount += 1;
       } catch {
         failCount += 1;
       }
 
-      if (total > 5) {
-        await new Promise((resolve) => setTimeout(resolve, 150));
+      if (i < total - 1) {
+        await sleep(RATE_LIMIT.perRequestMs);
+        if ((i + 1) % RATE_LIMIT.batchSize === 0) {
+          await sleep(RATE_LIMIT.batchPauseMs);
+        }
       }
     }
 
@@ -303,25 +414,48 @@ const WordLists: React.FC = () => {
     setEditEnglish(word.english);
     setEditTurkish(word.turkish);
     setEditSynonyms((word.synonyms || []).join(', '));
+    setEditExampleSentence(word.exampleSentence || '');
+    setEditExampleTranslation(word.exampleTranslation || '');
+    setEditEnglishDefinition(word.englishDefinition || '');
   };
   const saveEditWord = () => {
     if (!viewingListId || !editingWordId) return;
     const normalizedSynonyms = normalizeSynonymsInput(editSynonyms);
-    updateWord(viewingListId, editingWordId, editEnglish.trim(), editTurkish.trim(), normalizedSynonyms);
+    updateWord(viewingListId, editingWordId, {
+      english: editEnglish.trim(),
+      turkish: editTurkish.trim(),
+      synonyms: normalizedSynonyms,
+      exampleSentence: editExampleSentence.trim(),
+      exampleTranslation: editExampleTranslation.trim(),
+      englishDefinition: editEnglishDefinition.trim()
+    });
     setEditingWordId(null);
     setEditSynonyms('');
+    setEditExampleSentence('');
+    setEditExampleTranslation('');
+    setEditEnglishDefinition('');
     setMessage({ text: 'Kelime güncellendi!', type: 'success' });
   };
   const cancelEdit = () => {
     setEditingWordId(null);
     setEditSynonyms('');
+    setEditExampleSentence('');
+    setEditExampleTranslation('');
+    setEditEnglishDefinition('');
   };
 
   const handleExportWords = (title: string, words: Word[]) => {
     const safeTitle = title.trim().replace(/[<>:"/\\|?*]+/g, '') || 'liste';
     const data = [
-      ['English', 'Türkçe', 'Eş Anlamlılar'],
-      ...words.map((w) => [w.english, w.turkish, (w.synonyms || []).join(', ')]),
+      ['English', 'Türkçe', 'Örnek Cümle', 'Örnek Çeviri', 'İngilizce Tanım', 'Eş Anlamlılar'],
+      ...words.map((w) => [
+        w.english,
+        w.turkish,
+        w.exampleSentence || '',
+        w.exampleTranslation || '',
+        w.englishDefinition || '',
+        (w.synonyms || []).join(', ')
+      ]),
     ];
     const worksheet = XLSX.utils.aoa_to_sheet(data);
     const workbook = XLSX.utils.book_new();
@@ -431,15 +565,8 @@ const WordLists: React.FC = () => {
       setSynonymProgress({ current: i + 1, total: targets.length });
 
       try {
-        const res = await fetch('/api/synonyms', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ word: word.english, count: 4 }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || 'Eş anlamlı alınamadı');
-
-        const synonyms = Array.isArray(data?.synonyms) ? normalizeSynonymList(data.synonyms) : [];
+        const rawSynonyms = await requestSynonyms(word.english, 4);
+        const synonyms = normalizeSynonymList(rawSynonyms);
         if (synonyms.length) {
           pending.push({ wordId: word.id, synonyms });
         }
@@ -452,9 +579,11 @@ const WordLists: React.FC = () => {
         pending = [];
       }
 
-      // Basit throttling
-      if (targets.length > 5) {
-        await new Promise((resolve) => setTimeout(resolve, 150));
+      if (i < targets.length - 1) {
+        await sleep(RATE_LIMIT.perRequestMs);
+        if ((i + 1) % RATE_LIMIT.batchSize === 0) {
+          await sleep(RATE_LIMIT.batchPauseMs);
+        }
       }
     }
 
@@ -462,6 +591,134 @@ const WordLists: React.FC = () => {
     setSynonymProgress(null);
     setIsGeneratingSynonyms(false);
     setMessage({ text: 'Eş anlamlılar güncellendi.', type: 'success' });
+  };
+
+  const handleGenerateExampleForWord = async (word: Word) => {
+    if (!viewingListId) return;
+    if (generatingExampleId === word.id) return;
+    setGeneratingExampleId(word.id);
+    setExampleError(null);
+    try {
+      const result = await requestExample(word.english);
+      updateWord(viewingListId, word.id, {
+        english: word.english,
+        turkish: word.turkish,
+        exampleSentence: result.sentence,
+        exampleTranslation: result.translation,
+        exampleLang: 'en',
+        exampleModel: 'gemma-3-27b-it',
+        exampleUpdatedAt: new Date()
+      });
+    } catch (err: any) {
+      setExampleError(err?.message || 'Örnek cümle alınamadı');
+    } finally {
+      setGeneratingExampleId(null);
+    }
+  };
+
+  const handleGenerateDefinitionForWord = async (word: Word) => {
+    if (!viewingListId) return;
+    if (generatingDefinitionId === word.id) return;
+    setGeneratingDefinitionId(word.id);
+    setDefinitionError(null);
+    try {
+      const definition = await requestDefinition(word.english);
+      updateWord(viewingListId, word.id, {
+        english: word.english,
+        turkish: word.turkish,
+        englishDefinition: definition
+      });
+    } catch (err: any) {
+      setDefinitionError(err?.message || 'Tanım alınamadı');
+    } finally {
+      setGeneratingDefinitionId(null);
+    }
+  };
+
+  const handleGenerateExamples = async () => {
+    if (!viewingListId || !viewingList) return;
+    if (isGeneratingExamples) return;
+
+    const targets = viewingList.words.filter((w) => !(w.exampleSentence || '').trim());
+    if (targets.length === 0) {
+      setMessage({ text: 'Bu listedeki tüm örnek cümleler mevcut.', type: 'success' });
+      return;
+    }
+
+    setIsGeneratingExamples(true);
+    setExampleError(null);
+    setExampleProgress({ current: 0, total: targets.length });
+
+    for (let i = 0; i < targets.length; i++) {
+      const word = targets[i];
+      setExampleProgress({ current: i + 1, total: targets.length });
+      try {
+        const result = await requestExample(word.english);
+        updateWord(viewingListId, word.id, {
+          english: word.english,
+          turkish: word.turkish,
+          exampleSentence: result.sentence,
+          exampleTranslation: result.translation,
+          exampleLang: 'en',
+          exampleModel: 'gemma-3-27b-it',
+          exampleUpdatedAt: new Date()
+        });
+      } catch (err: any) {
+        setExampleError(err?.message || 'Örnek cümle alınamadı');
+      }
+
+      if (i < targets.length - 1) {
+        await sleep(RATE_LIMIT.perRequestMs);
+        if ((i + 1) % RATE_LIMIT.batchSize === 0) {
+          await sleep(RATE_LIMIT.batchPauseMs);
+        }
+      }
+    }
+
+    setExampleProgress(null);
+    setIsGeneratingExamples(false);
+    setMessage({ text: 'Örnek cümleler güncellendi.', type: 'success' });
+  };
+
+  const handleGenerateDefinitions = async () => {
+    if (!viewingListId || !viewingList) return;
+    if (isGeneratingDefinitions) return;
+
+    const targets = viewingList.words.filter((w) => !(w.englishDefinition || '').trim());
+    if (targets.length === 0) {
+      setMessage({ text: 'Bu listedeki tüm İngilizce tanımlar mevcut.', type: 'success' });
+      return;
+    }
+
+    setIsGeneratingDefinitions(true);
+    setDefinitionError(null);
+    setDefinitionProgress({ current: 0, total: targets.length });
+
+    for (let i = 0; i < targets.length; i++) {
+      const word = targets[i];
+      setDefinitionProgress({ current: i + 1, total: targets.length });
+      try {
+        const definition = await requestDefinition(word.english);
+        updateWord(viewingListId, word.id, {
+          english: word.english,
+          turkish: word.turkish,
+          englishDefinition: definition
+        });
+      } catch (err: any) {
+        setDefinitionError(err?.message || 'Tanım alınamadı');
+      }
+
+      if (i < targets.length - 1) {
+        await sleep(RATE_LIMIT.perRequestMs);
+        if ((i + 1) % RATE_LIMIT.batchSize === 0) {
+          await sleep(RATE_LIMIT.batchPauseMs);
+        }
+      }
+    }
+
+    setDefinitionProgress(null);
+    setIsGeneratingDefinitions(false);
+    setMessage({ text: 'İngilizce tanımlar güncellendi.', type: 'success' });
   };
 
   if (viewMode === 'add-manual') {
@@ -639,6 +896,20 @@ const WordLists: React.FC = () => {
               >
                 {isGeneratingSynonyms ? 'Üretiliyor...' : 'Eş anlamlıları üret'}
               </button>
+              <button
+                className="word-list-action-btn"
+                onClick={handleGenerateExamples}
+                disabled={isGeneratingExamples}
+              >
+                {isGeneratingExamples ? 'Üretiliyor...' : 'Örnek cümleleri üret'}
+              </button>
+              <button
+                className="word-list-action-btn"
+                onClick={handleGenerateDefinitions}
+                disabled={isGeneratingDefinitions}
+              >
+                {isGeneratingDefinitions ? 'Üretiliyor...' : 'İngilizce tanımları üret'}
+              </button>
             </div>
           </div>
           <p className="word-list-meta">
@@ -654,7 +925,19 @@ const WordLists: React.FC = () => {
               Türkçe çeviriler güncelleniyor: {translateProgress.current}/{translateProgress.total}
             </div>
           )}
+          {exampleProgress && (
+            <div className="example-progress">
+              Örnek cümleler üretiliyor: {exampleProgress.current}/{exampleProgress.total}
+            </div>
+          )}
+          {definitionProgress && (
+            <div className="definition-progress">
+              İngilizce tanımlar üretiliyor: {definitionProgress.current}/{definitionProgress.total}
+            </div>
+          )}
           {synonymError && <div className="synonym-error">{synonymError}</div>}
+          {exampleError && <div className="example-error">{exampleError}</div>}
+          {definitionError && <div className="definition-error">{definitionError}</div>}
         </div>
 
         <div className="word-list-search">
@@ -744,6 +1027,35 @@ const WordLists: React.FC = () => {
                         İptal
                       </button>
                     </div>
+                    <div className="word-table-details">
+                      <div className="word-table-detail">
+                        <label>Örnek cümle</label>
+                        <textarea
+                          className="word-table-textarea"
+                          rows={3}
+                          value={editExampleSentence}
+                          onChange={(e) => setEditExampleSentence(e.target.value)}
+                        />
+                      </div>
+                      <div className="word-table-detail">
+                        <label>Örnek çeviri</label>
+                        <textarea
+                          className="word-table-textarea"
+                          rows={3}
+                          value={editExampleTranslation}
+                          onChange={(e) => setEditExampleTranslation(e.target.value)}
+                        />
+                      </div>
+                      <div className="word-table-detail">
+                        <label>İngilizce tanım</label>
+                        <textarea
+                          className="word-table-textarea"
+                          rows={3}
+                          value={editEnglishDefinition}
+                          onChange={(e) => setEditEnglishDefinition(e.target.value)}
+                        />
+                      </div>
+                    </div>
                   </>
                 ) : (
                   <>
@@ -772,6 +1084,22 @@ const WordLists: React.FC = () => {
                       >
                         {translatingWordId === word.id ? 'Çeviriliyor...' : 'Çevir'}
                       </button>
+                      <button
+                        className="word-table-icon-btn example"
+                        onClick={() => handleGenerateExampleForWord(word)}
+                        disabled={generatingExampleId === word.id || isGeneratingExamples}
+                        title="Örnek cümle üret"
+                      >
+                        {generatingExampleId === word.id ? 'Örnek...' : 'Örnek'}
+                      </button>
+                      <button
+                        className="word-table-icon-btn definition"
+                        onClick={() => handleGenerateDefinitionForWord(word)}
+                        disabled={generatingDefinitionId === word.id || isGeneratingDefinitions}
+                        title="İngilizce tanım üret"
+                      >
+                        {generatingDefinitionId === word.id ? 'Tanım...' : 'Tanım'}
+                      </button>
                       <button className="word-table-icon-btn edit" onClick={() => startEditWord(word)} title="Düzenle">
                         Düzenle
                       </button>
@@ -787,6 +1115,25 @@ const WordLists: React.FC = () => {
                         Sil
                       </button>
                     </div>
+                    {(word.exampleSentence || word.exampleTranslation || word.englishDefinition) && (
+                      <div className="word-table-details">
+                        {word.exampleSentence && (
+                          <div className="word-table-detail">
+                            <label>Örnek cümle</label>
+                            <div className="word-table-detail-text">{word.exampleSentence}</div>
+                            {word.exampleTranslation && (
+                              <div className="word-table-detail-sub">Çeviri: {word.exampleTranslation}</div>
+                            )}
+                          </div>
+                        )}
+                        {word.englishDefinition && (
+                          <div className="word-table-detail">
+                            <label>İngilizce tanım</label>
+                            <div className="word-table-detail-text">{word.englishDefinition}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </>
                 )}
               </div>
