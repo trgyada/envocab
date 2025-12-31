@@ -1339,7 +1339,7 @@ a {
 .word-table-row,
 .word-table-add-row {
   display: grid;
-  grid-template-columns: 2fr 2fr 2fr 120px;
+  grid-template-columns: 2fr 2fr 2fr 180px;
   align-items: center;
   gap: 10px;
   padding: 12px 0;
@@ -1413,6 +1413,7 @@ a {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .word-table-icon-btn {
@@ -1443,6 +1444,11 @@ a {
 .word-table-icon-btn.sound,
 .word-table-icon-btn.edit {
   color: var(--text-secondary);
+}
+
+.word-table-icon-btn.translate {
+  color: var(--accent);
+  border-color: rgba(255, 152, 0, 0.35);
 }
 
 .results-container {

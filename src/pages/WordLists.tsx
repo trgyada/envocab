@@ -62,6 +62,7 @@ const WordLists: React.FC = () => {
   const [isGeneratingSynonyms, setIsGeneratingSynonyms] = useState(false);
   const [synonymProgress, setSynonymProgress] = useState<{ current: number; total: number } | null>(null);
   const [synonymError, setSynonymError] = useState<string | null>(null);
+  const [translatingWordId, setTranslatingWordId] = useState<string | null>(null);
 
   const [editingTitle, setEditingTitle] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -216,6 +217,34 @@ const WordLists: React.FC = () => {
     addWordToList(viewingListId, en, tr);
     setMessage({ text: 'Kelime eklendi!', type: 'success' });
     setManualWords([{ english: '', turkish: '' }]);
+  };
+
+  const handleTranslateWord = async (word: Word) => {
+    if (!viewingListId) return;
+    const english = word.english.trim();
+    if (!english) {
+      setMessage({ text: 'Çevirmek için İngilizce kelime gerekli.', type: 'error' });
+      return;
+    }
+    if (translatingWordId === word.id) return;
+    setTranslatingWordId(word.id);
+    try {
+      const res = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: english, from: 'en', to: 'tr' })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Çeviri alınamadı');
+      const translation = (data.translation || '').trim();
+      if (!translation) throw new Error('Çeviri alınamadı');
+      updateWord(viewingListId, word.id, word.english, translation, word.synonyms);
+      setMessage({ text: 'Türkçe çeviri güncellendi.', type: 'success' });
+    } catch (err: any) {
+      setMessage({ text: err?.message || 'Çeviri alınamadı.', type: 'error' });
+    } finally {
+      setTranslatingWordId(null);
+    }
   };
 
   const startEditWord = (word: Word) => {
@@ -671,6 +700,14 @@ const WordLists: React.FC = () => {
                         title="Sesli oku"
                       >
                         🔊
+                      </button>
+                      <button
+                        className="word-table-icon-btn translate"
+                        onClick={() => handleTranslateWord(word)}
+                        disabled={translatingWordId === word.id}
+                        title="Türkçe çeviri üret"
+                      >
+                        {translatingWordId === word.id ? 'Çeviriliyor...' : 'Çevir'}
                       </button>
                       <button className="word-table-icon-btn edit" onClick={() => startEditWord(word)} title="Düzenle">
                         Düzenle
