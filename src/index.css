@@ -1275,6 +1275,12 @@ a {
   font-size: 0.9rem;
 }
 
+.translate-progress {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
 .word-list-action-btn {
   background: #002035;
   border: 1px solid var(--border);

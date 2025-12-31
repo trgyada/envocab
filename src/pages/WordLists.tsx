@@ -63,6 +63,8 @@ const WordLists: React.FC = () => {
   const [synonymProgress, setSynonymProgress] = useState<{ current: number; total: number } | null>(null);
   const [synonymError, setSynonymError] = useState<string | null>(null);
   const [translatingWordId, setTranslatingWordId] = useState<string | null>(null);
+  const [isTranslatingAll, setIsTranslatingAll] = useState(false);
+  const [translateProgress, setTranslateProgress] = useState<{ current: number; total: number } | null>(null);
 
   const [editingTitle, setEditingTitle] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -245,6 +247,55 @@ const WordLists: React.FC = () => {
     } finally {
       setTranslatingWordId(null);
     }
+  };
+
+  const handleTranslateAll = async () => {
+    if (!viewingListId || !viewingList) return;
+    if (isTranslatingAll) return;
+    const confirmed = window.confirm(
+      'Tüm Türkçe çeviriler Gemini ile yeniden oluşturulacak. Mevcut çeviriler üzerine yazılır. Devam edilsin mi?'
+    );
+    if (!confirmed) return;
+
+    const total = viewingList.words.length;
+    if (total === 0) return;
+
+    setIsTranslatingAll(true);
+    setTranslateProgress({ current: 0, total });
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < viewingList.words.length; i++) {
+      const word = viewingList.words[i];
+      setTranslateProgress({ current: i + 1, total });
+
+      try {
+        const res = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: word.english, from: 'en', to: 'tr' })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || 'Çeviri alınamadı');
+        const translation = (data.translation || '').trim();
+        if (!translation) throw new Error('Çeviri alınamadı');
+        updateWord(viewingListId, word.id, word.english, translation, word.synonyms);
+        successCount += 1;
+      } catch {
+        failCount += 1;
+      }
+
+      if (total > 5) {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+    }
+
+    setTranslateProgress(null);
+    setIsTranslatingAll(false);
+    setMessage({
+      text: `Toplu çeviri tamamlandı. Başarılı: ${successCount}, Hatalı: ${failCount}.`,
+      type: failCount > 0 ? 'error' : 'success'
+    });
   };
 
   const startEditWord = (word: Word) => {
@@ -576,6 +627,13 @@ const WordLists: React.FC = () => {
               </button>
               <button
                 className="word-list-action-btn"
+                onClick={handleTranslateAll}
+                disabled={isTranslatingAll}
+              >
+                {isTranslatingAll ? 'Çeviriliyor...' : 'Tüm Türkçeleri düzelt'}
+              </button>
+              <button
+                className="word-list-action-btn"
                 onClick={handleGenerateSynonyms}
                 disabled={isGeneratingSynonyms}
               >
@@ -589,6 +647,11 @@ const WordLists: React.FC = () => {
           {synonymProgress && (
             <div className="synonym-progress">
               Eş anlamlılar üretiliyor: {synonymProgress.current}/{synonymProgress.total}
+            </div>
+          )}
+          {translateProgress && (
+            <div className="translate-progress">
+              Türkçe çeviriler güncelleniyor: {translateProgress.current}/{translateProgress.total}
             </div>
           )}
           {synonymError && <div className="synonym-error">{synonymError}</div>}
