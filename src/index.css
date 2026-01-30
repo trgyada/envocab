@@ -40,11 +40,11 @@
   --surface: rgba(0, 48, 73, 0.5);
   --surface-alt: rgba(0, 32, 53, 0.6);
   
-  /* Glass Effect */
-  --glass-bg: rgba(0, 32, 53, 0.7);
+  /* Glass Effect - Reduced for performance */
+  --glass-bg: rgba(0, 32, 53, 0.85);
   --glass-border: rgba(102, 155, 188, 0.15);
   --glass-highlight: rgba(253, 240, 213, 0.05);
-  --glass-blur: 20px;
+  --glass-blur: 12px; /* Reduced from 20px */
   
   /* Border & Text */
   --border: rgba(102, 155, 188, 0.12);
@@ -68,29 +68,13 @@
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--bg);
-  background-image: 
-    radial-gradient(ellipse at 20% 0%, rgba(0, 48, 73, 0.4) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 0%, rgba(102, 155, 188, 0.15) 0%, transparent 45%),
-    radial-gradient(ellipse at 50% 100%, rgba(193, 18, 31, 0.08) 0%, transparent 50%);
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.6;
-  position: relative;
   overflow-x: hidden;
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  inset: -30%;
-  background: 
-    radial-gradient(circle at 25% 25%, rgba(0, 48, 73, 0.25), transparent 50%),
-    radial-gradient(circle at 75% 15%, rgba(102, 155, 188, 0.12), transparent 45%),
-    radial-gradient(circle at 50% 85%, rgba(193, 18, 31, 0.08), transparent 50%);
-  filter: blur(60px);
-  opacity: 0.8;
-  z-index: -1;
-}
+/* Removed body::before pseudo element - no more gradient overlays */
 
 /* Liquid Glass Mixin */
 .glass {
@@ -112,17 +96,13 @@ a {
 }
 
 .navbar {
-  background: var(--glass-bg);
+  background: var(--bg-elevated);
   border-bottom: 1px solid var(--glass-border);
   position: sticky;
   top: 0;
   z-index: 1000;
   padding: 10px 16px;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  box-shadow: 
-    0 4px 24px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 var(--glass-highlight);
+  /* Removed backdrop-filter for performance */
 }
 
 .navbar-content {
@@ -140,11 +120,13 @@ a {
   justify-content: center;
 }
 
-.flame-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
+/* Simple text logo */
+.logo-text {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--accent);
+  text-decoration: none;
+  padding: 4px 12px;
 }
 
 .navbar-links {
@@ -2019,70 +2001,9 @@ a {
   background: #6b7280;
   border-radius: 10px;
 }
-.flame-logo {
-  width: 54px;
-  height: 74px;
-}
 
-.flame-logo svg {
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
+/* Removed .flame-logo styles - using simple text logo now */
 
-.flame-logo path {
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  fill-opacity: 0;
-  animation:
-    draw-lines 2.4s cubic-bezier(0.5, 0, 0.2, 1) infinite alternate,
-    fill-color 1.4s ease-in-out infinite alternate 1.2s;
-}
-
-.flame-left {
-  stroke: #ffca28;
-  stroke-dasharray: 350;
-  stroke-dashoffset: 350;
-}
-
-.flame-right {
-  stroke: #ffa000;
-  stroke-dasharray: 350;
-  stroke-dashoffset: 350;
-  animation-delay: 0.3s, 1.5s;
-}
-
-.flame-center {
-  stroke: #dd2c00;
-  stroke-dasharray: 600;
-  stroke-dashoffset: 600;
-  animation-delay: 0.6s, 1.8s;
-}
-
-.flame-center.highlight {
-  animation: fade-in 1.5s ease-in-out infinite alternate 1.4s;
-  stroke: none;
-}
-
-@keyframes draw-lines {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes fill-color {
-  to {
-    fill-opacity: 1;
-    stroke-width: 0;
-  }
-}
-
-@keyframes fade-in {
-  to {
-    opacity: 1;
-  }
-}
 .question-text-row {
   display: flex;
   align-items: center;
@@ -2220,4 +2141,68 @@ a {
 .type-synonyms {
   margin-top: 4px;
   color: var(--text-secondary);
+}
+
+/* ==========================================
+   PERFORMANCE OPTIMIZATIONS
+   ========================================== */
+
+/* Loading spinner for lazy-loaded pages */
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+}
+
+.loading-spinner::before {
+  content: '';
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--glass-border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .loading-spinner::before {
+    animation: none;
+    border-top-color: var(--accent);
+  }
+  
+  body::before {
+    display: none;
+  }
+}
+
+/* GPU hints for frequently animated elements */
+.quiz-card,
+.option-btn,
+.nav-link,
+.btn {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Contain layout for better performance */
+.quiz-container,
+.home-container,
+.wordlist-grid {
+  contain: layout style;
 }

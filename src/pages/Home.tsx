@@ -1,13 +1,18 @@
-import React from 'react';
+import React, { useMemo, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { useWordListStore } from '../stores/wordListStore';
 import { useUserProgressStore } from '../stores/userProgressStore';
 
-const Home: React.FC = () => {
-  const { wordLists } = useWordListStore();
-  const { stats } = useUserProgressStore();
+const Home: React.FC = memo(() => {
+  // Use shallow selectors to prevent unnecessary re-renders
+  const wordLists = useWordListStore((state) => state.wordLists);
+  const stats = useUserProgressStore((state) => state.stats);
 
-  const totalWords = wordLists.reduce((acc, list) => acc + list.words.length, 0);
+  // Memoize computed value
+  const totalWords = useMemo(
+    () => wordLists.reduce((acc, list) => acc + list.words.length, 0),
+    [wordLists]
+  );
 
   return (
     <div className="home-container">
@@ -84,6 +89,8 @@ const Home: React.FC = () => {
       )}
     </div>
   );
-};
+});
+
+Home.displayName = 'Home';
 
 export default Home;

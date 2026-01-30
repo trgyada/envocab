@@ -8,6 +8,28 @@ import {
   deleteWordListFromFirestore 
 } from '../services/firestoreWordLists';
 
+// ==========================================
+// DEBOUNCE UTILITY - Prevents excessive Firestore syncs
+// ==========================================
+const pendingSyncs = new Map<string, NodeJS.Timeout>();
+const SYNC_DEBOUNCE_MS = 2000; // 2 saniye bekle, sonra sync et
+
+const debouncedSync = (listId: string, list: WordList, syncFn: (list: WordList) => Promise<void>) => {
+  // Önceki pending sync varsa iptal et
+  const existing = pendingSyncs.get(listId);
+  if (existing) {
+    clearTimeout(existing);
+  }
+  
+  // Yeni debounced sync planla
+  const timeout = setTimeout(() => {
+    syncFn(list);
+    pendingSyncs.delete(listId);
+  }, SYNC_DEBOUNCE_MS);
+  
+  pendingSyncs.set(listId, timeout);
+};
+
 interface WordListState {
   wordLists: WordList[];
   selectedListId: string | null;
@@ -158,7 +180,8 @@ export const useWordListStore = create<WordListState>()(
           }),
         }));
 
-        if (updatedList) get().syncList(updatedList);
+        // Use debounced sync to prevent excessive Firestore writes
+        if (updatedList) debouncedSync(listId, updatedList, get().syncList);
       },
 
 
@@ -184,7 +207,8 @@ export const useWordListStore = create<WordListState>()(
           }),
         }));
 
-        if (updatedList) get().syncList(updatedList);
+        // Debounced sync for synonyms update
+        if (updatedList) debouncedSync(listId, updatedList, get().syncList);
       },
 
       getWordsByMastery: (listId, maxMastery) => {
@@ -225,7 +249,8 @@ export const useWordListStore = create<WordListState>()(
           }),
         }));
 
-        if (updatedList) get().syncList(updatedList);
+        // Debounced sync for word addition
+        if (updatedList) debouncedSync(listId, updatedList, get().syncList);
       },
 
       removeWordFromList: (listId, wordId) => {
@@ -244,7 +269,8 @@ export const useWordListStore = create<WordListState>()(
           }),
         }));
 
-        if (updatedList) get().syncList(updatedList);
+        // Debounced sync for word removal
+        if (updatedList) debouncedSync(listId, updatedList, get().syncList);
       },
 
       updateWord: (listId, wordId, payload) => {
@@ -293,7 +319,8 @@ export const useWordListStore = create<WordListState>()(
           }),
         }));
 
-        if (updatedList) get().syncList(updatedList);
+        // Debounced sync for word update
+        if (updatedList) debouncedSync(listId, updatedList, get().syncList);
       },
 
       updateListTitle: (listId, newTitle) => {
@@ -307,7 +334,8 @@ export const useWordListStore = create<WordListState>()(
           }),
         }));
 
-        if (updatedList) get().syncList(updatedList);
+        // Debounced sync for title update
+        if (updatedList) debouncedSync(listId, updatedList, get().syncList);
       },
 
       updateWordExample: (wordId, payload) => {
@@ -337,7 +365,7 @@ export const useWordListStore = create<WordListState>()(
           }),
         }));
 
-        updatedLists.forEach((list) => get().syncList(list));
+        updatedLists.forEach((list) => debouncedSync(list.id, list, get().syncList));
       },
 
       addUnknownWord: ({ english, turkish, source }) => {
