@@ -2,6 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { PartOfSpeech, QuizQuestion, Word } from '../types';
 import SelectableText from './SelectableText';
 import { useWordListStore } from '../stores/wordListStore';
+import {
+  AppLanguageCode,
+  DEFAULT_STUDY_LANGUAGE,
+  getStudyLanguageConfig,
+} from '../utils/languages';
 
 interface MultipleChoiceProps {
   question: QuizQuestion;
@@ -12,7 +17,7 @@ interface MultipleChoiceProps {
     translation?: string;
     loading?: boolean;
     error?: string;
-    lang?: 'en' | 'tr';
+    lang?: AppLanguageCode;
   };
   onRequestExample?: (force?: boolean) => void;
   definition?: {
@@ -60,7 +65,9 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationText, setTranslationText] = useState<string | null>(null);
   const [translateError, setTranslateError] = useState<string | null>(null);
-  const { addUnknownWord, wordLists } = useWordListStore();
+  const { addUnknownWord, wordLists, activeLanguage } = useWordListStore();
+  const studyLanguage = activeLanguage || DEFAULT_STUDY_LANGUAGE;
+  const languageConfig = getStudyLanguageConfig(studyLanguage);
 
   useEffect(() => {
     setSelectedAnswer(null);
@@ -102,11 +109,15 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
 
   const isSynonymMode = question.questionType === 'synonym';
   const isEnglishToTurkish = isSynonymMode ? true : question.direction !== 'tr-to-en';
-  const directionLabel = isSynonymMode ? 'İngilizce → İngilizce' : (isEnglishToTurkish ? 'İngilizce → Türkçe' : 'Türkçe → İngilizce');
+  const directionLabel = isSynonymMode
+    ? `${languageConfig.sourceLabel} → ${languageConfig.sourceLabel}`
+    : isEnglishToTurkish
+      ? `${languageConfig.sourceLabel} → Türkçe`
+      : `Türkçe → ${languageConfig.sourceLabel}`;
   const speakCurrent = () => {
     const text = isEnglishToTurkish ? question.word.english : question.word.turkish;
     const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = isEnglishToTurkish ? 'en-US' : 'tr-TR';
+    utter.lang = isEnglishToTurkish ? languageConfig.sourceSpeechLang : 'tr-TR';
     speechSynthesis.speak(utter);
   };
 
@@ -115,8 +126,8 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
     setIsModalOpen(true);
     setTranslateError(null);
     setTranslationText(null);
-    const lang = example?.lang || (question.direction === 'tr-to-en' ? 'tr' : 'en');
-    const target = lang === 'tr' ? 'en' : 'tr';
+    const lang = example?.lang || (question.direction === 'tr-to-en' ? 'tr' : studyLanguage);
+    const target = lang === 'tr' ? studyLanguage : 'tr';
     setIsTranslating(true);
     fetch('/api/translate', {
       method: 'POST',
@@ -138,10 +149,10 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
     if (!selectedWord) return;
     setIsTranslating(true);
     setTranslateError(null);
-    const lang = example?.lang || (question.direction === 'tr-to-en' ? 'tr' : 'en');
-    const target = lang === 'tr' ? 'en' : 'tr';
+    const lang = example?.lang || (question.direction === 'tr-to-en' ? 'tr' : studyLanguage);
+    const target = lang === 'tr' ? studyLanguage : 'tr';
     const unknownList = wordLists.find((l) => l.id === 'unknown');
-    const normalized = (lang === 'en' ? selectedWord : translationText || selectedWord).trim().toLowerCase();
+    const normalized = (lang === 'tr' ? translationText || selectedWord : selectedWord).trim().toLowerCase();
     if (unknownList?.words.some((w) => w.english.trim().toLowerCase() === normalized)) {
       setTranslateError('Bu kelime zaten Bilinmeyenler listesinde.');
       setIsTranslating(false);
@@ -159,7 +170,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
         if (!res.ok) throw new Error(data?.error || 'Çeviri başarısız');
         finalTranslation = data.translation || '';
       }
-      const english = lang === 'en' ? selectedWord : finalTranslation || selectedWord;
+      const english = lang === 'tr' ? finalTranslation || selectedWord : selectedWord;
       const turkish = lang === 'tr' ? selectedWord : finalTranslation || selectedWord;
       addUnknownWord({ english, turkish, source: 'example' });
       setIsModalOpen(false);
@@ -187,7 +198,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
       <p className="question-hint">
         {isSynonymMode
           ? 'Doğru eş anlamlıyı seç'
-          : (isEnglishToTurkish ? 'Doğru Türkçe karşılığını seç' : 'Doğru İngilizce karşılığını seç')}
+          : (isEnglishToTurkish ? 'Doğru Türkçe karşılığını seç' : `Doğru ${languageConfig.sourceLabel} karşılığını seç`)}
       </p>
 
       {onRequestExample && !examMode && (
@@ -212,7 +223,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
 
       {definition && !examMode && (
         <div className="example-box" style={{ marginTop: '12px' }}>
-          <div className="example-title">🇬🇧 İngilizce Tanım</div>
+          <div className="example-title">{languageConfig.flag} {languageConfig.definitionLabel}</div>
           {definition?.loading && <div className="example-sentence">Yükleniyor...</div>}
           {definition?.error && <div className="example-error">{definition.error}</div>}
           {!definition?.loading && definition?.text && (

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Word } from '../types';
 import { shuffleArray } from '../services/quizEngine';
+import { useWordListStore } from '../stores/wordListStore';
+import { DEFAULT_STUDY_LANGUAGE, getStudyLanguageConfig } from '../utils/languages';
 
 interface MatchingProps {
   words: Word[];
@@ -18,6 +20,8 @@ interface Card {
 }
 
 const Matching: React.FC<MatchingProps> = ({ words, onComplete, onExit, onWordResult }) => {
+  const activeLanguage = useWordListStore((state) => state.activeLanguage);
+  const languageConfig = getStudyLanguageConfig(activeLanguage || DEFAULT_STUDY_LANGUAGE);
   const [cards, setCards] = useState<Card[]>([]);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [matchedPairs, setMatchedPairs] = useState<string[]>([]);
@@ -161,7 +165,7 @@ const Matching: React.FC<MatchingProps> = ({ words, onComplete, onExit, onWordRe
       </div>
 
       <p style={{ textAlign: 'center', marginBottom: '20px', color: 'var(--text-secondary)' }}>
-        İngilizce kelimeyi Türkçe karşılığıyla eşleştirin
+        {languageConfig.sourceLabel} kelimeyi Türkçe karşılığıyla eşleştirin
       </p>
 
       <div className="matching-grid">
@@ -185,7 +189,7 @@ const Matching: React.FC<MatchingProps> = ({ words, onComplete, onExit, onWordRe
               display: 'block',
               marginBottom: '5px'
             }}>
-              {card.type === 'english' ? '🇬🇧 EN' : '🇹🇷 TR'}
+              {card.type === 'english' ? `${languageConfig.flag} ${languageConfig.sourceShortLabel}` : '🇹🇷 TR'}
             </span>
             {card.text}
           </div>

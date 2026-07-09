@@ -19,6 +19,12 @@ import { useReviewSessionStore } from '../stores/reviewSessionStore';
 import { useUserProgressStore } from '../stores/userProgressStore';
 import { useWordListStore } from '../stores/wordListStore';
 import { QuizQuestion, QuizType, Word } from '../types';
+import {
+  AppLanguageCode,
+  DEFAULT_STUDY_LANGUAGE,
+  getDirectionLabel,
+  getStudyLanguageConfig,
+} from '../utils/languages';
 
 type QuizPhase = 'select-list' | 'select-type' | 'quiz';
 
@@ -59,12 +65,12 @@ type ExampleState = {
   translation?: string;
   loading?: boolean;
   error?: string;
-  lang?: 'en' | 'tr';
+  lang?: AppLanguageCode;
 };
 
 const modelForExamples = 'gemma-3-27b-it';
 
-const getStoredExample = (word: Word, lang: 'en' | 'tr') => {
+const getStoredExample = (word: Word, lang: AppLanguageCode) => {
   if (word.exampleSentence && word.exampleLang === lang) {
     return {
       sentence: word.exampleSentence,
@@ -78,7 +84,9 @@ const getStoredExample = (word: Word, lang: 'en' | 'tr') => {
 const Quiz: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { wordLists, selectedListId, selectWordList, updateWordMastery, updateWordExample } = useWordListStore();
+  const { wordLists, selectedListId, selectWordList, updateWordMastery, updateWordExample, activeLanguage } = useWordListStore();
+  const studyLanguage = activeLanguage || DEFAULT_STUDY_LANGUAGE;
+  const languageConfig = getStudyLanguageConfig(studyLanguage);
   const { addQuizResult } = useUserProgressStore();
   const { cards, cardStates, createCardsFromWords, getCardByWordId, updateCardState } = useCardStore();
   const { startSession, endSession, addReviewLog, incrementCorrect, incrementIncorrect, incrementReviewed } =
@@ -201,7 +209,7 @@ const Quiz: React.FC = () => {
     const dir = (q.direction as string) || 'en-to-tr';
     if (dir === 'tr-to-en') return; // TR -> EN ise örnek cümle alma
     const key = `${q.word.id}-${dir}`;
-    const lang = dir === 'tr-to-en' ? 'tr' : 'en';
+    const lang: AppLanguageCode = dir === 'tr-to-en' ? 'tr' : studyLanguage;
     const stored = getStoredExample(q.word, lang);
     if (stored?.sentence) {
       setExampleMap((prev) => ({
@@ -245,7 +253,7 @@ const Quiz: React.FC = () => {
           [key]: { loading: false, error: err instanceof Error ? err.message : 'Örnek alınamadı' }
         }));
       });
-  }, [showExamples, questions, currentIndex, updateWordExample]);
+  }, [showExamples, questions, currentIndex, updateWordExample, studyLanguage]);
 
   // Definition otomatik yükleme (showDefinitions açıksa ve soru yönü en->tr ise)
   useEffect(() => {
@@ -276,7 +284,7 @@ const Quiz: React.FC = () => {
     fetch('/api/definition', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ word: q.word.english })
+      body: JSON.stringify({ word: q.word.english, language: studyLanguage })
     })
       .then(async (res) => {
         const data = await res.json();
@@ -294,7 +302,7 @@ const Quiz: React.FC = () => {
           [defKey]: { loading: false, error: err instanceof Error ? err.message : 'Tanım alınamadı' }
         }));
       });
-  }, [showDefinitions, questions, currentIndex]);
+  }, [showDefinitions, questions, currentIndex, studyLanguage]);
 
 
   useEffect(() => {
@@ -396,6 +404,7 @@ const Quiz: React.FC = () => {
       sessionId: crypto.randomUUID(),
       wordListId: selectedListId || '',
       wordListTitle: selectedList?.title || '',
+      language: studyLanguage,
       quizType,
       totalQuestions: finalTotal,
       correctAnswers: finalCorrect,
@@ -651,9 +660,9 @@ const Quiz: React.FC = () => {
             <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600' }}>Soru yönü</label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
               {[
-                { value: 'mixed' as const, label: 'Karışık' },
-                { value: 'en-to-tr' as const, label: 'İng → Tr' },
-                { value: 'tr-to-en' as const, label: 'Tr → İng' }
+                { value: 'mixed' as const, label: getDirectionLabel(studyLanguage, 'mixed') },
+                { value: 'en-to-tr' as const, label: getDirectionLabel(studyLanguage, 'en-to-tr') },
+                { value: 'tr-to-en' as const, label: getDirectionLabel(studyLanguage, 'tr-to-en') }
               ].map((item) => (
                 <button
                   key={item.value}
@@ -725,9 +734,11 @@ const Quiz: React.FC = () => {
             }}
           >
             <div>
-              <div style={{ fontWeight: '700', marginBottom: '6px' }}>🇬🇧 İngilizce Tanım</div>
+              <div style={{ fontWeight: '700', marginBottom: '6px' }}>
+                {languageConfig.flag} {languageConfig.definitionLabel}
+              </div>
               <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                Kelimenin İngilizce açıklamasını (definition) göster.
+                Kelimenin {languageConfig.sourceLabel} açıklamasını göster.
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -842,11 +853,11 @@ const Quiz: React.FC = () => {
           <div className="flashcard-container">
             <div className={`flashcard ${isFlipped ? 'flipped' : ''}`} onClick={() => setIsFlipped(!isFlipped)}>
               <div className="flashcard-front">
-                <span className="flashcard-label">{flashcardDirection === 'en-to-tr' ? 'İngilizce' : 'Türkçe'}</span>
+                <span className="flashcard-label">{flashcardDirection === 'en-to-tr' ? languageConfig.sourceLabel : 'Türkçe'}</span>
                 <span>{flashcardDirection === 'en-to-tr' ? currentWord.english : currentWord.turkish}</span>
               </div>
               <div className="flashcard-back">
-                <span className="flashcard-label">{flashcardDirection === 'en-to-tr' ? 'Türkçe' : 'İngilizce'}</span>
+                <span className="flashcard-label">{flashcardDirection === 'en-to-tr' ? 'Türkçe' : languageConfig.sourceLabel}</span>
                 <span>{flashcardDirection === 'en-to-tr' ? currentWord.turkish : currentWord.english}</span>
               </div>
             </div>
@@ -945,7 +956,7 @@ const Quiz: React.FC = () => {
 
       const requestExample = async (force = false) => {
         if (!showExamples || dir === 'tr-to-en') return;
-        const lang = dir === 'tr-to-en' ? 'tr' : 'en';
+        const lang: AppLanguageCode = dir === 'tr-to-en' ? 'tr' : studyLanguage;
         const stored = getStoredExample(currentQuestion.word, lang);
         if (stored?.sentence && !force) {
           setExampleMap((prev) => ({

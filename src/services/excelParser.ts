@@ -235,7 +235,7 @@ export const parseExcelFile = (file: File): Promise<ParsedExcelResult> => {
           resolve({
             success: false,
             words: [],
-            error: 'Dosyada ge\u00e7erli kelime bulunamad\u0131. Format: \u0130ngilizce;T\u00fcrk\u00e7e veya \u0130ngilizce,T\u00fcrk\u00e7e',
+            error: 'Dosyada ge\u00e7erli kelime bulunamad\u0131. Format: kelime;T\u00fcrk\u00e7e veya kelime,T\u00fcrk\u00e7e',
             fileName: file.name,
           });
           return;

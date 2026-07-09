@@ -1,6 +1,15 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const modelName = 'gemma-3-27b-it';
+type DefinitionLanguage = 'en' | 'de';
+
+const languageNames: Record<DefinitionLanguage, string> = {
+  en: 'English',
+  de: 'German',
+};
+
+const isDefinitionLanguage = (value: unknown): value is DefinitionLanguage =>
+  value === 'en' || value === 'de';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -12,9 +21,12 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: 'Missing GEMINI_API_KEY' });
   }
 
-  const { word } = req.body as { word?: string };
+  const { word, language = 'en' } = req.body as { word?: string; language?: DefinitionLanguage };
   if (!word) {
     return res.status(400).json({ error: 'word is required' });
+  }
+  if (!isDefinitionLanguage(language)) {
+    return res.status(400).json({ error: 'language must be en or de' });
   }
 
   try {
@@ -23,9 +35,9 @@ export default async function handler(req: any, res: any) {
 
     const prompt = `
 Word: "${word}"
-Task: Provide a concise English definition (max 20 words).
+Task: Provide a concise ${languageNames[language]} definition (max 20 words).
 Guidelines:
-- Dictionary-grade (Oxford/Cambridge/Merriam-Webster style).
+- Dictionary-grade, standard learner-friendly wording.
 - No translation, no examples, no synonyms list.
 Return plain text only.`;
 

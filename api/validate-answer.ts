@@ -4,10 +4,15 @@ type ReqBody = {
   prompt: string;
   correct: string;
   user: string;
-  lang?: 'en' | 'tr';
+  lang?: 'en' | 'de' | 'tr';
 };
 
 const modelName = 'gemma-3-27b-it';
+const languageNames = {
+  en: 'English',
+  de: 'German',
+  tr: 'Turkish',
+} as const;
 
 const levenshtein = (a: string, b: string) => {
   const m = a.length;
@@ -67,7 +72,7 @@ export default async function handler(req: any, res: any) {
 
     const promptText = `
 Sen bir sinav degerlendiricisisin. Ogrenci bir kelimenin karsiligini yaziyor.
-Dil: ${lang === 'tr' ? 'Turkce' : 'Ingilizce'}
+Dil: ${languageNames[lang] || languageNames.en}
 Dogru cevap: "${correct}"
 Ogrenci cevabi: "${user}"
 

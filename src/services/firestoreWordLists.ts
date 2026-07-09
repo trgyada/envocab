@@ -9,8 +9,10 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { WordList, Word } from '../types';
+import { DEFAULT_STUDY_LANGUAGE, StudyLanguage, getStudyLanguageConfig } from '../utils/languages';
 
-const COLLECTION = 'lists';
+const getCollectionName = (language: StudyLanguage = DEFAULT_STUDY_LANGUAGE) =>
+  getStudyLanguageConfig(language).collectionName;
 
 const toTimestamp = (value?: Date | Timestamp) => {
   if (!value) return serverTimestamp();
@@ -74,9 +76,10 @@ const serializeWord = (word: Word) => {
   return base;
 };
 
-const serializeWordList = (list: WordList) => ({
+const serializeWordList = (list: WordList, language: StudyLanguage) => ({
   title: list.title,
   description: list.description || '',
+  language,
   words: list.words.map(serializeWord),
   createdAt: toTimestamp(list.createdAt),
   updatedAt: serverTimestamp(),
@@ -100,26 +103,35 @@ const deserializeWord = (raw: any): Word => ({
   synonyms: Array.isArray(raw.synonyms) ? raw.synonyms : undefined,
 });
 
-const deserializeWordList = (id: string, data: any): WordList => ({
+const deserializeWordList = (id: string, data: any, language: StudyLanguage): WordList => ({
   id,
   title: data.title || 'İsimsiz Liste',
   description: data.description,
+  language,
   words: Array.isArray(data.words) ? data.words.map(deserializeWord) : [],
   createdAt: toDate(data.createdAt) || new Date(),
   updatedAt: toDate(data.updatedAt) || new Date(),
 });
 
-export const fetchWordListsFromFirestore = async (): Promise<WordList[]> => {
-  const snap = await getDocs(collection(db, COLLECTION));
-  return snap.docs.map((d) => deserializeWordList(d.id, d.data()));
+export const fetchWordListsFromFirestore = async (
+  language: StudyLanguage = DEFAULT_STUDY_LANGUAGE
+): Promise<WordList[]> => {
+  const snap = await getDocs(collection(db, getCollectionName(language)));
+  return snap.docs.map((d) => deserializeWordList(d.id, d.data(), language));
 };
 
-export const saveWordListToFirestore = async (list: WordList) => {
-  const ref = doc(db, COLLECTION, list.id);
-  await setDoc(ref, serializeWordList(list), { merge: true });
+export const saveWordListToFirestore = async (
+  list: WordList,
+  language: StudyLanguage = list.language || DEFAULT_STUDY_LANGUAGE
+) => {
+  const ref = doc(db, getCollectionName(language), list.id);
+  await setDoc(ref, serializeWordList(list, language), { merge: true });
 };
 
-export const deleteWordListFromFirestore = async (id: string) => {
-  const ref = doc(db, COLLECTION, id);
+export const deleteWordListFromFirestore = async (
+  id: string,
+  language: StudyLanguage = DEFAULT_STUDY_LANGUAGE
+) => {
+  const ref = doc(db, getCollectionName(language), id);
   await deleteDoc(ref);
 };

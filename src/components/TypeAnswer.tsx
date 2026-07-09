@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { QuizQuestion, Word } from '../types';
+import { useWordListStore } from '../stores/wordListStore';
+import { DEFAULT_STUDY_LANGUAGE } from '../utils/languages';
 
 type Props = {
   question: QuizQuestion;
@@ -14,6 +16,8 @@ type ValidateResponse = {
 };
 
 const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
+  const activeLanguage = useWordListStore((state) => state.activeLanguage);
+  const studyLanguage = activeLanguage || DEFAULT_STUDY_LANGUAGE;
   const [value, setValue] = useState('');
   const [result, setResult] = useState<ValidateResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -26,6 +30,7 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
   const direction = question.direction === 'tr-to-en' ? 'tr-to-en' : 'en-to-tr';
   const correctAnswer =
     (question as any).correctAnswer || question.word[direction === 'tr-to-en' ? 'english' : 'turkish'];
+  const answerLanguage = direction === 'tr-to-en' ? studyLanguage : 'tr';
 
   useEffect(() => {
     setValue('');
@@ -48,7 +53,7 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
               prompt: question.question,
               correct: correctAnswer,
               user: correctAnswer,
-              lang: direction === 'tr-to-en' ? 'tr' : 'en'
+              lang: answerLanguage
             })
           });
           const data: ValidateResponse = await res.json();
@@ -81,7 +86,7 @@ const TypeAnswer: React.FC<Props> = ({ question, onAnswer }) => {
           prompt: question.question,
           correct: correctAnswer,
           user: value.trim(),
-          lang: direction === 'tr-to-en' ? 'tr' : 'en'
+          lang: answerLanguage
         })
       });
       const data: ValidateResponse = await res.json();

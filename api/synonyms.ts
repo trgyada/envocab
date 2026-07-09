@@ -1,6 +1,15 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const modelName = 'gemma-3-27b-it';
+type SynonymLanguage = 'en' | 'de';
+
+const languageNames: Record<SynonymLanguage, string> = {
+  en: 'English',
+  de: 'German',
+};
+
+const isSynonymLanguage = (value: unknown): value is SynonymLanguage =>
+  value === 'en' || value === 'de';
 
 const normalize = (value: string) => value.toLowerCase().trim();
 
@@ -48,11 +57,11 @@ const parseSynonymResponse = (raw: string) => {
     .filter(Boolean);
 };
 
-const buildPrompt = (word: string, count: number) => `
+const buildPrompt = (word: string, count: number, language: SynonymLanguage) => `
 Word: "${word}"
-Task: Provide ${count} English synonyms.
+Task: Provide ${count} ${languageNames[language]} synonyms.
 Guidelines:
-- Prefer standard, dictionary-grade synonyms (Oxford/Cambridge/Merriam-Webster style).
+- Prefer standard, dictionary-grade synonyms.
 - Avoid slang or overly rare terms.
 - No duplicates.
 - Do not include the original word.
@@ -72,9 +81,12 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: 'Missing GEMINI_API_KEY' });
   }
 
-  const { word, count } = req.body as { word?: string; count?: number };
+  const { word, count, language = 'en' } = req.body as { word?: string; count?: number; language?: SynonymLanguage };
   if (!word || typeof word !== 'string') {
     return res.status(400).json({ error: 'word is required' });
+  }
+  if (!isSynonymLanguage(language)) {
+    return res.status(400).json({ error: 'language must be en or de' });
   }
 
   const targetCount = Math.max(1, Math.min(Number(count) || 4, 6));
@@ -85,7 +97,7 @@ export default async function handler(req: any, res: any) {
 
     const generateOnce = async () => {
       const result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: buildPrompt(word, targetCount) }] }],
+        contents: [{ role: 'user', parts: [{ text: buildPrompt(word, targetCount, language) }] }],
         generationConfig: {
           temperature: 0.6,
           topP: 0.9,

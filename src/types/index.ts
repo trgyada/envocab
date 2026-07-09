@@ -1,3 +1,5 @@
+import type { StudyLanguage } from '../utils/languages';
+
 // ==========================================
 // TEMEL TİPLER
 // ==========================================
@@ -20,7 +22,7 @@ export interface Word {
   lastPracticed?: Date;
   exampleSentence?: string;
   exampleTranslation?: string;
-  exampleLang?: 'en' | 'tr';
+  exampleLang?: StudyLanguage | 'tr';
   exampleUpdatedAt?: Date;
   exampleModel?: string;
   englishDefinition?: string; // ?ngilizce tan?m (EN-EN) - Excel'den veya AI'dan
@@ -184,6 +186,7 @@ export interface WordList {
   id: string;
   title: string;
   description?: string;
+  language?: StudyLanguage;
   words: Word[];
   createdAt: Date;
   updatedAt: Date;
@@ -226,6 +229,7 @@ export interface QuizResult {
   sessionId: string;
   wordListId: string;
   wordListTitle: string;
+  language?: StudyLanguage;
   quizType: QuizType;
   totalQuestions: number;
   correctAnswers: number;

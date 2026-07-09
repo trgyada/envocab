@@ -4,6 +4,7 @@ import { useWordListStore } from '../stores/wordListStore';
 import { useUserProgressStore } from '../stores/userProgressStore';
 import { parseExcelFile, isValidExcelFile } from '../services/excelParser';
 import { Word } from '../types';
+import { DEFAULT_STUDY_LANGUAGE, getStudyLanguageConfig } from '../utils/languages';
 
 type ViewMode = 'lists' | 'detail' | 'add-manual';
 
@@ -18,8 +19,12 @@ const WordLists: React.FC = () => {
     removeWordFromList,
     updateWord,
     updateWordsSynonyms,
-    updateListTitle
+    updateListTitle,
+    activeLanguage
   } = useWordListStore();
+  const studyLanguage = activeLanguage || DEFAULT_STUDY_LANGUAGE;
+  const languageConfig = getStudyLanguageConfig(studyLanguage);
+  const definitionPluralLabel = `${languageConfig.definitionLabel}ları`;
 
   const listsWithoutUnknown = React.useMemo(() => wordLists.filter((l) => l.id !== 'unknown'), [wordLists]);
 
@@ -179,7 +184,7 @@ const WordLists: React.FC = () => {
       const res = await fetch('/api/example', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ word: english, lang: 'en' })
+        body: JSON.stringify({ word: english, lang: studyLanguage })
       });
       const data = await res.json();
       return { res, data };
@@ -210,7 +215,7 @@ const WordLists: React.FC = () => {
       const res = await fetch('/api/definition', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ word: english })
+        body: JSON.stringify({ word: english, language: studyLanguage })
       });
       const data = await res.json();
       return { res, data };
@@ -239,7 +244,7 @@ const WordLists: React.FC = () => {
       const res = await fetch('/api/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: english, from: 'en', to: 'tr' })
+        body: JSON.stringify({ text: english, from: studyLanguage, to: 'tr' })
       });
       const data = await res.json();
       return { res, data };
@@ -262,7 +267,7 @@ const WordLists: React.FC = () => {
       const res = await fetch('/api/synonyms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ word: english, count })
+        body: JSON.stringify({ word: english, count, language: studyLanguage })
       });
       const data = await res.json();
       return { res, data };
@@ -332,7 +337,7 @@ const WordLists: React.FC = () => {
     const en = english.trim();
     const tr = turkish.trim();
     if (!en || !tr) {
-      setMessage({ text: 'İngilizce ve Türkçe alanlarını doldurun.', type: 'error' });
+      setMessage({ text: `${languageConfig.sourceLabel} ve Türkçe alanlarını doldurun.`, type: 'error' });
       return;
     }
     const isDuplicate = viewingList.words.some((w) => w.english.toLowerCase() === en.toLowerCase());
@@ -349,7 +354,7 @@ const WordLists: React.FC = () => {
     if (!viewingListId) return;
     const english = word.english.trim();
     if (!english) {
-      setMessage({ text: 'Çevirmek için İngilizce kelime gerekli.', type: 'error' });
+      setMessage({ text: `Çevirmek için ${languageConfig.sourceLabel} kelime gerekli.`, type: 'error' });
       return;
     }
     if (translatingWordId === word.id) return;
@@ -447,7 +452,7 @@ const WordLists: React.FC = () => {
   const handleExportWords = (title: string, words: Word[]) => {
     const safeTitle = title.trim().replace(/[<>:"/\\|?*]+/g, '') || 'liste';
     const data = [
-      ['English', 'Türkçe', 'Örnek Cümle', 'Örnek Çeviri', 'İngilizce Tanım', 'Eş Anlamlılar'],
+      [languageConfig.sourceLabel, 'Türkçe', 'Örnek Cümle', 'Örnek Çeviri', languageConfig.definitionLabel, 'Eş Anlamlılar'],
       ...words.map((w) => [
         w.english,
         w.turkish,
@@ -605,7 +610,7 @@ const WordLists: React.FC = () => {
         turkish: word.turkish,
         exampleSentence: result.sentence,
         exampleTranslation: result.translation,
-        exampleLang: 'en',
+        exampleLang: studyLanguage,
         exampleModel: 'gemma-3-27b-it',
         exampleUpdatedAt: new Date()
       });
@@ -659,7 +664,7 @@ const WordLists: React.FC = () => {
           turkish: word.turkish,
           exampleSentence: result.sentence,
           exampleTranslation: result.translation,
-          exampleLang: 'en',
+          exampleLang: studyLanguage,
           exampleModel: 'gemma-3-27b-it',
           exampleUpdatedAt: new Date()
         });
@@ -686,7 +691,7 @@ const WordLists: React.FC = () => {
 
     const targets = viewingList.words.filter((w) => !(w.englishDefinition || '').trim());
     if (targets.length === 0) {
-      setMessage({ text: 'Bu listedeki tüm İngilizce tanımlar mevcut.', type: 'success' });
+      setMessage({ text: `Bu listedeki tüm ${definitionPluralLabel} mevcut.`, type: 'success' });
       return;
     }
 
@@ -718,7 +723,7 @@ const WordLists: React.FC = () => {
 
     setDefinitionProgress(null);
     setIsGeneratingDefinitions(false);
-    setMessage({ text: 'İngilizce tanımlar güncellendi.', type: 'success' });
+    setMessage({ text: `${definitionPluralLabel} güncellendi.`, type: 'success' });
   };
 
   if (viewMode === 'add-manual') {
@@ -768,7 +773,7 @@ const WordLists: React.FC = () => {
                     type="text"
                     value={word.english}
                     onChange={(e) => updateManualWord(index, 'english', e.target.value)}
-                    placeholder="İngilizce"
+                    placeholder={languageConfig.sourceLabel}
                     className="word-card-edit-input"
                     style={{ flex: 1 }}
                   />
@@ -920,7 +925,7 @@ const WordLists: React.FC = () => {
                     onClick={handleGenerateDefinitions}
                     disabled={isGeneratingDefinitions}
                   >
-                    {isGeneratingDefinitions ? 'Üretiliyor...' : 'İngilizce tanımları üret'}
+                    {isGeneratingDefinitions ? 'Üretiliyor...' : languageConfig.definitionActionLabel}
                   </button>
                 </div>
               </details>
@@ -945,7 +950,7 @@ const WordLists: React.FC = () => {
             )}
             {definitionProgress && (
               <div className="definition-progress">
-                İngilizce tanımlar üretiliyor: {definitionProgress.current}/{definitionProgress.total}
+                {definitionPluralLabel} üretiliyor: {definitionProgress.current}/{definitionProgress.total}
               </div>
             )}
             {synonymError && <div className="synonym-error">{synonymError}</div>}
@@ -972,7 +977,7 @@ const WordLists: React.FC = () => {
         )}
 
         <div className="word-table-header">
-          <span className="word-table-col">English</span>
+          <span className="word-table-col">{languageConfig.sourceLabel}</span>
           <span className="word-table-col">Türkçe</span>
           <span className="word-table-col">Eş Anlamlılar</span>
           <span className="word-table-col-actions"></span>
@@ -1062,7 +1067,7 @@ const WordLists: React.FC = () => {
                           />
                         </div>
                         <div className="word-table-detail">
-                          <label>İngilizce tanım</label>
+                          <label>{languageConfig.definitionLabel}</label>
                           <textarea
                             className="word-table-textarea"
                             rows={3}
@@ -1085,7 +1090,7 @@ const WordLists: React.FC = () => {
                         className="word-table-icon-btn sound"
                         onClick={() => {
                           const utterance = new SpeechSynthesisUtterance(word.english);
-                          utterance.lang = 'en-US';
+                          utterance.lang = languageConfig.sourceSpeechLang;
                           speechSynthesis.speak(utterance);
                         }}
                         title="Sesli oku"
@@ -1112,7 +1117,7 @@ const WordLists: React.FC = () => {
                         className="word-table-icon-btn definition"
                         onClick={() => handleGenerateDefinitionForWord(word)}
                         disabled={generatingDefinitionId === word.id || isGeneratingDefinitions}
-                        title="İngilizce tanım üret"
+                        title={`${languageConfig.definitionLabel} üret`}
                       >
                         {generatingDefinitionId === word.id ? 'Tanım...' : 'Tanım'}
                       </button>
@@ -1146,7 +1151,7 @@ const WordLists: React.FC = () => {
                           )}
                           {word.englishDefinition && (
                             <div className="word-table-detail">
-                              <label>İngilizce tanım</label>
+                              <label>{languageConfig.definitionLabel}</label>
                               <div className="word-table-detail-text">{word.englishDefinition}</div>
                             </div>
                           )}
@@ -1207,7 +1212,7 @@ const WordLists: React.FC = () => {
         </div>
 
         <p className="upload-hint">
-          Excel/CSV: 1. sütun İngilizce, 2. sütun Türkçe | Ayraç: virgül veya noktalı virgül
+          {languageConfig.excelHint} | Ayraç: virgül veya noktalı virgül
         </p>
 
         {isLoading && <div className="spinner" />}
@@ -1256,7 +1261,7 @@ const WordLists: React.FC = () => {
       <div className="tools-section">
         <h3 className="section-title">🔗 Listeleri Birleştir</h3>
         <p className="section-desc">
-          Az kelimeli listeleri tek bir listede topla. Aynı İngilizce kelime tekrar eklenmez.
+          Az kelimeli listeleri tek bir listede topla. Aynı {languageConfig.sourceLabel} kelime tekrar eklenmez.
         </p>
         <div className="merge-header">
           <input

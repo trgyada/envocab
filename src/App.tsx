@@ -1,6 +1,7 @@
 import React, { useEffect, Suspense, lazy, memo, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useWordListStore } from './stores/wordListStore';
+import { STUDY_LANGUAGES, StudyLanguage, getStudyLanguageConfig } from './utils/languages';
 
 // Lazy load pages for better initial load performance
 const Home = lazy(() => import('./pages/Home'));
@@ -54,8 +55,32 @@ const IconChart = () => (
   </svg>
 );
 
+const LanguageGate: React.FC<{ onSelect: (language: StudyLanguage) => void }> = ({ onSelect }) => (
+  <main className="language-gate">
+    <section className="language-gate-panel">
+      <div className="language-gate-mark">V</div>
+      <h1>Çalışmak istediğin dili seç</h1>
+      <p>Listeler, quizler ve bulut kayıtları seçilen dile göre ayrı tutulur.</p>
+      <div className="language-gate-options">
+        {STUDY_LANGUAGES.map((language) => (
+          <button key={language.id} className="language-gate-option" onClick={() => onSelect(language.id)}>
+            <span className="language-gate-flag">{language.flag}</span>
+            <span>
+              <strong>{language.name}</strong>
+              <small>{language.nativeName}</small>
+            </span>
+          </button>
+        ))}
+      </div>
+    </section>
+  </main>
+);
+
 const Navigation: React.FC = memo(() => {
   const location = useLocation();
+  const activeLanguage = useWordListStore((state) => state.activeLanguage);
+  const setActiveLanguage = useWordListStore((state) => state.setActiveLanguage);
+  const languageConfig = getStudyLanguageConfig(activeLanguage);
 
   const isActive = useCallback((path: string) => location.pathname === path, [location.pathname]);
 
@@ -81,6 +106,21 @@ const Navigation: React.FC = memo(() => {
             <span className="nav-icon accent"><IconChart /></span> İstatistik
           </Link>
         </div>
+        <div className="language-switcher" aria-label="Çalışma dili">
+          {STUDY_LANGUAGES.map((language) => (
+            <button
+              key={language.id}
+              className={`language-switcher-btn ${languageConfig.id === language.id ? 'active' : ''}`}
+              onClick={() => {
+                if (languageConfig.id !== language.id) setActiveLanguage(language.id);
+              }}
+              title={`${language.name} çalış`}
+            >
+              <span>{language.flag}</span>
+              <span>{language.sourceShortLabel}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </nav>
   );
@@ -90,13 +130,19 @@ Navigation.displayName = 'Navigation';
 
 const App: React.FC = () => {
   // Use shallow selector to avoid unnecessary re-renders
+  const activeLanguage = useWordListStore((state) => state.activeLanguage);
+  const setActiveLanguage = useWordListStore((state) => state.setActiveLanguage);
   const hydrateFromCloud = useWordListStore((state) => state.hydrateFromCloud);
 
   useEffect(() => {
-    // Only hydrate once on mount
-    hydrateFromCloud();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (activeLanguage) {
+      hydrateFromCloud(activeLanguage);
+    }
+  }, [activeLanguage, hydrateFromCloud]);
+
+  if (!activeLanguage) {
+    return <LanguageGate onSelect={setActiveLanguage} />;
+  }
 
   return (
     <Router>

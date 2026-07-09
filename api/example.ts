@@ -3,6 +3,22 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 // v1 endpoint ve güncel model (Gemini 2.5 Flash)
 // const modelName = 'gemini-2.5-flash';
 const modelName = 'gemma-3-27b-it';
+type LanguageCode = 'en' | 'de' | 'tr';
+
+const languageNames: Record<LanguageCode, string> = {
+  en: 'English',
+  de: 'German',
+  tr: 'Turkish',
+};
+
+const translationTargetNames: Record<LanguageCode, string> = {
+  en: 'Turkish',
+  de: 'Turkish',
+  tr: 'English',
+};
+
+const isLanguageCode = (value: unknown): value is LanguageCode =>
+  value === 'en' || value === 'de' || value === 'tr';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -14,9 +30,9 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: 'Missing GEMINI_API_KEY' });
   }
 
-  const { word, lang } = req.body as { word?: string; lang?: 'en' | 'tr' };
-  if (!word || (lang !== 'en' && lang !== 'tr')) {
-    return res.status(400).json({ error: 'word and lang (en|tr) are required' });
+  const { word, lang } = req.body as { word?: string; lang?: LanguageCode };
+  if (!word || !isLanguageCode(lang)) {
+    return res.status(400).json({ error: 'word and lang (en|de|tr) are required' });
   }
 
   try {
@@ -25,12 +41,11 @@ export default async function handler(req: any, res: any) {
     const model = genAI.getGenerativeModel({ model: modelName });
 
     const prompt = `
-Kelime: "${word}"
-Dil: ${lang === 'en' ? 'Ingilizce' : 'Turkce'}
-Gorev: YDS-YOKDIL tipinde B2-C1 seviyesinde tek cumle kur. Kelimeyi dogal baglamda kullan.
-Kural: Cumlede dogru tense/voice (aktif-pasif) kullan; mumkunse gerund/infinitive yapisini dogal sekilde kullan.
-Tarz: Akademik ama akici, sozluk kalitesinde.
-Ceviri: Cevap verildikten sonra gostermek icin karsi dilde bir ceviri de uret.
+Word: "${word}"
+Language: ${languageNames[lang]}
+Task: Write one B2-C1 level sentence in ${languageNames[lang]}. Use the word naturally in context.
+Style: Academic but fluent, dictionary-quality.
+Translation: Also produce a ${translationTargetNames[lang]} translation for showing after the answer.
 
 Yaniti su JSON formatinda ver:
 {

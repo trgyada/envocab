@@ -168,6 +168,117 @@ a {
   color: var(--accent);
 }
 
+.language-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  background: rgba(0, 21, 35, 0.72);
+}
+
+.language-switcher-btn {
+  min-width: 62px;
+  height: 38px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.language-switcher-btn.active {
+  background: rgba(193, 18, 31, 0.2);
+  color: var(--text-primary);
+}
+
+.language-gate {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.language-gate-panel {
+  width: min(720px, 100%);
+  padding: 32px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--glass-bg);
+  box-shadow: var(--shadow-soft);
+}
+
+.language-gate-mark {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 18px;
+  border-radius: var(--radius-md);
+  background: rgba(193, 18, 31, 0.16);
+  color: var(--accent-light);
+  font-size: 1.8rem;
+  font-weight: 900;
+}
+
+.language-gate h1 {
+  font-size: 2rem;
+  line-height: 1.15;
+  margin-bottom: 10px;
+}
+
+.language-gate p {
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.language-gate-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.language-gate-option {
+  min-height: 92px;
+  padding: 18px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  background: rgba(0, 48, 73, 0.35);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+}
+
+.language-gate-option:hover {
+  border-color: var(--accent);
+  background: rgba(193, 18, 31, 0.12);
+}
+
+.language-gate-flag {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.language-gate-option strong,
+.language-gate-option small {
+  display: block;
+}
+
+.language-gate-option small {
+  margin-top: 2px;
+  color: var(--text-secondary);
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -1936,6 +2047,15 @@ a {
     gap: 6px;
   }
 
+  .language-switcher {
+    order: 3;
+  }
+
+  .language-switcher-btn {
+    min-width: 50px;
+    height: 34px;
+  }
+
   .quiz-container {
     padding: 0 16px 30px;
   }
@@ -1973,6 +2093,19 @@ a {
 }
 
 @media (max-width: 540px) {
+  .navbar-content {
+    flex-wrap: wrap;
+  }
+
+  .language-switcher {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .language-gate-panel {
+    padding: 24px;
+  }
+
   .stats-overview {
     grid-template-columns: 1fr;
     max-width: 100%;

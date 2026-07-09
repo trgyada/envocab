@@ -2,11 +2,37 @@ import React, { useMemo, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { useWordListStore } from '../stores/wordListStore';
 import { useUserProgressStore } from '../stores/userProgressStore';
+import { DEFAULT_STUDY_LANGUAGE, getStudyLanguageConfig } from '../utils/languages';
 
 const Home: React.FC = memo(() => {
   // Use shallow selectors to prevent unnecessary re-renders
   const wordLists = useWordListStore((state) => state.wordLists);
-  const stats = useUserProgressStore((state) => state.stats);
+  const activeLanguage = useWordListStore((state) => state.activeLanguage);
+  const quizResults = useUserProgressStore((state) => state.quizResults);
+  const studyLanguage = activeLanguage || DEFAULT_STUDY_LANGUAGE;
+  const languageConfig = getStudyLanguageConfig(studyLanguage);
+  const languageResults = useMemo(
+    () => quizResults.filter((result) => (result.language || DEFAULT_STUDY_LANGUAGE) === studyLanguage),
+    [quizResults, studyLanguage]
+  );
+  const stats = useMemo(() => {
+    const totalScore = languageResults.reduce((sum, result) => sum + result.score, 0);
+    const dayKeys = new Set(
+      languageResults.map((result) => new Date(result.completedAt).toISOString().split('T')[0])
+    );
+    let streakDays = 0;
+    const cursor = new Date();
+    cursor.setHours(0, 0, 0, 0);
+    while (dayKeys.has(cursor.toISOString().split('T')[0])) {
+      streakDays += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return {
+      totalQuizzes: languageResults.length,
+      averageScore: languageResults.length ? Math.round(totalScore / languageResults.length) : 0,
+      streakDays,
+    };
+  }, [languageResults]);
 
   // Memoize computed value
   const totalWords = useMemo(
@@ -18,7 +44,7 @@ const Home: React.FC = memo(() => {
     <div className="home-container">
       <h1>VocabMaster</h1>
       <p>
-        Excel dosyalarından kelime listeleri yükle, farklı quiz modlarıyla pratik yap ve ilerlemeni takip et!
+        {languageConfig.sourceLabel} kelime listeleri yükle, farklı quiz modlarıyla pratik yap ve ilerlemeni takip et!
       </p>
 
       <div className="stats-overview">
@@ -81,7 +107,7 @@ const Home: React.FC = memo(() => {
         <div className="getting-started">
           <h3>Nasıl Başlarım?</h3>
           <ol>
-            <li>Excel veya CSV dosyanı hazırla (1. sütun: İngilizce, 2. sütun: Türkçe)</li>
+            <li>Excel veya CSV dosyanı hazırla (1. sütun: {languageConfig.sourceLabel}, 2. sütun: Türkçe)</li>
             <li>"Kelime Listeleri" sayfasından dosyanı yükle</li>
             <li>Quiz modunu seç ve öğrenmeye başla!</li>
           </ol>
