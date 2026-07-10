@@ -16,6 +16,16 @@ const translationTargetNames: Record<LanguageCode, string> = {
   tr: 'English',
 };
 
+const exampleInstructions: Record<LanguageCode, string> = {
+  en: `Task: Write one B2-C1 level sentence in English. Use the word naturally in context.
+Style: Academic but fluent, dictionary-quality.`,
+  de: `Task: Write one A1-A2 CEFR level sentence in German. Use the word naturally in a simple everyday context.
+Style: Beginner-friendly, short, clear, and natural. Use common vocabulary and simple grammar.
+Length: 5-10 words when possible. Prefer present tense. Avoid idioms, subordinate clauses, advanced connectors, and long sentences.`,
+  tr: `Task: Write one B2-C1 level sentence in Turkish. Use the word naturally in context.
+Style: Academic but fluent, dictionary-quality.`,
+};
+
 const isLanguageCode = (value: unknown): value is LanguageCode =>
   value === 'en' || value === 'de' || value === 'tr';
 
@@ -42,8 +52,7 @@ export default async function handler(req: any, res: any) {
     const prompt = `
 Word: "${word}"
 Language: ${languageNames[lang]}
-Task: Write one B2-C1 level sentence in ${languageNames[lang]}. Use the word naturally in context.
-Style: Academic but fluent, dictionary-quality.
+${exampleInstructions[lang]}
 Translation: Also produce a ${translationTargetNames[lang]} translation for showing after the answer.
 
 Yaniti su JSON formatinda ver:

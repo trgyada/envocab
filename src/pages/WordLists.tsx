@@ -4,6 +4,7 @@ import { useWordListStore } from '../stores/wordListStore';
 import { useUserProgressStore } from '../stores/userProgressStore';
 import { parseExcelFile, isValidExcelFile } from '../services/excelParser';
 import { Word } from '../types';
+import { getExampleModelLabel, isStoredExampleCurrent } from '../utils/exampleGeneration';
 import { DEFAULT_STUDY_LANGUAGE, getStudyLanguageConfig } from '../utils/languages';
 
 type ViewMode = 'lists' | 'detail' | 'add-manual';
@@ -611,7 +612,7 @@ const WordLists: React.FC = () => {
         exampleSentence: result.sentence,
         exampleTranslation: result.translation,
         exampleLang: studyLanguage,
-        exampleModel: 'gemini-2.5-flash',
+        exampleModel: getExampleModelLabel(studyLanguage),
         exampleUpdatedAt: new Date()
       });
     } catch (err: any) {
@@ -644,7 +645,9 @@ const WordLists: React.FC = () => {
     if (!viewingListId || !viewingList) return;
     if (isGeneratingExamples) return;
 
-    const targets = viewingList.words.filter((w) => !(w.exampleSentence || '').trim());
+    const targets = viewingList.words.filter(
+      (w) => !isStoredExampleCurrent(w.exampleSentence, w.exampleLang, w.exampleModel, studyLanguage)
+    );
     if (targets.length === 0) {
       setMessage({ text: 'Bu listedeki tüm örnek cümleler mevcut.', type: 'success' });
       return;
@@ -665,7 +668,7 @@ const WordLists: React.FC = () => {
           exampleSentence: result.sentence,
           exampleTranslation: result.translation,
           exampleLang: studyLanguage,
-          exampleModel: 'gemini-2.5-flash',
+          exampleModel: getExampleModelLabel(studyLanguage),
           exampleUpdatedAt: new Date()
         });
       } catch (err: any) {

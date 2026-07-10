@@ -19,6 +19,7 @@ import { useReviewSessionStore } from '../stores/reviewSessionStore';
 import { useUserProgressStore } from '../stores/userProgressStore';
 import { useWordListStore } from '../stores/wordListStore';
 import { QuizQuestion, QuizType, Word } from '../types';
+import { getExampleModelLabel, isStoredExampleCurrent } from '../utils/exampleGeneration';
 import {
   AppLanguageCode,
   DEFAULT_STUDY_LANGUAGE,
@@ -68,10 +69,8 @@ type ExampleState = {
   lang?: AppLanguageCode;
 };
 
-const modelForExamples = 'gemini-2.5-flash';
-
 const getStoredExample = (word: Word, lang: AppLanguageCode) => {
-  if (word.exampleSentence && word.exampleLang === lang) {
+  if (isStoredExampleCurrent(word.exampleSentence, word.exampleLang, word.exampleModel, lang)) {
     return {
       sentence: word.exampleSentence,
       translation: word.exampleTranslation,
@@ -243,7 +242,7 @@ const Quiz: React.FC = () => {
           sentence: data.sentence,
           translation: data.translation,
           lang,
-          model: modelForExamples,
+          model: getExampleModelLabel(lang),
           updatedAt: new Date(),
         });
       })
@@ -982,13 +981,13 @@ const Quiz: React.FC = () => {
           }
           setExampleMap((prev) => ({
             ...prev,
-            [exampleKey]: { sentence: data.sentence, translation: data.translation, loading: false }
+            [exampleKey]: { sentence: data.sentence, translation: data.translation, loading: false, lang }
           }));
           updateWordExample(currentQuestion.word.id, {
             sentence: data.sentence,
             translation: data.translation,
             lang,
-            model: modelForExamples,
+            model: getExampleModelLabel(lang),
             updatedAt: new Date(),
           });
         } catch (err) {
