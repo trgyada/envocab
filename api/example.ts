@@ -1,8 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // v1 endpoint ve güncel model (Gemini 2.5 Flash)
-// const modelName = 'gemini-2.5-flash';
-const modelName = 'gemma-3-27b-it';
+const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 type LanguageCode = 'en' | 'de' | 'tr';
 
 const languageNames: Record<LanguageCode, string> = {

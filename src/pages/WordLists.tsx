@@ -611,7 +611,7 @@ const WordLists: React.FC = () => {
         exampleSentence: result.sentence,
         exampleTranslation: result.translation,
         exampleLang: studyLanguage,
-        exampleModel: 'gemma-3-27b-it',
+        exampleModel: 'gemini-2.5-flash',
         exampleUpdatedAt: new Date()
       });
     } catch (err: any) {
@@ -665,7 +665,7 @@ const WordLists: React.FC = () => {
           exampleSentence: result.sentence,
           exampleTranslation: result.translation,
           exampleLang: studyLanguage,
-          exampleModel: 'gemma-3-27b-it',
+          exampleModel: 'gemini-2.5-flash',
           exampleUpdatedAt: new Date()
         });
       } catch (err: any) {

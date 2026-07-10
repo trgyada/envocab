@@ -68,7 +68,7 @@ type ExampleState = {
   lang?: AppLanguageCode;
 };
 
-const modelForExamples = 'gemma-3-27b-it';
+const modelForExamples = 'gemini-2.5-flash';
 
 const getStoredExample = (word: Word, lang: AppLanguageCode) => {
   if (word.exampleSentence && word.exampleLang === lang) {

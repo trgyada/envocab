@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const modelName = 'gemma-3-27b-it';
+const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 type LanguageCode = 'en' | 'de' | 'tr';
 
 const languageNames: Record<LanguageCode, string> = {

@@ -7,7 +7,7 @@ type ReqBody = {
   lang?: 'en' | 'de' | 'tr';
 };
 
-const modelName = 'gemma-3-27b-it';
+const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const languageNames = {
   en: 'English',
   de: 'German',
