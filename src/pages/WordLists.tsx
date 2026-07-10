@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
+import { Eraser, FileUp, Merge, PencilLine, Search } from 'lucide-react';
 import { useWordListStore } from '../stores/wordListStore';
 import { useUserProgressStore } from '../stores/userProgressStore';
 import { parseExcelFile, isValidExcelFile } from '../services/excelParser';
@@ -1179,7 +1180,7 @@ const WordLists: React.FC = () => {
       <div className="upload-section">
         <div className="upload-grid">
           <div className="upload-option">
-            <span className="upload-icon">📂</span>
+            <span className="upload-icon" aria-hidden="true"><FileUp size={28} /></span>
             <h3>Dosyadan Yükle</h3>
             <div className="file-input-wrapper">
               <input
@@ -1200,15 +1201,17 @@ const WordLists: React.FC = () => {
                 style={{ display: 'none' }}
               />
               <label htmlFor="file-upload" className="file-label" style={{ cursor: 'pointer' }}>
+                <FileUp size={18} aria-hidden="true" />
                 Excel / CSV Seç
               </label>
             </div>
           </div>
 
           <div className="upload-option">
-            <span className="upload-icon">✏️</span>
+            <span className="upload-icon" aria-hidden="true"><PencilLine size={28} /></span>
             <h3>Manuel Oluştur</h3>
             <button className="btn btn-secondary" onClick={() => setViewMode('add-manual')}>
+              <PencilLine size={18} aria-hidden="true" />
               Elle Kelime Ekle
             </button>
           </div>
@@ -1224,9 +1227,10 @@ const WordLists: React.FC = () => {
 
       {/* Tekrar Tarama */}
       <div className="tools-section">
-        <h3 className="section-title">🔍 Tekrar Tarama</h3>
+        <h3 className="section-title"><Search size={18} aria-hidden="true" /> Tekrar Tarama</h3>
         <div className="tools-actions">
           <button className="btn btn-secondary" onClick={scanDuplicates} disabled={isScanning}>
+            <Search size={18} aria-hidden="true" />
             {isScanning ? 'Taranıyor...' : 'Tekrarları Tara'}
           </button>
           <button
@@ -1234,6 +1238,7 @@ const WordLists: React.FC = () => {
             onClick={cleanDuplicatesKeepLargest}
             disabled={duplicateReport.length === 0}
           >
+            <Eraser size={18} aria-hidden="true" />
             Tekrarları Temizle (En Büyük Listeyi Koru)
           </button>
         </div>
@@ -1262,7 +1267,7 @@ const WordLists: React.FC = () => {
 
       {/* Listeleri Birleştir */}
       <div className="tools-section">
-        <h3 className="section-title">🔗 Listeleri Birleştir</h3>
+        <h3 className="section-title"><Merge size={18} aria-hidden="true" /> Listeleri Birleştir</h3>
         <p className="section-desc">
           Az kelimeli listeleri tek bir listede topla. Aynı {languageConfig.sourceLabel} kelime tekrar eklenmez.
         </p>
@@ -1279,6 +1284,7 @@ const WordLists: React.FC = () => {
             onClick={handleMergeLists}
             disabled={mergeSelection.length < 2}
           >
+            <Merge size={18} aria-hidden="true" />
             {mergeSelection.length < 2 ? 'En az 2 liste seç' : `Birleştir (${mergeSelection.length})`}
           </button>
         </div>

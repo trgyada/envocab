@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Word, WordList } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { createId } from '../utils/id';
 import { 
   fetchWordListsFromFirestore, 
   saveWordListToFirestore, 
@@ -124,7 +124,7 @@ export const useWordListStore = create<WordListState>()(
           if (seen.has(key)) return;
           seen.add(key);
           words.push({
-            id: uuidv4(),
+            id: createId(),
             english: w.english.trim(),
             turkish: w.turkish.trim(),
             partOfSpeech: w.partOfSpeech,
@@ -141,7 +141,7 @@ export const useWordListStore = create<WordListState>()(
         });
 
         const newList: WordList = {
-          id: uuidv4(),
+          id: createId(),
           title,
           language,
           words,
@@ -262,7 +262,7 @@ export const useWordListStore = create<WordListState>()(
             }
             
             const newWord: Word = {
-              id: uuidv4(),
+              id: createId(),
               english: english.trim(),
               turkish: turkish.trim(),
               mastery: 0,
@@ -420,7 +420,7 @@ export const useWordListStore = create<WordListState>()(
           if (hasDuplicate) return state;
 
           const newWord: Word = {
-            id: uuidv4(),
+            id: createId(),
             english: english.trim(),
             turkish: turkish.trim(),
             mastery: 0,

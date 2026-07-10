@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { CircleHelp, GalleryVerticalEnd, Keyboard, Link2, Repeat2 } from 'lucide-react';
 import MultipleChoice from '../components/MultipleChoice';
 import Matching from '../components/Matching';
 import TypeAnswer from '../components/TypeAnswer';
@@ -181,6 +182,13 @@ const Quiz: React.FC = () => {
       createCardsFromWords(selectedList.words);
     }
   }, [selectedList, createCardsFromWords]);
+
+  useEffect(() => {
+    if (!selectedList?.words.length) return;
+    const maxQuestions = selectedList.words.length;
+    const minQuestions = Math.min(5, maxQuestions);
+    setQuestionCount((current) => Math.min(maxQuestions, Math.max(minQuestions, current)));
+  }, [selectedList?.id, selectedList?.words.length]);
 
   useEffect(() => {
     if (quizType === 'synonym') {
@@ -559,17 +567,19 @@ const Quiz: React.FC = () => {
         ) : (
           <div className="wordlist-grid">
             {wordLists.map((list) => (
-              <div
+              <button
                 key={list.id}
-                className={`wordlist-card ${selectedListId === list.id ? 'selected' : ''}`}
+                type="button"
+                className={`wordlist-card quiz-list-card ${selectedListId === list.id ? 'selected' : ''}`}
                 onClick={() => {
                   selectWordList(list.id);
                   setPhase('select-type');
                 }}
+                aria-pressed={selectedListId === list.id}
               >
                 <h3>{list.title}</h3>
                 <p>{list.words.length} kelime</p>
-              </div>
+              </button>
             ))}
           </div>
         )}
@@ -578,11 +588,13 @@ const Quiz: React.FC = () => {
   }
 
   // select type/settings
-  
-  // select type/settings
   if (phase === 'select-type') {
     const maxQuestions = selectedList?.words.length || 10;
+    const minQuestions = Math.min(5, maxQuestions);
+    const boundedQuestionCount = Math.min(maxQuestions, Math.max(minQuestions, questionCount));
     const directionDisabled = quizType === 'synonym';
+    const multipleChoiceSettingsEnabled = quizType === 'multiple-choice' && !examMode;
+    const hasDifficultWords = allDifficultWords.length > 0 || difficultWords.length > 0;
     return (
       <div className="quiz-container">
         <h1 style={{ marginBottom: '10px', textAlign: 'center' }}>Quiz Ayarları</h1>
@@ -593,18 +605,18 @@ const Quiz: React.FC = () => {
         <div style={{ maxWidth: '520px', margin: '0 auto' }}>
           <div style={{ marginBottom: '30px' }}>
             <label style={{ display: 'block', marginBottom: '10px', fontWeight: '600' }}>
-              Soru Sayısı: {questionCount}
+              Soru Sayısı: {boundedQuestionCount}
             </label>
             <input
               type="range"
-              min="5"
+              min={minQuestions}
               max={maxQuestions}
-              value={questionCount}
+              value={boundedQuestionCount}
               onChange={(e) => setQuestionCount(parseInt(e.target.value))}
               style={{ width: '100%' }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-              <span>5</span>
+              <span>{minQuestions}</span>
               <span>{maxQuestions}</span>
             </div>
           </div>
@@ -613,46 +625,36 @@ const Quiz: React.FC = () => {
             <label style={{ display: 'block', marginBottom: '15px', fontWeight: '600' }}>Quiz Tipi Seç</label>
             <div className="quiz-type-grid">
               {[
-                { type: 'multiple-choice' as QuizType, icon: '❓', label: 'Çoktan Seçmeli' },
-                { type: 'flashcard' as QuizType, icon: '🃏', label: 'Flashcard' },
-                { type: 'matching' as QuizType, icon: '🔗', label: 'Eşleşme' },
-                { type: 'write' as QuizType, icon: '⌨️', label: 'Yazarak Cevap' },
-                { type: 'synonym' as QuizType, icon: '🔁', label: 'Eş Anlamlı' }
-              ].map(({ type, icon, label }) => (
-                <div
+                { type: 'multiple-choice' as QuizType, icon: CircleHelp, label: 'Çoktan Seçmeli' },
+                { type: 'flashcard' as QuizType, icon: GalleryVerticalEnd, label: 'Flashcard' },
+                { type: 'matching' as QuizType, icon: Link2, label: 'Eşleşme' },
+                { type: 'write' as QuizType, icon: Keyboard, label: 'Yazarak Cevap' },
+                { type: 'synonym' as QuizType, icon: Repeat2, label: 'Eş Anlamlı' }
+              ].map(({ type, icon: Icon, label }) => (
+                <button
                   key={type}
+                  type="button"
                   className={`quiz-type-card ${quizType === type ? 'selected' : ''}`}
                   onClick={() => setQuizType(type)}
+                  aria-pressed={quizType === type}
                 >
-                  <span className="quiz-type-icon">{icon}</span>
+                  <span className="quiz-type-icon" aria-hidden="true"><Icon size={26} /></span>
                   <span className="quiz-type-label">{label}</span>
-                </div>
+                </button>
               ))}
             </div>
-        <div style={{ marginTop: '10px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-          {(() => {
-            const testToggleEnabled = quizType === 'multiple-choice';
-            return (
-              <div
-                    className={`toggle-shell ${examMode ? 'enabled' : 'disabled'}`}
-                    onClick={() => {
-                      if (!testToggleEnabled) return;
-                      setExamMode(!examMode);
-                    }}
-                    style={{
-                      cursor: testToggleEnabled ? 'pointer' : 'not-allowed',
-                      opacity: testToggleEnabled ? 1 : 0.45,
-                      filter: testToggleEnabled ? 'none' : 'blur(0.3px)'
-                    }}
-                  >
-                    <div className="toggle-knob" />
-                  </div>
-                );
-              })()}
-              <div style={{ color: 'var(--text-secondary)' }}>
-                Test modu (geri bildirim gizli, sonuç tablosu açık)
-              </div>
-            </div>
+            <button
+              type="button"
+              className="quiz-setting-row quiz-setting-row-compact"
+              onClick={() => setExamMode((value) => !value)}
+              disabled={quizType !== 'multiple-choice'}
+              aria-pressed={examMode}
+            >
+              <span className={`toggle-shell ${examMode ? 'enabled' : 'disabled'}`} aria-hidden="true">
+                <span className="toggle-knob" />
+              </span>
+              <span className="quiz-setting-description">Test modu: geri bildirim gizli, sonuç tablosu açık</span>
+            </button>
           </div>
 
           <div style={{ marginBottom: '24px' }}>
@@ -684,102 +686,61 @@ const Quiz: React.FC = () => {
             </div>
           </div>
 
-          <div
-            style={{
-              marginBottom: '20px',
-              padding: '12px 14px',
-              background: '#002035',
-              border: '1px solid var(--border)',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '10px',
-              opacity: quizType === 'multiple-choice' ? 1 : 0.5
-            }}
+          <button
+            type="button"
+            className="quiz-setting-row"
+            disabled={!multipleChoiceSettingsEnabled}
+            aria-pressed={showExamples}
+            onClick={() => setShowExamples((value) => !value)}
           >
-            <div>
-              <div style={{ fontWeight: '700', marginBottom: '6px' }}>Örnek cümle (Gemini)</div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+            <span className="quiz-setting-copy">
+              <strong>Örnek cümle (Gemini)</strong>
+              <span className="quiz-setting-description">
                 Quiz başlamadan örnek cümleler hazırlanır; çeviri yanıt sonrasında gösterilir.
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <div
-                className={`toggle-shell ${showExamples && quizType === 'multiple-choice' && !examMode ? 'enabled' : 'disabled'}`}
-                style={{ cursor: quizType === 'multiple-choice' && !examMode ? 'pointer' : 'not-allowed', opacity: examMode ? 0.5 : 1 }}
-                onClick={() => {
-                  if (quizType !== 'multiple-choice' || examMode) return;
-                  setShowExamples((v) => !v);
-                }}
-              >
-                <div className="toggle-knob" />
-              </div>
-            </div>
-          </div>
+              </span>
+            </span>
+            <span className={`toggle-shell ${showExamples && multipleChoiceSettingsEnabled ? 'enabled' : 'disabled'}`} aria-hidden="true">
+              <span className="toggle-knob" />
+            </span>
+          </button>
 
-          <div
-            style={{
-              marginBottom: '20px',
-              padding: '12px 14px',
-              background: '#002035',
-              border: '1px solid var(--border)',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '10px',
-              opacity: quizType === 'multiple-choice' ? 1 : 0.5
-            }}
+          <button
+            type="button"
+            className="quiz-setting-row"
+            disabled={!multipleChoiceSettingsEnabled}
+            aria-pressed={showDefinitions}
+            onClick={() => setShowDefinitions((value) => !value)}
           >
-            <div>
-              <div style={{ fontWeight: '700', marginBottom: '6px' }}>
+            <span className="quiz-setting-copy">
+              <strong>
                 {languageConfig.flag} {languageConfig.definitionLabel}
-              </div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              </strong>
+              <span className="quiz-setting-description">
                 Kelimenin {languageConfig.sourceLabel} açıklamasını göster.
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <div
-                className={`toggle-shell ${showDefinitions && quizType === 'multiple-choice' && !examMode ? 'enabled' : 'disabled'}`}
-                style={{ cursor: quizType === 'multiple-choice' && !examMode ? 'pointer' : 'not-allowed', opacity: examMode ? 0.5 : 1 }}
-                onClick={() => {
-                  if (quizType !== 'multiple-choice' || examMode) return;
-                  setShowDefinitions((v) => !v);
-                }}
-              >
-                <div className="toggle-knob" />
-              </div>
-            </div>
-          </div>
+              </span>
+            </span>
+            <span className={`toggle-shell ${showDefinitions && multipleChoiceSettingsEnabled ? 'enabled' : 'disabled'}`} aria-hidden="true">
+              <span className="toggle-knob" />
+            </span>
+          </button>
 
-          <div
-            style={{
-              marginBottom: '30px',
-              padding: '15px 20px',
-              background: onlyDifficultWords ? 'rgba(239, 68, 68, 0.16)' : '#111a2d',
-              borderRadius: '12px',
-              border: onlyDifficultWords ? '2px solid var(--danger)' : '1px solid var(--border)',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-            onClick={() => setOnlyDifficultWords(!onlyDifficultWords)}
+          <button
+            type="button"
+            className={`quiz-setting-row quiz-setting-difficult ${onlyDifficultWords ? 'is-active' : ''}`}
+            onClick={() => setOnlyDifficultWords((value) => !value)}
+            disabled={!hasDifficultWords}
+            aria-pressed={onlyDifficultWords}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontWeight: '600', marginBottom: '5px' }}>Zor Kelimeler</div>
-                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                  Sadece daha once hata yapilan kelimeler ({allDifficultWords.length} kelime)
-                </div>
-              </div>
-              <div
-                className={`toggle-shell ${onlyDifficultWords ? 'enabled' : 'disabled'}`}
-              >
-                <div className="toggle-knob" />
-              </div>
-            </div>
-          </div>
+            <span className="quiz-setting-copy">
+              <strong>Zor Kelimeler</strong>
+              <span className="quiz-setting-description">
+                Sadece daha önce hata yapılan kelimeler ({allDifficultWords.length} kelime)
+              </span>
+            </span>
+            <span className={`toggle-shell ${onlyDifficultWords ? 'enabled' : 'disabled'}`} aria-hidden="true">
+              <span className="toggle-knob" />
+            </span>
+          </button>
 
           <button
             className="btn btn-primary btn-lg"
@@ -806,7 +767,7 @@ const Quiz: React.FC = () => {
     );
   }
 
-// quiz phase
+  // quiz phase
   if (phase === 'quiz' && selectedList) {
     if (quizType === 'matching') {
       const wordsForMatching =

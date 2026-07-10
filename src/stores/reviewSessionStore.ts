@@ -13,7 +13,7 @@ import {
   QualityResponse,
   QuizType 
 } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { createId } from '../utils/id';
 
 // ==========================================
 // STORE TİPLERİ
@@ -87,8 +87,8 @@ interface DailyStats {
 // YARDIMCI FONKSİYONLAR
 // ==========================================
 
-const generateSessionId = () => `session-${uuidv4()}`;
-const generateLogId = () => `log-${uuidv4()}`;
+const generateSessionId = () => `session-${createId()}`;
+const generateLogId = () => `log-${createId()}`;
 
 const isSameDay = (date1: Date, date2: Date): boolean => {
   return (
