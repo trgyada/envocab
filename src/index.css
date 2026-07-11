@@ -885,6 +885,78 @@ a {
   font-weight: 700;
 }
 
+.example-header,
+.example-actions,
+.word-table-detail-heading {
+  display: flex;
+  align-items: center;
+}
+
+.example-header,
+.word-table-detail-heading {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.example-actions {
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.example-title,
+.word-table-detail-heading > span {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.example-level-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 7px;
+  border: 1px solid rgba(94, 234, 212, 0.28);
+  border-radius: var(--radius-sm);
+  background: rgba(20, 184, 166, 0.1);
+  color: var(--primary-light);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.example-speak-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--primary-light);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.example-speak-btn:hover {
+  border-color: var(--primary);
+  background: rgba(20, 184, 166, 0.08);
+}
+
+.example-inline-level {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 .example-sentence {
   margin-top: 8px;
   color: var(--text-secondary);
@@ -1023,6 +1095,65 @@ a {
 .quiz-setting-difficult.is-active {
   border-color: var(--danger);
   background: rgba(239, 68, 68, 0.1);
+}
+
+.example-level-fieldset {
+  min-width: 0;
+  margin: 0 0 12px;
+  padding: 13px 14px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-alt);
+}
+
+.example-level-fieldset:disabled {
+  opacity: 0.45;
+}
+
+.example-level-fieldset legend {
+  padding: 0 6px;
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.example-level-fieldset p {
+  margin-top: 9px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.example-level-segments {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+}
+
+.example-level-segments button {
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.example-level-segments button.active {
+  background: var(--surface);
+  color: var(--primary-light);
+  box-shadow: inset 0 0 0 1px rgba(94, 234, 212, 0.28);
+}
+
+.example-level-segments button:disabled {
+  cursor: not-allowed;
 }
 
 .quiz-type-card h3 {
@@ -1563,6 +1694,30 @@ a {
 
 .word-list-bulk[open] summary {
   margin-bottom: 6px;
+}
+
+.bulk-example-level {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.example-level-segments.compact {
+  width: 176px;
+  flex: 0 0 auto;
+}
+
+.example-level-segments.compact button {
+  min-height: 32px;
+  padding: 5px 8px;
+  font-size: 0.76rem;
 }
 
 .word-list-meta {
@@ -2345,6 +2500,37 @@ a {
   .nav-card {
     min-height: 190px;
   }
+
+  .example-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .example-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .bulk-example-level {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .example-inline-level {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .example-level-segments.compact {
+    width: 100%;
+  }
+}
+
+.word-table-detail-heading {
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
 }
 
 .quiz-list-card {
@@ -2381,11 +2567,16 @@ a {
   gap: 8px;
 }
 .question-speak-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: #fff;
-  padding: 6px 10px;
-  border-radius: 10px;
+  padding: 0;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.15s ease;
 }

@@ -1,12 +1,19 @@
 import React, { useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
-import { Eraser, FileUp, Merge, PencilLine, Search } from 'lucide-react';
+import { Eraser, FileUp, Merge, PencilLine, Search, Volume2 } from 'lucide-react';
 import { useWordListStore } from '../stores/wordListStore';
 import { useUserProgressStore } from '../stores/userProgressStore';
 import { parseExcelFile, isValidExcelFile } from '../services/excelParser';
 import { Word } from '../types';
-import { getExampleModelLabel, isStoredExampleCurrent } from '../utils/exampleGeneration';
+import {
+  GERMAN_EXAMPLE_LEVEL_OPTIONS,
+  getExampleModelLabel,
+  getGermanExampleLevelFromModel,
+  isStoredExampleCurrent,
+} from '../utils/exampleGeneration';
 import { DEFAULT_STUDY_LANGUAGE, getStudyLanguageConfig } from '../utils/languages';
+import { useGermanExampleLevel } from '../hooks/useGermanExampleLevel';
+import { speakText } from '../utils/speech';
 
 type ViewMode = 'lists' | 'detail' | 'add-manual';
 
@@ -26,6 +33,7 @@ const WordLists: React.FC = () => {
   } = useWordListStore();
   const studyLanguage = activeLanguage || DEFAULT_STUDY_LANGUAGE;
   const languageConfig = getStudyLanguageConfig(studyLanguage);
+  const [germanExampleLevel, setGermanExampleLevel] = useGermanExampleLevel();
   const definitionPluralLabel = `${languageConfig.definitionLabel}ları`;
 
   const listsWithoutUnknown = React.useMemo(() => wordLists.filter((l) => l.id !== 'unknown'), [wordLists]);
@@ -186,7 +194,11 @@ const WordLists: React.FC = () => {
       const res = await fetch('/api/example', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ word: english, lang: studyLanguage })
+        body: JSON.stringify({
+          word: english,
+          lang: studyLanguage,
+          level: studyLanguage === 'de' ? germanExampleLevel : undefined,
+        })
       });
       const data = await res.json();
       return { res, data };
@@ -613,7 +625,7 @@ const WordLists: React.FC = () => {
         exampleSentence: result.sentence,
         exampleTranslation: result.translation,
         exampleLang: studyLanguage,
-        exampleModel: getExampleModelLabel(studyLanguage),
+        exampleModel: getExampleModelLabel(studyLanguage, germanExampleLevel),
         exampleUpdatedAt: new Date()
       });
     } catch (err: any) {
@@ -647,7 +659,13 @@ const WordLists: React.FC = () => {
     if (isGeneratingExamples) return;
 
     const targets = viewingList.words.filter(
-      (w) => !isStoredExampleCurrent(w.exampleSentence, w.exampleLang, w.exampleModel, studyLanguage)
+      (w) => !isStoredExampleCurrent(
+        w.exampleSentence,
+        w.exampleLang,
+        w.exampleModel,
+        studyLanguage,
+        germanExampleLevel
+      )
     );
     if (targets.length === 0) {
       setMessage({ text: 'Bu listedeki tüm örnek cümleler mevcut.', type: 'success' });
@@ -669,7 +687,7 @@ const WordLists: React.FC = () => {
           exampleSentence: result.sentence,
           exampleTranslation: result.translation,
           exampleLang: studyLanguage,
-          exampleModel: getExampleModelLabel(studyLanguage),
+          exampleModel: getExampleModelLabel(studyLanguage, germanExampleLevel),
           exampleUpdatedAt: new Date()
         });
       } catch (err: any) {
@@ -686,7 +704,10 @@ const WordLists: React.FC = () => {
 
     setExampleProgress(null);
     setIsGeneratingExamples(false);
-    setMessage({ text: 'Örnek cümleler güncellendi.', type: 'success' });
+    setMessage({
+      text: `Örnek cümleler${studyLanguage === 'de' ? ` (${germanExampleLevel.toUpperCase()})` : ''} güncellendi.`,
+      type: 'success',
+    });
   };
 
   const handleGenerateDefinitions = async () => {
@@ -902,6 +923,25 @@ const WordLists: React.FC = () => {
               </div>
               <details className="word-list-bulk">
                 <summary>Toplu işlemler</summary>
+                {studyLanguage === 'de' && (
+                  <div className="bulk-example-level">
+                    <span>Örnek cümle seviyesi</span>
+                    <div className="example-level-segments compact">
+                      {GERMAN_EXAMPLE_LEVEL_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          className={germanExampleLevel === option.id ? 'active' : ''}
+                          onClick={() => setGermanExampleLevel(option.id)}
+                          aria-pressed={germanExampleLevel === option.id}
+                          disabled={isGeneratingExamples}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="word-list-actions bulk-actions">
                   <button
                     className="word-list-action-btn"
@@ -922,7 +962,9 @@ const WordLists: React.FC = () => {
                     onClick={handleGenerateExamples}
                     disabled={isGeneratingExamples}
                   >
-                    {isGeneratingExamples ? 'Üretiliyor...' : 'Örnek cümleleri üret'}
+                    {isGeneratingExamples
+                      ? 'Üretiliyor...'
+                      : `Örnek cümleleri üret${studyLanguage === 'de' ? ` (${germanExampleLevel.toUpperCase()})` : ''}`}
                   </button>
                   <button
                     className="word-list-action-btn"
@@ -949,7 +991,8 @@ const WordLists: React.FC = () => {
             )}
             {exampleProgress && (
               <div className="example-progress">
-                Örnek cümleler üretiliyor: {exampleProgress.current}/{exampleProgress.total}
+                Örnek cümleler{studyLanguage === 'de' ? ` (${germanExampleLevel.toUpperCase()})` : ''} üretiliyor:{' '}
+                {exampleProgress.current}/{exampleProgress.total}
               </div>
             )}
             {definitionProgress && (
@@ -1092,14 +1135,10 @@ const WordLists: React.FC = () => {
                     <div className="word-table-actions">
                       <button
                         className="word-table-icon-btn sound"
-                        onClick={() => {
-                          const utterance = new SpeechSynthesisUtterance(word.english);
-                          utterance.lang = languageConfig.sourceSpeechLang;
-                          speechSynthesis.speak(utterance);
-                        }}
+                        onClick={() => speakText(word.english, studyLanguage)}
                         title="Sesli oku"
                       >
-                        🔊
+                        <Volume2 size={15} aria-hidden="true" />
                       </button>
                       <button
                         className="word-table-icon-btn translate"
@@ -1146,7 +1185,25 @@ const WordLists: React.FC = () => {
                         <div className="word-table-details-grid">
                           {word.exampleSentence && (
                             <div className="word-table-detail">
-                              <label>Örnek cümle</label>
+                              <div className="word-table-detail-heading">
+                                <span>
+                                  Örnek cümle
+                                  {studyLanguage === 'de' && getGermanExampleLevelFromModel(word.exampleModel) && (
+                                    <small className="example-level-badge">
+                                      {getGermanExampleLevelFromModel(word.exampleModel)?.toUpperCase()}
+                                    </small>
+                                  )}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="example-speak-btn"
+                                  onClick={() => speakText(word.exampleSentence || '', studyLanguage)}
+                                  aria-label="Örnek cümleyi seslendir"
+                                  title="Örnek cümleyi seslendir"
+                                >
+                                  <Volume2 size={16} aria-hidden="true" />
+                                </button>
+                              </div>
                               <div className="word-table-detail-text">{word.exampleSentence}</div>
                               {word.exampleTranslation && (
                                 <div className="word-table-detail-sub">Çeviri: {word.exampleTranslation}</div>

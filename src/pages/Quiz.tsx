@@ -20,7 +20,13 @@ import { useReviewSessionStore } from '../stores/reviewSessionStore';
 import { useUserProgressStore } from '../stores/userProgressStore';
 import { useWordListStore } from '../stores/wordListStore';
 import { QuizQuestion, QuizType, Word } from '../types';
-import { getExampleModelLabel, isStoredExampleCurrent } from '../utils/exampleGeneration';
+import {
+  GERMAN_EXAMPLE_LEVEL_OPTIONS,
+  GermanExampleLevel,
+  getExampleModelLabel,
+  isStoredExampleCurrent,
+} from '../utils/exampleGeneration';
+import { useGermanExampleLevel } from '../hooks/useGermanExampleLevel';
 import {
   AppLanguageCode,
   DEFAULT_STUDY_LANGUAGE,
@@ -68,18 +74,27 @@ type ExampleState = {
   loading?: boolean;
   error?: string;
   lang?: AppLanguageCode;
+  level?: GermanExampleLevel;
 };
 
-const getStoredExample = (word: Word, lang: AppLanguageCode) => {
-  if (isStoredExampleCurrent(word.exampleSentence, word.exampleLang, word.exampleModel, lang)) {
+const getStoredExample = (word: Word, lang: AppLanguageCode, germanLevel: GermanExampleLevel) => {
+  if (isStoredExampleCurrent(word.exampleSentence, word.exampleLang, word.exampleModel, lang, germanLevel)) {
     return {
       sentence: word.exampleSentence,
       translation: word.exampleTranslation,
       lang,
+      level: lang === 'de' ? germanLevel : undefined,
     };
   }
   return null;
 };
+
+const getExampleStateKey = (
+  wordId: string,
+  direction: string,
+  language: AppLanguageCode,
+  germanLevel: GermanExampleLevel
+) => `${wordId}-${direction}-${language === 'de' ? germanLevel : 'default'}`;
 
 const Quiz: React.FC = () => {
   const navigate = useNavigate();
@@ -87,6 +102,7 @@ const Quiz: React.FC = () => {
   const { wordLists, selectedListId, selectWordList, updateWordMastery, updateWordExample, activeLanguage } = useWordListStore();
   const studyLanguage = activeLanguage || DEFAULT_STUDY_LANGUAGE;
   const languageConfig = getStudyLanguageConfig(studyLanguage);
+  const [germanExampleLevel, setGermanExampleLevel] = useGermanExampleLevel();
   const { addQuizResult } = useUserProgressStore();
   const { cards, cardStates, createCardsFromWords, getCardByWordId, updateCardState } = useCardStore();
   const { startSession, endSession, addReviewLog, incrementCorrect, incrementIncorrect, incrementReviewed } =
@@ -215,9 +231,9 @@ const Quiz: React.FC = () => {
     const q = questions[currentIndex];
     const dir = (q.direction as string) || 'en-to-tr';
     if (dir === 'tr-to-en') return; // TR -> EN ise örnek cümle alma
-    const key = `${q.word.id}-${dir}`;
     const lang: AppLanguageCode = dir === 'tr-to-en' ? 'tr' : studyLanguage;
-    const stored = getStoredExample(q.word, lang);
+    const key = getExampleStateKey(q.word.id, dir, lang, germanExampleLevel);
+    const stored = getStoredExample(q.word, lang, germanExampleLevel);
     if (stored?.sentence) {
       setExampleMap((prev) => ({
         ...prev,
@@ -232,7 +248,11 @@ const Quiz: React.FC = () => {
     fetch('/api/example', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ word: lang === 'tr' ? q.word.turkish : q.word.english, lang })
+      body: JSON.stringify({
+        word: lang === 'tr' ? q.word.turkish : q.word.english,
+        lang,
+        level: lang === 'de' ? germanExampleLevel : undefined,
+      })
     })
       .then(async (res) => {
         const data = await res.json();
@@ -244,13 +264,19 @@ const Quiz: React.FC = () => {
         }
         setExampleMap((prev) => ({
           ...prev,
-          [key]: { sentence: data.sentence, translation: data.translation, loading: false, lang }
+          [key]: {
+            sentence: data.sentence,
+            translation: data.translation,
+            loading: false,
+            lang,
+            level: lang === 'de' ? germanExampleLevel : undefined,
+          }
         }));
         updateWordExample(q.word.id, {
           sentence: data.sentence,
           translation: data.translation,
           lang,
-          model: getExampleModelLabel(lang),
+          model: getExampleModelLabel(lang, germanExampleLevel),
           updatedAt: new Date(),
         });
       })
@@ -260,7 +286,7 @@ const Quiz: React.FC = () => {
           [key]: { loading: false, error: err instanceof Error ? err.message : 'Örnek alınamadı' }
         }));
       });
-  }, [showExamples, questions, currentIndex, updateWordExample, studyLanguage]);
+  }, [showExamples, questions, currentIndex, updateWordExample, studyLanguage, germanExampleLevel]);
 
   // Definition otomatik yükleme (showDefinitions açıksa ve soru yönü en->tr ise)
   useEffect(() => {
@@ -704,6 +730,31 @@ const Quiz: React.FC = () => {
             </span>
           </button>
 
+          {studyLanguage === 'de' && (
+            <fieldset
+              className="example-level-fieldset"
+              disabled={quizType !== 'multiple-choice' || examMode}
+            >
+              <legend>Almanca örnek cümle seviyesi</legend>
+              <div className="example-level-segments">
+                {GERMAN_EXAMPLE_LEVEL_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={germanExampleLevel === option.id ? 'active' : ''}
+                    onClick={() => setGermanExampleLevel(option.id)}
+                    aria-pressed={germanExampleLevel === option.id}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <p>
+                {GERMAN_EXAMPLE_LEVEL_OPTIONS.find((option) => option.id === germanExampleLevel)?.description}
+              </p>
+            </fieldset>
+          )}
+
           <button
             type="button"
             className="quiz-setting-row"
@@ -910,14 +961,20 @@ const Quiz: React.FC = () => {
       const currentQuestion = questions[currentIndex];
       const isSynonymQuestion = currentQuestion.questionType === 'synonym';
       const dir = (currentQuestion.direction as string) || 'en-to-tr';
-      const exampleKey = `${currentQuestion.word.id}-${dir}`;
+      const exampleLanguage: AppLanguageCode = dir === 'tr-to-en' ? 'tr' : studyLanguage;
+      const exampleKey = getExampleStateKey(
+        currentQuestion.word.id,
+        dir,
+        exampleLanguage,
+        germanExampleLevel
+      );
       const exampleState = exampleMap[exampleKey];
       const allowExample = showExamples && !examMode && dir !== 'tr-to-en' && !isSynonymQuestion;
 
       const requestExample = async (force = false) => {
         if (!showExamples || dir === 'tr-to-en') return;
         const lang: AppLanguageCode = dir === 'tr-to-en' ? 'tr' : studyLanguage;
-        const stored = getStoredExample(currentQuestion.word, lang);
+        const stored = getStoredExample(currentQuestion.word, lang, germanExampleLevel);
         if (stored?.sentence && !force) {
           setExampleMap((prev) => ({
             ...prev,
@@ -933,7 +990,8 @@ const Quiz: React.FC = () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               word: lang === 'tr' ? currentQuestion.word.turkish : currentQuestion.word.english,
-              lang
+              lang,
+              level: lang === 'de' ? germanExampleLevel : undefined,
             })
           });
           const data = await res.json();
@@ -942,13 +1000,19 @@ const Quiz: React.FC = () => {
           }
           setExampleMap((prev) => ({
             ...prev,
-            [exampleKey]: { sentence: data.sentence, translation: data.translation, loading: false, lang }
+            [exampleKey]: {
+              sentence: data.sentence,
+              translation: data.translation,
+              loading: false,
+              lang,
+              level: lang === 'de' ? germanExampleLevel : undefined,
+            }
           }));
           updateWordExample(currentQuestion.word.id, {
             sentence: data.sentence,
             translation: data.translation,
             lang,
-            model: getExampleModelLabel(lang),
+            model: getExampleModelLabel(lang, germanExampleLevel),
             updatedAt: new Date(),
           });
         } catch (err) {
@@ -996,6 +1060,10 @@ const Quiz: React.FC = () => {
             example={allowExample ? exampleState : undefined}
             onRequestExample={
               allowExample ? (force?: boolean) => requestExample(force ?? false) : undefined
+            }
+            germanExampleLevel={studyLanguage === 'de' && allowExample ? germanExampleLevel : undefined}
+            onGermanExampleLevelChange={
+              studyLanguage === 'de' && allowExample ? setGermanExampleLevel : undefined
             }
             definition={allowDefinition ? defState : undefined}
             debugInfo={allowExample ? exampleState?.error || null : null}

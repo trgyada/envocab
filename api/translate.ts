@@ -31,8 +31,8 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey, { apiVersion: 'v1' });
-    const model = genAI.getGenerativeModel({ model: modelName });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1' });
 
     const prompt = `Translate the text.\nSource language: ${languageNames[from]}\nTarget language: ${languageNames[to]}\nText: "${text}"\nReturn only the translation, with no extra text.`;
 

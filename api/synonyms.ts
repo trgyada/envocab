@@ -92,8 +92,8 @@ export default async function handler(req: any, res: any) {
   const targetCount = Math.max(1, Math.min(Number(count) || 4, 6));
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey, { apiVersion: 'v1' });
-    const model = genAI.getGenerativeModel({ model: modelName });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1' });
 
     const generateOnce = async () => {
       const result = await model.generateContent({

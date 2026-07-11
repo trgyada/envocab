@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { RefreshCw, Volume2 } from 'lucide-react';
 import { PartOfSpeech, QuizQuestion, Word } from '../types';
 import SelectableText from './SelectableText';
 import { useWordListStore } from '../stores/wordListStore';
@@ -7,6 +8,11 @@ import {
   DEFAULT_STUDY_LANGUAGE,
   getStudyLanguageConfig,
 } from '../utils/languages';
+import {
+  GERMAN_EXAMPLE_LEVEL_OPTIONS,
+  type GermanExampleLevel,
+} from '../utils/exampleGeneration';
+import { speakText } from '../utils/speech';
 
 interface MultipleChoiceProps {
   question: QuizQuestion;
@@ -18,8 +24,11 @@ interface MultipleChoiceProps {
     loading?: boolean;
     error?: string;
     lang?: AppLanguageCode;
+    level?: GermanExampleLevel;
   };
   onRequestExample?: (force?: boolean) => void;
+  germanExampleLevel?: GermanExampleLevel;
+  onGermanExampleLevelChange?: (level: GermanExampleLevel) => void;
   definition?: {
     text?: string;
     loading?: boolean;
@@ -53,6 +62,8 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
   optionMeaning,
   example,
   onRequestExample,
+  germanExampleLevel,
+  onGermanExampleLevelChange,
   definition,
   debugInfo,
   examMode
@@ -116,9 +127,12 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
       : `Türkçe → ${languageConfig.sourceLabel}`;
   const speakCurrent = () => {
     const text = isEnglishToTurkish ? question.word.english : question.word.turkish;
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = isEnglishToTurkish ? languageConfig.sourceSpeechLang : 'tr-TR';
-    speechSynthesis.speak(utter);
+    speakText(text, isEnglishToTurkish ? studyLanguage : 'tr');
+  };
+
+  const speakExample = () => {
+    if (!example?.sentence) return;
+    speakText(example.sentence, example.lang || studyLanguage);
   };
 
   const handleWordClick = (word: string) => {
@@ -191,8 +205,14 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
             <span className="part-of-speech"> {getPartOfSpeechLabel(question.word.partOfSpeech)}</span>
           )}
         </h2>
-        <button className="question-speak-btn" onClick={speakCurrent} title="Sesli oku">
-          🔊
+        <button
+          type="button"
+          className="question-speak-btn"
+          onClick={speakCurrent}
+          title="Soruyu seslendir"
+          aria-label="Soruyu seslendir"
+        >
+          <Volume2 size={18} aria-hidden="true" />
         </button>
       </div>
       <p className="question-hint">
@@ -203,12 +223,52 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
 
       {onRequestExample && !examMode && (
         <div className="example-box">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
-            <div className="example-title">Örnek cümle (Gemini)</div>
-            <button className="btn btn-outline btn-sm" onClick={() => onRequestExample?.(true)} disabled={example?.loading}>
-              {example?.loading ? 'Yükleniyor...' : 'Yeniden getir'}
-            </button>
+          <div className="example-header">
+            <div className="example-title">
+              Örnek cümle (Gemini)
+              {example?.level && <small className="example-level-badge">{example.level.toUpperCase()}</small>}
+            </div>
+            <div className="example-actions">
+              {example?.sentence && (
+                <button
+                  type="button"
+                  className="example-speak-btn"
+                  onClick={speakExample}
+                  title="Örnek cümleyi seslendir"
+                  aria-label="Örnek cümleyi seslendir"
+                >
+                  <Volume2 size={17} aria-hidden="true" />
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={() => onRequestExample?.(true)}
+                disabled={example?.loading}
+              >
+                <RefreshCw size={16} aria-hidden="true" />
+                {example?.loading ? 'Yükleniyor...' : 'Yeniden getir'}
+              </button>
+            </div>
           </div>
+          {germanExampleLevel && onGermanExampleLevelChange && (
+            <div className="example-inline-level">
+              <span>Seviye</span>
+              <div className="example-level-segments compact">
+                {GERMAN_EXAMPLE_LEVEL_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={germanExampleLevel === option.id ? 'active' : ''}
+                    onClick={() => onGermanExampleLevelChange(option.id)}
+                    aria-pressed={germanExampleLevel === option.id}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {example?.error && <div className="example-error">{example.error}</div>}
           {example?.sentence && (
             <div className="example-sentence">
