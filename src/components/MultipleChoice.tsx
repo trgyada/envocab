@@ -1,7 +1,18 @@
 import React, { useEffect, useState } from 'react';
+import { RefreshCw, Volume2 } from 'lucide-react';
 import { PartOfSpeech, QuizQuestion, Word } from '../types';
 import SelectableText from './SelectableText';
 import { useWordListStore } from '../stores/wordListStore';
+import {
+  AppLanguageCode,
+  DEFAULT_STUDY_LANGUAGE,
+  getStudyLanguageConfig,
+} from '../utils/languages';
+import {
+  GERMAN_EXAMPLE_LEVEL_OPTIONS,
+  type GermanExampleLevel,
+} from '../utils/exampleGeneration';
+import { speakText } from '../utils/speech';
 
 interface MultipleChoiceProps {
   question: QuizQuestion;
@@ -12,9 +23,12 @@ interface MultipleChoiceProps {
     translation?: string;
     loading?: boolean;
     error?: string;
-    lang?: 'en' | 'tr';
+    lang?: AppLanguageCode;
+    level?: GermanExampleLevel;
   };
   onRequestExample?: (force?: boolean) => void;
+  germanExampleLevel?: GermanExampleLevel;
+  onGermanExampleLevelChange?: (level: GermanExampleLevel) => void;
   definition?: {
     text?: string;
     loading?: boolean;
@@ -48,6 +62,8 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
   optionMeaning,
   example,
   onRequestExample,
+  germanExampleLevel,
+  onGermanExampleLevelChange,
   definition,
   debugInfo,
   examMode
@@ -60,7 +76,9 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationText, setTranslationText] = useState<string | null>(null);
   const [translateError, setTranslateError] = useState<string | null>(null);
-  const { addUnknownWord, wordLists } = useWordListStore();
+  const { addUnknownWord, wordLists, activeLanguage } = useWordListStore();
+  const studyLanguage = activeLanguage || DEFAULT_STUDY_LANGUAGE;
+  const languageConfig = getStudyLanguageConfig(studyLanguage);
 
   useEffect(() => {
     setSelectedAnswer(null);
@@ -102,12 +120,19 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
 
   const isSynonymMode = question.questionType === 'synonym';
   const isEnglishToTurkish = isSynonymMode ? true : question.direction !== 'tr-to-en';
-  const directionLabel = isSynonymMode ? 'İngilizce → İngilizce' : (isEnglishToTurkish ? 'İngilizce → Türkçe' : 'Türkçe → İngilizce');
+  const directionLabel = isSynonymMode
+    ? `${languageConfig.sourceLabel} → ${languageConfig.sourceLabel}`
+    : isEnglishToTurkish
+      ? `${languageConfig.sourceLabel} → Türkçe`
+      : `Türkçe → ${languageConfig.sourceLabel}`;
   const speakCurrent = () => {
     const text = isEnglishToTurkish ? question.word.english : question.word.turkish;
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = isEnglishToTurkish ? 'en-US' : 'tr-TR';
-    speechSynthesis.speak(utter);
+    speakText(text, isEnglishToTurkish ? studyLanguage : 'tr');
+  };
+
+  const speakExample = () => {
+    if (!example?.sentence) return;
+    speakText(example.sentence, example.lang || studyLanguage);
   };
 
   const handleWordClick = (word: string) => {
@@ -115,8 +140,8 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
     setIsModalOpen(true);
     setTranslateError(null);
     setTranslationText(null);
-    const lang = example?.lang || (question.direction === 'tr-to-en' ? 'tr' : 'en');
-    const target = lang === 'tr' ? 'en' : 'tr';
+    const lang = example?.lang || (question.direction === 'tr-to-en' ? 'tr' : studyLanguage);
+    const target = lang === 'tr' ? studyLanguage : 'tr';
     setIsTranslating(true);
     fetch('/api/translate', {
       method: 'POST',
@@ -138,10 +163,10 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
     if (!selectedWord) return;
     setIsTranslating(true);
     setTranslateError(null);
-    const lang = example?.lang || (question.direction === 'tr-to-en' ? 'tr' : 'en');
-    const target = lang === 'tr' ? 'en' : 'tr';
+    const lang = example?.lang || (question.direction === 'tr-to-en' ? 'tr' : studyLanguage);
+    const target = lang === 'tr' ? studyLanguage : 'tr';
     const unknownList = wordLists.find((l) => l.id === 'unknown');
-    const normalized = (lang === 'en' ? selectedWord : translationText || selectedWord).trim().toLowerCase();
+    const normalized = (lang === 'tr' ? translationText || selectedWord : selectedWord).trim().toLowerCase();
     if (unknownList?.words.some((w) => w.english.trim().toLowerCase() === normalized)) {
       setTranslateError('Bu kelime zaten Bilinmeyenler listesinde.');
       setIsTranslating(false);
@@ -159,7 +184,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
         if (!res.ok) throw new Error(data?.error || 'Çeviri başarısız');
         finalTranslation = data.translation || '';
       }
-      const english = lang === 'en' ? selectedWord : finalTranslation || selectedWord;
+      const english = lang === 'tr' ? finalTranslation || selectedWord : selectedWord;
       const turkish = lang === 'tr' ? selectedWord : finalTranslation || selectedWord;
       addUnknownWord({ english, turkish, source: 'example' });
       setIsModalOpen(false);
@@ -180,24 +205,70 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
             <span className="part-of-speech"> {getPartOfSpeechLabel(question.word.partOfSpeech)}</span>
           )}
         </h2>
-        <button className="question-speak-btn" onClick={speakCurrent} title="Sesli oku">
-          🔊
+        <button
+          type="button"
+          className="question-speak-btn"
+          onClick={speakCurrent}
+          title="Soruyu seslendir"
+          aria-label="Soruyu seslendir"
+        >
+          <Volume2 size={18} aria-hidden="true" />
         </button>
       </div>
       <p className="question-hint">
         {isSynonymMode
           ? 'Doğru eş anlamlıyı seç'
-          : (isEnglishToTurkish ? 'Doğru Türkçe karşılığını seç' : 'Doğru İngilizce karşılığını seç')}
+          : (isEnglishToTurkish ? 'Doğru Türkçe karşılığını seç' : `Doğru ${languageConfig.sourceLabel} karşılığını seç`)}
       </p>
 
       {onRequestExample && !examMode && (
         <div className="example-box">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
-            <div className="example-title">Örnek cümle (Gemini)</div>
-            <button className="btn btn-outline btn-sm" onClick={() => onRequestExample?.(true)} disabled={example?.loading}>
-              {example?.loading ? 'Yükleniyor...' : 'Yeniden getir'}
-            </button>
+          <div className="example-header">
+            <div className="example-title">
+              Örnek cümle (Gemini)
+              {example?.level && <small className="example-level-badge">{example.level.toUpperCase()}</small>}
+            </div>
+            <div className="example-actions">
+              {example?.sentence && (
+                <button
+                  type="button"
+                  className="example-speak-btn"
+                  onClick={speakExample}
+                  title="Örnek cümleyi seslendir"
+                  aria-label="Örnek cümleyi seslendir"
+                >
+                  <Volume2 size={17} aria-hidden="true" />
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={() => onRequestExample?.(true)}
+                disabled={example?.loading}
+              >
+                <RefreshCw size={16} aria-hidden="true" />
+                {example?.loading ? 'Yükleniyor...' : 'Yeniden getir'}
+              </button>
+            </div>
           </div>
+          {germanExampleLevel && onGermanExampleLevelChange && (
+            <div className="example-inline-level">
+              <span>Seviye</span>
+              <div className="example-level-segments compact">
+                {GERMAN_EXAMPLE_LEVEL_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={germanExampleLevel === option.id ? 'active' : ''}
+                    onClick={() => onGermanExampleLevelChange(option.id)}
+                    aria-pressed={germanExampleLevel === option.id}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {example?.error && <div className="example-error">{example.error}</div>}
           {example?.sentence && (
             <div className="example-sentence">
@@ -212,7 +283,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
 
       {definition && !examMode && (
         <div className="example-box" style={{ marginTop: '12px' }}>
-          <div className="example-title">🇬🇧 İngilizce Tanım</div>
+          <div className="example-title">{languageConfig.flag} {languageConfig.definitionLabel}</div>
           {definition?.loading && <div className="example-sentence">Yükleniyor...</div>}
           {definition?.error && <div className="example-error">{definition.error}</div>}
           {!definition?.loading && definition?.text && (

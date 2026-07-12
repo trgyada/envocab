@@ -65,7 +65,9 @@ const Results: React.FC = () => {
       case 'multiple-choice': return 'Çoktan Seçmeli';
       case 'flashcard': return 'Flashcard';
       case 'matching': return 'Eşleşme';
+      case 'write': return 'Yazarak Cevap';
       case 'synonym': return 'Eş Anlamlı';
+      case 'sentence-builder': return 'Cümle Kurma';
       case 'mixed': return 'Karışık';
       default: return 'Quiz';
     }

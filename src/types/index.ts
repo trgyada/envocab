@@ -1,3 +1,5 @@
+import type { StudyLanguage } from '../utils/languages';
+
 // ==========================================
 // TEMEL TİPLER
 // ==========================================
@@ -20,7 +22,7 @@ export interface Word {
   lastPracticed?: Date;
   exampleSentence?: string;
   exampleTranslation?: string;
-  exampleLang?: 'en' | 'tr';
+  exampleLang?: StudyLanguage | 'tr';
   exampleUpdatedAt?: Date;
   exampleModel?: string;
   englishDefinition?: string; // ?ngilizce tan?m (EN-EN) - Excel'den veya AI'dan
@@ -184,6 +186,7 @@ export interface WordList {
   id: string;
   title: string;
   description?: string;
+  language?: StudyLanguage;
   words: Word[];
   createdAt: Date;
   updatedAt: Date;
@@ -196,7 +199,7 @@ export type QuizDirection = 'en-to-tr' | 'tr-to-en' | 'mixed';
 export interface QuizQuestion {
   id: string;
   word: Word;
-  questionType: 'multiple-choice' | 'matching' | 'flashcard' | 'write' | 'synonym';
+  questionType: 'multiple-choice' | 'matching' | 'flashcard' | 'write' | 'synonym' | 'sentence-builder';
   question: string;
   options?: string[];
   correctAnswer: string;
@@ -218,7 +221,7 @@ export interface QuizSession {
 }
 
 // Quiz tipleri
-export type QuizType = 'multiple-choice' | 'matching' | 'flashcard' | 'write' | 'synonym';
+export type QuizType = 'multiple-choice' | 'matching' | 'flashcard' | 'write' | 'synonym' | 'sentence-builder';
 
 // Quiz sonucu
 export interface QuizResult {
@@ -226,6 +229,7 @@ export interface QuizResult {
   sessionId: string;
   wordListId: string;
   wordListTitle: string;
+  language?: StudyLanguage;
   quizType: QuizType;
   totalQuestions: number;
   correctAnswers: number;

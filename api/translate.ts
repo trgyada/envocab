@@ -1,6 +1,16 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const modelName = 'gemma-3-27b-it';
+const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+type LanguageCode = 'en' | 'de' | 'tr';
+
+const languageNames: Record<LanguageCode, string> = {
+  en: 'English',
+  de: 'German',
+  tr: 'Turkish',
+};
+
+const isLanguageCode = (value: unknown): value is LanguageCode =>
+  value === 'en' || value === 'de' || value === 'tr';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -16,14 +26,15 @@ export default async function handler(req: any, res: any) {
   if (!text || typeof text !== 'string') {
     return res.status(400).json({ error: 'text is required' });
   }
+  if (!isLanguageCode(from) || !isLanguageCode(to)) {
+    return res.status(400).json({ error: 'from and to must be one of en, de, tr' });
+  }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey, { apiVersion: 'v1' });
-    const model = genAI.getGenerativeModel({ model: modelName });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1' });
 
-    const prompt = `Metni cevir.\nGiris dili: ${from === 'tr' ? 'Turkce' : 'Ingilizce'}\nHedef dili: ${
-      to === 'tr' ? 'Turkce' : 'Ingilizce'
-    }\nMetin: "${text}"\nSadece ceviri don, ek yazi yazma.`;
+    const prompt = `Translate the text.\nSource language: ${languageNames[from]}\nTarget language: ${languageNames[to]}\nText: "${text}"\nReturn only the translation, with no extra text.`;
 
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],

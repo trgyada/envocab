@@ -1,20 +1,52 @@
 # VocabMaster
 
-## Ozellikler
-- Excel/CSV veya manuel giris ile liste olusturma; tekrar eden kelimeler engellenir.
-- Quiz modlari: Coktan secmeli, Flashcard, Eslesme; soru yonu: Karisik, Ing -> Tr, Tr -> Ing.
-- Gemini destekli ornek cumle/ceviri: coktan secmeli icin toggle ile acilir; her kelime icin uretilen cumle ve ceviri Firestore'da saklanir, yeniden kullanilir, istenirse tekrar urettirilir.
-- Bilmiyorum/Listeye ekle butonu; yanlis/bilinmeyen cevaplar tek bir “Bilemedigim Kelimeler” havuzunda tutulur ve listeler ekraninda ayrica gosterilir.
-- Zor kelimeler toggle: tum listelerde incorrectCount > 0 olan kelimelerden quiz baslatma (sayac dahil).
-- Seslendirme: soru kelimesi icin sesli okutma; listelerde tek tek kelime seslendirme.
-- SM-2 tabanli secim ve “Testi Bitir” ile erken cikis; dogru/yanlis sayaci, ilerleme cizgisi, quiz sayaci.
-- Animasyonlu navbar logosu; tiklayinca ana sayfaya donus.
-- Firestore senkronizasyonu ile listeler ve kelime istatistikleri bulutta saklanir; zor/yanlis havuzu tum listeleri kapsar.
+İngilizce ve Almanca kelime listelerini ayrı tutan, farklı quiz modları ve ilerleme takibi sunan kişisel kelime çalışma uygulaması.
 
-## Versiyon notlari (kisa)
-- v1.3: Ornek cumle/ceviri Firestore cache, yeniden kullanma ve yeniden uretme; zor kelimeler tum listelerden tek havuz; ikonlar/emoji geri getirildi; sesli okuma butonu eklendi.
-- v1.2: Quiz ayarlari ve toggle tasarimi yenilendi, “Bilemedigim Kelimeler” tek havuza tasindi.
-- v1.1: Gemini entegrasyonu, zor kelimeler toggle, Testi Bitir, SM-2 secim iyilestirmeleri.
-- v1.0: Liste yukleme/olusturma, temel quiz modlari, Firestore senk ve navbar animasyonu.
+## Özellikler
 
-Not: Bu repo tek kullanici senaryosu icin tasarlandi; ortam degiskenleri ve Firebase kurulumu gereklidir.
+- İngilizce (`lists`) ve Almanca (`lists_de`) için ayrı Firestore koleksiyonları
+- Excel, CSV veya manuel girişle kelime listesi oluşturma
+- Çoktan seçmeli, flashcard, eşleştirme, yazarak cevap ve eş anlamlı quizleri
+- Almanca için A1-A2 düzeyinde Gemini örnek cümleleri
+- SM-2 tabanlı tekrar seçimi, zor kelime havuzu ve ayrıntılı istatistikler
+- Masaüstü ve mobil uyumlu çalışma paneli
+
+## Yerel Çalıştırma
+
+Node.js 20 veya üzeri gerekir.
+
+```bash
+npm install
+npm run dev
+```
+
+Uygulama varsayılan olarak `http://127.0.0.1:3000/` adresinde açılır.
+
+## Ortam Değişkenleri
+
+İstemci tarafında Firebase yapılandırması için şu değişkenler kullanılır:
+
+```text
+VITE_FIREBASE_API_KEY
+VITE_FIREBASE_AUTH_DOMAIN
+VITE_FIREBASE_PROJECT_ID
+VITE_FIREBASE_STORAGE_BUCKET
+VITE_FIREBASE_MESSAGING_SENDER_ID
+VITE_FIREBASE_APP_ID
+```
+
+Vercel API fonksiyonları için:
+
+```text
+GEMINI_API_KEY
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+Mevcut otomatik oturum akışı `VITE_FIREBASE_USER` ve `VITE_FIREBASE_PASS` değişkenlerini de destekler. `VITE_` önekli değerler tarayıcı paketine dahil edildiğinden, herkese açık dağıtımlarda bu yaklaşım yerine etkileşimli Firebase Authentication kullanılması gerekir.
+
+## Doğrulama
+
+```bash
+npm run build
+npm audit --omit=dev
+```

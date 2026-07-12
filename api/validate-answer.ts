@@ -4,10 +4,15 @@ type ReqBody = {
   prompt: string;
   correct: string;
   user: string;
-  lang?: 'en' | 'tr';
+  lang?: 'en' | 'de' | 'tr';
 };
 
-const modelName = 'gemma-3-27b-it';
+const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const languageNames = {
+  en: 'English',
+  de: 'German',
+  tr: 'Turkish',
+} as const;
 
 const levenshtein = (a: string, b: string) => {
   const m = a.length;
@@ -62,12 +67,12 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey, { apiVersion: 'v1' });
-    const model = genAI.getGenerativeModel({ model: modelName });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1' });
 
     const promptText = `
 Sen bir sinav degerlendiricisisin. Ogrenci bir kelimenin karsiligini yaziyor.
-Dil: ${lang === 'tr' ? 'Turkce' : 'Ingilizce'}
+Dil: ${languageNames[lang] || languageNames.en}
 Dogru cevap: "${correct}"
 Ogrenci cevabi: "${user}"
 

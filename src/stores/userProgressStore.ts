@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { QuizResult, UserStats, Word } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { createId } from '../utils/id';
 
 interface UserProgressState {
   quizResults: QuizResult[];
@@ -36,7 +36,7 @@ export const useUserProgressStore = create<UserProgressState>()(
       addQuizResult: (result) => {
         const newResult: QuizResult = {
           ...result,
-          id: uuidv4(),
+          id: createId(),
           completedAt: new Date(),
         };
 

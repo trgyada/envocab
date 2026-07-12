@@ -1,5 +1,5 @@
 ﻿import { Word, QuizQuestion, QuizType, MatchingCard, MatchingPair, UserCardState, Card } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { createId } from '../utils/id';
 import { prioritizeCards, getDueCards } from './sm2Algorithm';
 
 /**
@@ -143,7 +143,7 @@ export const generateMultipleChoiceQuestion = (
   const options = shuffleArray([correctAnswer, ...wrongOptions]);
 
   return {
-    id: uuidv4(),
+    id: createId(),
     word,
     questionType: 'multiple-choice',
     question,
@@ -182,7 +182,7 @@ export const generateFlashcardQuiz = (words: Word[], count?: number): QuizQuesti
   const quizWords = count ? shuffledWords.slice(0, count) : shuffledWords;
 
   return quizWords.map((word) => ({
-    id: uuidv4(),
+    id: createId(),
     word,
     questionType: 'flashcard' as const,
     question: word.english,
@@ -206,7 +206,7 @@ export const generateMatchingGame = (words: Word[], pairCount: number = 6): Matc
 
   // İngilizce ve Türkçe kartlarını oluştur
   const englishCards: MatchingCard[] = pairs.map((pair) => ({
-    id: uuidv4(),
+    id: createId(),
     text: pair.english,
     type: 'english' as const,
     pairId: pair.id,
@@ -215,7 +215,7 @@ export const generateMatchingGame = (words: Word[], pairCount: number = 6): Matc
   }));
 
   const turkishCards: MatchingCard[] = pairs.map((pair) => ({
-    id: uuidv4(),
+    id: createId(),
     text: pair.turkish,
     type: 'turkish' as const,
     pairId: pair.id,
@@ -239,7 +239,7 @@ export const generateWriteQuiz = (
   const quizWords = count ? shuffledWords.slice(0, count) : shuffledWords;
 
   return quizWords.map((word) => ({
-    id: uuidv4(),
+    id: createId(),
     word,
     questionType: 'write' as const,
     question: isEnglishToTurkish ? word.english : word.turkish,
@@ -291,7 +291,7 @@ const generateSynonymQuestion = (word: Word, allWords: Word[]): QuizQuestion => 
   const options = shuffleArray([correctAnswer, ...distractors]).slice(0, 4);
 
   return {
-    id: uuidv4(),
+    id: createId(),
     word,
     questionType: 'synonym' as const,
     question: word.english,
@@ -340,7 +340,7 @@ export const generateMixedQuiz = (
         return generateMultipleChoiceQuestion(word, words, direction);
       case 'flashcard':
         return {
-          id: uuidv4(),
+          id: createId(),
           word,
           questionType: 'flashcard' as const,
           question: isEnglishToTurkish ? word.english : word.turkish,
@@ -349,7 +349,7 @@ export const generateMixedQuiz = (
         };
       case 'write':
         return {
-          id: uuidv4(),
+          id: createId(),
           word,
           questionType: 'write' as const,
           question: isEnglishToTurkish ? word.english : word.turkish,
@@ -398,6 +398,8 @@ export const generateQuiz = (
       return generateMultipleChoiceQuiz(words, count, direction);
     case 'synonym':
       return generateSynonymQuiz(words, count, allWords);
+    case 'sentence-builder':
+      return [];
     default:
       return generateMultipleChoiceQuiz(words, count, direction);
   }

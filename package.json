@@ -1,32 +1,27 @@
 {
   "name": "vocab-quiz-app",
   "version": "1.0.0",
-  "description": "A web application for vocabulary quizzes, supporting multiple quiz formats and analytics.",
+  "description": "İngilizce ve Almanca kelime çalışmak için quiz, liste ve ilerleme uygulaması.",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
-  "types": [
-    "node"
-  ],
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "exceljs": "^4.4.0",
-    "firebase": "^12.6.0",
+    "firebase": "12.15.0",
+    "lucide-react": "1.24.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.20.0",
+    "react-router-dom": "6.30.4",
     "recharts": "^2.10.3",
-    "uuid": "^9.0.1",
-    "xlsx": "^0.18.5",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zustand": "^4.4.7"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
-    "@types/uuid": "^9.0.7",
     "@vitejs/plugin-react": "^4.2.1",
     "typescript": "^5.3.3",
     "vite": "^7.2.7"

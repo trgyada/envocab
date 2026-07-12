@@ -1,8 +1,43 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // v1 endpoint ve güncel model (Gemini 2.5 Flash)
-// const modelName = 'gemini-2.5-flash';
-const modelName = 'gemma-3-27b-it';
+const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+type LanguageCode = 'en' | 'de' | 'tr';
+type GermanExampleLevel = 'a1-a2' | 'a2-b1';
+
+const languageNames: Record<LanguageCode, string> = {
+  en: 'English',
+  de: 'German',
+  tr: 'Turkish',
+};
+
+const translationTargetNames: Record<LanguageCode, string> = {
+  en: 'Turkish',
+  de: 'Turkish',
+  tr: 'English',
+};
+
+const exampleInstructions: Record<Exclude<LanguageCode, 'de'>, string> = {
+  en: `Task: Write one B2-C1 level sentence in English. Use the word naturally in context.
+Style: Academic but fluent, dictionary-quality.`,
+  tr: `Task: Write one B2-C1 level sentence in Turkish. Use the word naturally in context.
+Style: Academic but fluent, dictionary-quality.`,
+};
+
+const germanExampleInstructions: Record<GermanExampleLevel, string> = {
+  'a1-a2': `Task: Write one A1-A2 CEFR level sentence in German. Use the word naturally in a simple everyday context.
+Style: Beginner-friendly, short, clear, and natural. Use common vocabulary and simple grammar.
+Length: 5-10 words when possible. Prefer present tense. Avoid idioms, subordinate clauses, advanced connectors, and long sentences.`,
+  'a2-b1': `Task: Write one A2-B1 CEFR level sentence in German. Use the word naturally in an everyday context.
+Style: Clear and natural for a learner moving toward intermediate level. Use common vocabulary and practical grammar.
+Length: 8-14 words when possible. You may use modal verbs, past tense, or one simple subordinate clause. Avoid rare vocabulary, idioms, and complex sentence structures.`,
+};
+
+const isLanguageCode = (value: unknown): value is LanguageCode =>
+  value === 'en' || value === 'de' || value === 'tr';
+
+const isGermanExampleLevel = (value: unknown): value is GermanExampleLevel =>
+  value === 'a1-a2' || value === 'a2-b1';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -14,23 +49,30 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: 'Missing GEMINI_API_KEY' });
   }
 
-  const { word, lang } = req.body as { word?: string; lang?: 'en' | 'tr' };
-  if (!word || (lang !== 'en' && lang !== 'tr')) {
-    return res.status(400).json({ error: 'word and lang (en|tr) are required' });
+  const { word, lang, level } = req.body as {
+    word?: string;
+    lang?: LanguageCode;
+    level?: GermanExampleLevel;
+  };
+  if (!word || !isLanguageCode(lang)) {
+    return res.status(400).json({ error: 'word and lang (en|de|tr) are required' });
+  }
+  if (lang === 'de' && level !== undefined && !isGermanExampleLevel(level)) {
+    return res.status(400).json({ error: 'level must be a1-a2 or a2-b1 for German examples' });
   }
 
+  const germanLevel = lang === 'de' && isGermanExampleLevel(level) ? level : 'a1-a2';
+  const instructions = lang === 'de' ? germanExampleInstructions[germanLevel] : exampleInstructions[lang];
+
   try {
-    // v1 API kullan
-    const genAI = new GoogleGenerativeAI(apiKey, { apiVersion: 'v1' });
-    const model = genAI.getGenerativeModel({ model: modelName });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1' });
 
     const prompt = `
-Kelime: "${word}"
-Dil: ${lang === 'en' ? 'Ingilizce' : 'Turkce'}
-Gorev: YDS-YOKDIL tipinde B2-C1 seviyesinde tek cumle kur. Kelimeyi dogal baglamda kullan.
-Kural: Cumlede dogru tense/voice (aktif-pasif) kullan; mumkunse gerund/infinitive yapisini dogal sekilde kullan.
-Tarz: Akademik ama akici, sozluk kalitesinde.
-Ceviri: Cevap verildikten sonra gostermek icin karsi dilde bir ceviri de uret.
+Word: "${word}"
+Language: ${languageNames[lang]}
+${instructions}
+Translation: Also produce a ${translationTargetNames[lang]} translation for showing after the answer.
 
 Yaniti su JSON formatinda ver:
 {

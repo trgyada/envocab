@@ -1,4 +1,5 @@
 ﻿import React, { useState } from 'react';
+import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserProgressStore } from '../stores/userProgressStore';
 import { useWordListStore } from '../stores/wordListStore';
@@ -7,19 +8,49 @@ import { useReviewSessionStore } from '../stores/reviewSessionStore';
 import { getMasteryColor, getMasteryLabel } from '../services/sm2Algorithm';
 import { MasteryLevel } from '../types';
 import ProgressChart from '../components/ProgressChart';
+import { DEFAULT_STUDY_LANGUAGE } from '../utils/languages';
 
 const Analytics: React.FC = () => {
   const navigate = useNavigate();
-  const { stats, quizResults, getWeakWords, resetStats } = useUserProgressStore();
-  const { wordLists } = useWordListStore();
+  const { quizResults, resetStats } = useUserProgressStore();
+  const { wordLists, activeLanguage } = useWordListStore();
   const { cardStates, getMasteryDistribution, cards, resetAllCardStates, getDifficultCards } = useCardStore();
   const { getTotalStats, clearHistory } = useReviewSessionStore();
+  const studyLanguage = activeLanguage || DEFAULT_STUDY_LANGUAGE;
+  const languageResults = useMemo(
+    () => quizResults.filter((result) => (result.language || DEFAULT_STUDY_LANGUAGE) === studyLanguage),
+    [quizResults, studyLanguage]
+  );
+  const stats = useMemo(() => {
+    const totalScore = languageResults.reduce((sum, result) => sum + result.score, 0);
+    return {
+      totalQuizzes: languageResults.length,
+      totalWords: languageResults.reduce((sum, result) => sum + result.totalQuestions, 0),
+      averageScore: languageResults.length ? Math.round(totalScore / languageResults.length) : 0,
+      bestScore: languageResults.reduce((max, result) => Math.max(max, result.score), 0),
+      totalStudyTime: languageResults.reduce((sum, result) => sum + Math.round(result.duration / 60), 0),
+    };
+  }, [languageResults]);
 
   const [showDueCardsModal, setShowDueCardsModal] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  const weakWords = getWeakWords();
-  const masteryDistribution = getMasteryDistribution();
+  const weakWords = useMemo(() => {
+    const wordCounts = new Map<string, { word: any; count: number }>();
+    languageResults.forEach((result) => {
+      result.wrongWords.forEach((word) => {
+        const existing = wordCounts.get(word.id);
+        wordCounts.set(word.id, { word, count: (existing?.count || 0) + 1 });
+      });
+    });
+    return Array.from(wordCounts.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20)
+      .map((item) => item.word);
+  }, [languageResults]);
+  const currentWordIds = useMemo(() => wordLists.flatMap((list) => list.words.map((word) => word.id)), [wordLists]);
+  const currentWordIdSet = useMemo(() => new Set(currentWordIds), [currentWordIds]);
+  const masteryDistribution = getMasteryDistribution(currentWordIds);
   const sm2Stats = getTotalStats();
   getDifficultCards(undefined, 0.6); // warm up
 
@@ -34,6 +65,7 @@ const Analytics: React.FC = () => {
     })
     .map(([cardId, state]) => {
       const card = cards.find((c) => c.id === cardId);
+      if (!card || !currentWordIdSet.has(card.wordId)) return null;
       return {
         cardId,
         state,
@@ -44,9 +76,12 @@ const Analytics: React.FC = () => {
         dueDate: new Date(state.nextReviewDate)
       };
     })
+    .filter((item): item is NonNullable<typeof item> => !!item)
     .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
 
   const dueCardsCount = dueCardsWithDetails.length;
+  const currentCards = cards.filter((card) => currentWordIdSet.has(card.wordId));
+  const currentCardStateCount = currentCards.filter((card) => !!cardStates[card.id]).length;
 
   const handleResetAllStats = () => {
     resetAllCardStates();
@@ -75,7 +110,7 @@ const Analytics: React.FC = () => {
       date.setHours(0, 0, 0, 0);
       date.setDate(date.getDate() - i);
       const dateKey = toKey(date);
-      const dayResults = quizResults.filter((r) => toKey(new Date(r.completedAt)) === dateKey);
+      const dayResults = languageResults.filter((r) => toKey(new Date(r.completedAt)) === dateKey);
       days.push({
         date: date.toLocaleDateString('tr-TR', { weekday: 'short', day: '2-digit', month: '2-digit' }),
         quizCount: dayResults.length,
@@ -90,7 +125,7 @@ const Analytics: React.FC = () => {
 
   const chartData = getLast7DaysData();
 
-  if (quizResults.length === 0) {
+  if (languageResults.length === 0) {
     return (
       <div className="analytics-container">
         <h1 style={{ marginBottom: '30px' }}>İstatistikler</h1>
@@ -163,13 +198,13 @@ const Analytics: React.FC = () => {
         <ProgressChart data={chartData} />
       </div>
 
-      {Object.keys(cardStates).length > 0 && (
+      {currentCardStateCount > 0 && (
         <div className="analytics-card" style={{ marginBottom: '24px' }}>
           <h3 style={{ marginBottom: '16px' }}>Öğrenme Seviyesi Dağılımı</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {([5, 4, 3, 2, 1, 0] as MasteryLevel[]).map((level) => {
               const count = masteryDistribution[level];
-              const total = Object.keys(cardStates).length;
+              const total = currentCardStateCount;
               const percentage = total > 0 ? (count / total) * 100 : 0;
 
               return (
@@ -295,7 +330,7 @@ const Analytics: React.FC = () => {
       <div className="analytics-card" style={{ marginBottom: '24px' }}>
         <h3 style={{ marginBottom: '12px' }}>Son Quiz Sonuçları</h3>
         <div style={{ display: 'grid', gap: '10px' }}>
-          {quizResults.slice(0, 10).map((result, idx) => (
+          {languageResults.slice(0, 10).map((result, idx) => (
             <div
               key={idx}
               style={{

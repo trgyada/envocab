@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Word, WordList } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { createId } from '../utils/id';
 import { 
   fetchWordListsFromFirestore, 
   saveWordListToFirestore, 
   deleteWordListFromFirestore 
 } from '../services/firestoreWordLists';
+import { DEFAULT_STUDY_LANGUAGE, StudyLanguage } from '../utils/languages';
 
 // ==========================================
 // DEBOUNCE UTILITY - Prevents excessive Firestore syncs
@@ -14,27 +15,38 @@ import {
 const pendingSyncs = new Map<string, NodeJS.Timeout>();
 const SYNC_DEBOUNCE_MS = 2000; // 2 saniye bekle, sonra sync et
 
-const debouncedSync = (listId: string, list: WordList, syncFn: (list: WordList) => Promise<void>) => {
+const debouncedSync = (
+  language: StudyLanguage,
+  listId: string,
+  list: WordList,
+  syncFn: (list: WordList, language?: StudyLanguage) => Promise<void>
+) => {
   // Önceki pending sync varsa iptal et
-  const existing = pendingSyncs.get(listId);
+  const syncKey = `${language}:${listId}`;
+  const existing = pendingSyncs.get(syncKey);
   if (existing) {
     clearTimeout(existing);
   }
   
   // Yeni debounced sync planla
   const timeout = setTimeout(() => {
-    syncFn(list);
-    pendingSyncs.delete(listId);
+    syncFn(list, language);
+    pendingSyncs.delete(syncKey);
   }, SYNC_DEBOUNCE_MS);
   
-  pendingSyncs.set(listId, timeout);
+  pendingSyncs.set(syncKey, timeout);
 };
 
+const resolveListLanguage = (list: WordList, fallback?: StudyLanguage | null): StudyLanguage =>
+  list.language || fallback || DEFAULT_STUDY_LANGUAGE;
+
 interface WordListState {
+  activeLanguage: StudyLanguage | null;
   wordLists: WordList[];
   selectedListId: string | null;
-  hydrateFromCloud: () => Promise<void>;
-  syncList: (list: WordList) => Promise<void>;
+  setActiveLanguage: (language: StudyLanguage) => void;
+  hydrateFromCloud: (language?: StudyLanguage) => Promise<void>;
+  syncList: (list: WordList, language?: StudyLanguage) => Promise<void>;
   
   // Actions
   addWordList: (title: string, words: Omit<Word, 'id' | 'mastery' | 'correctCount' | 'incorrectCount'>[]) => void;
@@ -54,7 +66,7 @@ interface WordListState {
       synonyms?: string[];
       exampleSentence?: string;
       exampleTranslation?: string;
-      exampleLang?: 'en' | 'tr';
+      exampleLang?: StudyLanguage | 'tr';
       exampleModel?: string;
       exampleUpdatedAt?: Date;
       englishDefinition?: string;
@@ -64,7 +76,7 @@ interface WordListState {
   updateListTitle: (listId: string, newTitle: string) => void;
   updateWordExample: (
     wordId: string,
-    payload: { sentence?: string; translation?: string; lang?: 'en' | 'tr'; model?: string; updatedAt?: Date }
+    payload: { sentence?: string; translation?: string; lang?: StudyLanguage | 'tr'; model?: string; updatedAt?: Date }
   ) => void;
   addUnknownWord: (params: { english: string; turkish: string; source?: string }) => void;
 }
@@ -72,25 +84,38 @@ interface WordListState {
 export const useWordListStore = create<WordListState>()(
   persist(
     (set, get) => ({
+      activeLanguage: null,
       wordLists: [],
       selectedListId: null,
-      hydrateFromCloud: async () => {
+      setActiveLanguage: (language) => {
+        set({
+          activeLanguage: language,
+          selectedListId: null,
+          wordLists: [],
+        });
+      },
+      hydrateFromCloud: async (language) => {
+        const targetLanguage = language || get().activeLanguage || DEFAULT_STUDY_LANGUAGE;
         try {
-          const lists = await fetchWordListsFromFirestore();
-          set({ wordLists: lists });
+          const lists = await fetchWordListsFromFirestore(targetLanguage);
+          if (get().activeLanguage === targetLanguage) {
+            set({ wordLists: lists });
+          }
         } catch (err) {
           console.error('Cloud hydrate failed', err);
         }
       },
-      syncList: async (list: WordList) => {
+      syncList: async (list: WordList, language) => {
+        const targetLanguage = language || list.language || get().activeLanguage || DEFAULT_STUDY_LANGUAGE;
         try {
-          await saveWordListToFirestore(list);
+          await saveWordListToFirestore({ ...list, language: targetLanguage }, targetLanguage);
         } catch (err) {
           console.error('Sync list failed', err);
         }
       },
 
       addWordList: (title, rawWords) => {
+        const language = get().activeLanguage || DEFAULT_STUDY_LANGUAGE;
         const seen = new Set<string>();
         const words: Word[] = [];
 
@@ -99,7 +124,7 @@ export const useWordListStore = create<WordListState>()(
           if (seen.has(key)) return;
           seen.add(key);
           words.push({
-            id: uuidv4(),
+            id: createId(),
             english: w.english.trim(),
             turkish: w.turkish.trim(),
             partOfSpeech: w.partOfSpeech,
@@ -109,15 +134,16 @@ export const useWordListStore = create<WordListState>()(
             // Excel'den gelen ek alanlar (varsa)
             exampleSentence: (w as any).exampleSentence || undefined,
             exampleTranslation: (w as any).exampleTranslation || undefined,
-            exampleLang: (w as any).exampleSentence ? 'en' : undefined,
+            exampleLang: (w as any).exampleSentence ? language : undefined,
             englishDefinition: (w as any).englishDefinition || undefined,
             synonyms: (w as any).synonyms || undefined,
           });
         });
 
         const newList: WordList = {
-          id: uuidv4(),
+          id: createId(),
           title,
+          language,
           words,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -132,12 +158,13 @@ export const useWordListStore = create<WordListState>()(
       },
 
       removeWordList: (id) => {
+        const language = get().activeLanguage || DEFAULT_STUDY_LANGUAGE;
         set((state) => ({
           wordLists: state.wordLists.filter((list) => list.id !== id),
           selectedListId: state.selectedListId === id ? null : state.selectedListId,
         }));
 
-        deleteWordListFromFirestore(id).catch((err) => console.error('Delete list failed', err));
+        deleteWordListFromFirestore(id, language).catch((err) => console.error('Delete list failed', err));
       },
 
       selectWordList: (id) => {
@@ -181,7 +208,9 @@ export const useWordListStore = create<WordListState>()(
         }));
 
         // Use debounced sync to prevent excessive Firestore writes
-        if (updatedList) debouncedSync(listId, updatedList, get().syncList);
+        if (updatedList) {
+          debouncedSync(resolveListLanguage(updatedList, get().activeLanguage), listId, updatedList, get().syncList);
+        }
       },
 
 
@@ -208,7 +237,9 @@ export const useWordListStore = create<WordListState>()(
         }));
 
         // Debounced sync for synonyms update
-        if (updatedList) debouncedSync(listId, updatedList, get().syncList);
+        if (updatedList) {
+          debouncedSync(resolveListLanguage(updatedList, get().activeLanguage), listId, updatedList, get().syncList);
+        }
       },
 
       getWordsByMastery: (listId, maxMastery) => {
@@ -231,7 +262,7 @@ export const useWordListStore = create<WordListState>()(
             }
             
             const newWord: Word = {
-              id: uuidv4(),
+              id: createId(),
               english: english.trim(),
               turkish: turkish.trim(),
               mastery: 0,
@@ -250,7 +281,9 @@ export const useWordListStore = create<WordListState>()(
         }));
 
         // Debounced sync for word addition
-        if (updatedList) debouncedSync(listId, updatedList, get().syncList);
+        if (updatedList) {
+          debouncedSync(resolveListLanguage(updatedList, get().activeLanguage), listId, updatedList, get().syncList);
+        }
       },
 
       removeWordFromList: (listId, wordId) => {
@@ -270,7 +303,9 @@ export const useWordListStore = create<WordListState>()(
         }));
 
         // Debounced sync for word removal
-        if (updatedList) debouncedSync(listId, updatedList, get().syncList);
+        if (updatedList) {
+          debouncedSync(resolveListLanguage(updatedList, get().activeLanguage), listId, updatedList, get().syncList);
+        }
       },
 
       updateWord: (listId, wordId, payload) => {
@@ -320,7 +355,9 @@ export const useWordListStore = create<WordListState>()(
         }));
 
         // Debounced sync for word update
-        if (updatedList) debouncedSync(listId, updatedList, get().syncList);
+        if (updatedList) {
+          debouncedSync(resolveListLanguage(updatedList, get().activeLanguage), listId, updatedList, get().syncList);
+        }
       },
 
       updateListTitle: (listId, newTitle) => {
@@ -335,7 +372,9 @@ export const useWordListStore = create<WordListState>()(
         }));
 
         // Debounced sync for title update
-        if (updatedList) debouncedSync(listId, updatedList, get().syncList);
+        if (updatedList) {
+          debouncedSync(resolveListLanguage(updatedList, get().activeLanguage), listId, updatedList, get().syncList);
+        }
       },
 
       updateWordExample: (wordId, payload) => {
@@ -365,11 +404,14 @@ export const useWordListStore = create<WordListState>()(
           }),
         }));
 
-        updatedLists.forEach((list) => debouncedSync(list.id, list, get().syncList));
+        updatedLists.forEach((list) =>
+          debouncedSync(resolveListLanguage(list, get().activeLanguage), list.id, list, get().syncList)
+        );
       },
 
       addUnknownWord: ({ english, turkish, source }) => {
         if (!english.trim() || !turkish.trim()) return;
+        const language = get().activeLanguage || DEFAULT_STUDY_LANGUAGE;
         set((state) => {
           const existingUnknown = state.wordLists.find((l) => l.id === 'unknown');
           const normalized = english.trim().toLowerCase();
@@ -378,7 +420,7 @@ export const useWordListStore = create<WordListState>()(
           if (hasDuplicate) return state;
 
           const newWord: Word = {
-            id: uuidv4(),
+            id: createId(),
             english: english.trim(),
             turkish: turkish.trim(),
             mastery: 0,
@@ -390,12 +432,13 @@ export const useWordListStore = create<WordListState>()(
           if (existingUnknown) {
             const updated: WordList = {
               ...existingUnknown,
+              language,
               updatedAt: new Date(),
               words: [...existingUnknown.words, newWord],
             };
             const lists = state.wordLists.map((l) => (l.id === 'unknown' ? updated : l));
             // Fire and forget sync
-            get().syncList(updated);
+            get().syncList(updated, language);
             return { ...state, wordLists: lists };
           }
 
@@ -403,11 +446,12 @@ export const useWordListStore = create<WordListState>()(
             id: 'unknown',
             title: 'Bilinmeyenler',
             description: 'Ornek cumlelerden eklenen bilinmeyen kelimeler',
+            language,
             createdAt: new Date(),
             updatedAt: new Date(),
             words: [newWord],
           };
-          get().syncList(newList);
+          get().syncList(newList, language);
           return { ...state, wordLists: [...state.wordLists, newList] };
         });
       },
