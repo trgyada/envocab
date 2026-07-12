@@ -398,6 +398,8 @@ export const generateQuiz = (
       return generateMultipleChoiceQuiz(words, count, direction);
     case 'synonym':
       return generateSynonymQuiz(words, count, allWords);
+    case 'sentence-builder':
+      return [];
     default:
       return generateMultipleChoiceQuiz(words, count, direction);
   }

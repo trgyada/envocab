@@ -1,8 +1,9 @@
 ﻿import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CircleHelp, GalleryVerticalEnd, Keyboard, Link2, Repeat2 } from 'lucide-react';
+import { CircleHelp, GalleryVerticalEnd, Keyboard, Languages, Link2, Repeat2 } from 'lucide-react';
 import MultipleChoice from '../components/MultipleChoice';
 import Matching from '../components/Matching';
+import SentenceBuilder from '../components/SentenceBuilder';
 import TypeAnswer from '../components/TypeAnswer';
 import {
   calculateScore,
@@ -132,6 +133,11 @@ const Quiz: React.FC = () => {
   const [definitionMap, setDefinitionMap] = useState<
     Record<string, { text?: string; loading?: boolean; error?: string }>
   >({});
+  const [sentencePreparation, setSentencePreparation] = useState<{
+    current: number;
+    total: number;
+    error?: string;
+  } | null>(null);
   const sourceTagMapRef = useRef<Map<string, QuestionSourceTag>>(new Map());
   const [hasAnswered, setHasAnswered] = useState(false);
   const [examMode, setExamMode] = useState(false);
@@ -209,7 +215,10 @@ const Quiz: React.FC = () => {
   useEffect(() => {
     if (quizType === 'synonym') {
       setQuizDirection('en-to-tr');
+    } else if (quizType === 'sentence-builder') {
+      setQuizDirection('tr-to-en');
     }
+    setSentencePreparation(null);
   }, [quizType]);
 
   useEffect(() => {
@@ -353,7 +362,69 @@ const Quiz: React.FC = () => {
     return '';
   };
 
-  const startQuiz = () => {
+  const prepareSentenceQuestions = async (words: Word[]): Promise<QuizQuestion[]> => {
+    const prepared = new Map<string, { sentence: string; translation: string }>();
+    const missing: Word[] = [];
+
+    words.forEach((word) => {
+      const stored = getStoredExample(word, 'de', germanExampleLevel);
+      if (stored?.sentence && stored.translation) {
+        prepared.set(word.id, { sentence: stored.sentence, translation: stored.translation });
+      } else {
+        missing.push(word);
+      }
+    });
+
+    if (missing.length > 0) {
+      for (let offset = 0; offset < missing.length; offset += 20) {
+        const batch = missing.slice(offset, offset + 20);
+        try {
+          const response = await fetch('/api/sentence-exercises', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              level: germanExampleLevel,
+              words: batch.map((word) => ({ id: word.id, word: word.english, meaning: word.turkish })),
+            }),
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data?.error || 'Cümleler hazırlanamadı.');
+          const exercises = Array.isArray(data?.exercises) ? data.exercises : [];
+          exercises.forEach((exercise: { id?: string; sentence?: string; translation?: string }) => {
+            if (!exercise.id || !exercise.sentence?.trim() || !exercise.translation?.trim()) return;
+            const sentence = exercise.sentence.trim();
+            const translation = exercise.translation.trim();
+            prepared.set(exercise.id, { sentence, translation });
+            updateWordExample(exercise.id, {
+              sentence,
+              translation,
+              lang: 'de',
+              model: getExampleModelLabel('de', germanExampleLevel),
+              updatedAt: new Date(),
+            });
+          });
+          setSentencePreparation({ current: Math.min(words.length, prepared.size), total: words.length });
+        } catch (error) {
+          if (prepared.size === 0) throw error;
+        }
+      }
+    }
+
+    return words.flatMap((word, index) => {
+      const exercise = prepared.get(word.id);
+      if (!exercise) return [];
+      return [{
+        id: `sentence-builder-${word.id}-${index}-${Date.now()}`,
+        word,
+        questionType: 'sentence-builder' as const,
+        question: exercise.translation,
+        correctAnswer: exercise.sentence,
+        direction: 'tr-to-en' as const,
+      }];
+    });
+  };
+
+  const startQuiz = async () => {
     if (!selectedList || !selectedList.words.length) {
       setPhase('select-list');
       return;
@@ -362,7 +433,9 @@ const Quiz: React.FC = () => {
     let wordsToUse: Word[];
 
     if (onlyDifficultWords) {
-      wordsToUse = allDifficultWords.length > 0 ? allDifficultWords : difficultWords;
+      wordsToUse = quizType === 'sentence-builder'
+        ? difficultWords
+        : (allDifficultWords.length > 0 ? allDifficultWords : difficultWords);
     } else if (useSM2Selection && cards.length > 0) {
       wordsToUse = selectWordsForReview(selectedList.words, cardStates, cards, {
         limit: questionCount,
@@ -390,6 +463,36 @@ const Quiz: React.FC = () => {
     const wordsOnly = balanced.map((b) => b.word);
 
     const count = Math.min(questionCount, wordsOnly.length);
+
+    if (quizType === 'sentence-builder') {
+      setSentencePreparation({ current: 0, total: count });
+      try {
+        const generated = await prepareSentenceQuestions(wordsOnly.slice(0, count));
+        if (generated.length === 0) throw new Error('Bu kelimeler için cümle hazırlanamadı.');
+        quizStartedRef.current = true;
+        startSession(selectedListId || '', generated.length);
+        setStartTime(new Date());
+        questionStartTimeRef.current = Date.now();
+        setCorrectCount(0);
+        setWrongWords([]);
+        setExampleMap({});
+        setDefinitionMap({});
+        setCurrentIndex(0);
+        setAnswerSheet([]);
+        setQuestions(generated);
+        totalQuestionsRef.current = generated.length;
+        setSentencePreparation(null);
+        setPhase('quiz');
+      } catch (error) {
+        setSentencePreparation({
+          current: 0,
+          total: count,
+          error: error instanceof Error ? error.message : 'Cümleler hazırlanamadı.',
+        });
+      }
+      return;
+    }
+
     quizStartedRef.current = true;
     startSession(selectedListId || '', count);
     setStartTime(new Date());
@@ -618,9 +721,14 @@ const Quiz: React.FC = () => {
     const maxQuestions = selectedList?.words.length || 10;
     const minQuestions = Math.min(5, maxQuestions);
     const boundedQuestionCount = Math.min(maxQuestions, Math.max(minQuestions, questionCount));
-    const directionDisabled = quizType === 'synonym';
+    const directionDisabled = quizType === 'synonym' || quizType === 'sentence-builder';
     const multipleChoiceSettingsEnabled = quizType === 'multiple-choice' && !examMode;
-    const hasDifficultWords = allDifficultWords.length > 0 || difficultWords.length > 0;
+    const isPreparingSentenceQuiz = Boolean(
+      sentencePreparation && !sentencePreparation.error && sentencePreparation.current < sentencePreparation.total
+    );
+    const hasDifficultWords = quizType === 'sentence-builder'
+      ? difficultWords.length > 0
+      : allDifficultWords.length > 0 || difficultWords.length > 0;
     return (
       <div className="quiz-container">
         <h1 style={{ marginBottom: '10px', textAlign: 'center' }}>Quiz Ayarları</h1>
@@ -655,7 +763,10 @@ const Quiz: React.FC = () => {
                 { type: 'flashcard' as QuizType, icon: GalleryVerticalEnd, label: 'Flashcard' },
                 { type: 'matching' as QuizType, icon: Link2, label: 'Eşleşme' },
                 { type: 'write' as QuizType, icon: Keyboard, label: 'Yazarak Cevap' },
-                { type: 'synonym' as QuizType, icon: Repeat2, label: 'Eş Anlamlı' }
+                { type: 'synonym' as QuizType, icon: Repeat2, label: 'Eş Anlamlı' },
+                ...(studyLanguage === 'de'
+                  ? [{ type: 'sentence-builder' as QuizType, icon: Languages, label: 'Cümle Kurma' }]
+                  : [])
               ].map(({ type, icon: Icon, label }) => (
                 <button
                   key={type}
@@ -733,7 +844,7 @@ const Quiz: React.FC = () => {
           {studyLanguage === 'de' && (
             <fieldset
               className="example-level-fieldset"
-              disabled={quizType !== 'multiple-choice' || examMode}
+              disabled={(quizType !== 'multiple-choice' && quizType !== 'sentence-builder') || examMode}
             >
               <legend>Almanca örnek cümle seviyesi</legend>
               <div className="example-level-segments">
@@ -797,10 +908,19 @@ const Quiz: React.FC = () => {
             className="btn btn-primary btn-lg"
             onClick={startQuiz}
             style={{ width: '100%', marginTop: '20px' }}
-            disabled={onlyDifficultWords && (allDifficultWords.length === 0 && difficultWords.length === 0)}
+            disabled={
+              isPreparingSentenceQuiz ||
+              (onlyDifficultWords && !hasDifficultWords)
+            }
           >
-            Quiz'i Başlat
+            {isPreparingSentenceQuiz ? 'Cümleler hazırlanıyor...' : "Quiz'i Başlat"}
           </button>
+
+          {sentencePreparation?.error && (
+            <div className="example-error" style={{ marginTop: '10px' }} role="alert">
+              {sentencePreparation.error}
+            </div>
+          )}
 
           <button
             className="btn btn-outline"
@@ -952,6 +1072,51 @@ const Quiz: React.FC = () => {
               <div style={{ color: 'var(--danger)' }}>Yanlış: {wrongWords.length}</div>
             </div>
           )}
+        </div>
+      );
+    }
+
+    if (quizType === 'sentence-builder' && questions.length > 0 && currentIndex < questions.length) {
+      const currentQuestion = questions[currentIndex];
+      return (
+        <div className="quiz-container sentence-builder-page">
+          <div className="quiz-top-actions">
+            <button className="quiz-exit-btn" onClick={handleExitQuiz} title="Quizden çık" aria-label="Quizden çık">
+              ✖
+            </button>
+            <button className="btn btn-outline btn-sm" onClick={handleFinishEarly}>Testi Bitir</button>
+          </div>
+
+          <div className="quiz-header">
+            <div className="quiz-progress">
+              <div className="quiz-progress-bar" style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }} />
+            </div>
+            <Timer startTime={startTime} />
+          </div>
+
+          <div className="sentence-builder-meta">
+            <span className="quiz-counter">Cümle {currentIndex + 1} / {questions.length}</span>
+            <span className="example-level-badge">{germanExampleLevel.toUpperCase()}</span>
+          </div>
+
+          <SentenceBuilder
+            key={currentQuestion.id}
+            question={currentQuestion}
+            onAnswer={(isCorrect, word, userAnswer, direction) => {
+              handleAnswer(isCorrect, word, userAnswer, direction);
+            }}
+          />
+
+          <div className="sentence-builder-next">
+            <button className="btn btn-primary" onClick={() => goNextQuestion()} disabled={!hasAnswered}>
+              {currentIndex >= questions.length - 1 ? 'Bitir' : 'Sonraki Cümle'}
+            </button>
+          </div>
+
+          <div className="sentence-builder-score">
+            <span>Doğru: {correctCount}</span>
+            <span>Yanlış: {wrongWords.length}</span>
+          </div>
         </div>
       );
     }

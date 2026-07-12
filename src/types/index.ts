@@ -199,7 +199,7 @@ export type QuizDirection = 'en-to-tr' | 'tr-to-en' | 'mixed';
 export interface QuizQuestion {
   id: string;
   word: Word;
-  questionType: 'multiple-choice' | 'matching' | 'flashcard' | 'write' | 'synonym';
+  questionType: 'multiple-choice' | 'matching' | 'flashcard' | 'write' | 'synonym' | 'sentence-builder';
   question: string;
   options?: string[];
   correctAnswer: string;
@@ -221,7 +221,7 @@ export interface QuizSession {
 }
 
 // Quiz tipleri
-export type QuizType = 'multiple-choice' | 'matching' | 'flashcard' | 'write' | 'synonym';
+export type QuizType = 'multiple-choice' | 'matching' | 'flashcard' | 'write' | 'synonym' | 'sentence-builder';
 
 // Quiz sonucu
 export interface QuizResult {
