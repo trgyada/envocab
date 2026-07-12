@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
-import { Eraser, FileUp, Merge, PencilLine, Search, Volume2 } from 'lucide-react';
+import { Eraser, FileUp, Merge, Mic, PencilLine, Search, Volume2 } from 'lucide-react';
 import { useWordListStore } from '../stores/wordListStore';
 import { useUserProgressStore } from '../stores/userProgressStore';
 import { parseExcelFile, isValidExcelFile } from '../services/excelParser';
@@ -11,9 +11,10 @@ import {
   getGermanExampleLevelFromModel,
   isStoredExampleCurrent,
 } from '../utils/exampleGeneration';
-import { DEFAULT_STUDY_LANGUAGE, getStudyLanguageConfig } from '../utils/languages';
+import { type AppLanguageCode, DEFAULT_STUDY_LANGUAGE, getStudyLanguageConfig } from '../utils/languages';
 import { useGermanExampleLevel } from '../hooks/useGermanExampleLevel';
 import { speakText } from '../utils/speech';
+import PronunciationPractice from '../components/PronunciationPractice';
 
 type ViewMode = 'lists' | 'detail' | 'add-manual';
 
@@ -65,6 +66,7 @@ const WordLists: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('lists');
   const [viewingListId, setViewingListId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [practiceTarget, setPracticeTarget] = useState<{ text: string; language: AppLanguageCode } | null>(null);
 
   const [manualListName, setManualListName] = useState('');
   const [manualWords, setManualWords] = useState<{ english: string; turkish: string }[]>([{ english: '', turkish: '' }]);
@@ -851,7 +853,8 @@ const WordLists: React.FC = () => {
 
   if (viewMode === 'detail' && viewingList) {
     return (
-      <div className="wordlists-container">
+      <>
+        <div className="wordlists-container">
         <button
           className="btn btn-outline"
           onClick={() => {
@@ -1141,6 +1144,22 @@ const WordLists: React.FC = () => {
                         <Volume2 size={15} aria-hidden="true" />
                       </button>
                       <button
+                        className="word-table-icon-btn sound"
+                        onClick={() => setPracticeTarget({ text: word.english, language: studyLanguage })}
+                        title={`${languageConfig.sourceLabel} telaffuz çalış`}
+                        aria-label={`${word.english} telaffuzunu çalış`}
+                      >
+                        <Mic size={15} aria-hidden="true" />
+                      </button>
+                      <button
+                        className="word-table-icon-btn sound"
+                        onClick={() => setPracticeTarget({ text: word.turkish, language: 'tr' })}
+                        title="Türkçe telaffuz çalış"
+                        aria-label={`${word.turkish} Türkçe telaffuzunu çalış`}
+                      >
+                        <Mic size={15} aria-hidden="true" />
+                      </button>
+                      <button
                         className="word-table-icon-btn translate"
                         onClick={() => handleTranslateWord(word)}
                         disabled={translatingWordId === word.id}
@@ -1203,6 +1222,18 @@ const WordLists: React.FC = () => {
                                 >
                                   <Volume2 size={16} aria-hidden="true" />
                                 </button>
+                                <button
+                                  type="button"
+                                  className="example-speak-btn"
+                                  onClick={() => setPracticeTarget({
+                                    text: word.exampleSentence || '',
+                                    language: studyLanguage,
+                                  })}
+                                  aria-label="Örnek cümlenin telaffuzunu çalış"
+                                  title="Örnek cümlenin telaffuzunu çalış"
+                                >
+                                  <Mic size={16} aria-hidden="true" />
+                                </button>
                               </div>
                               <div className="word-table-detail-text">{word.exampleSentence}</div>
                               {word.exampleTranslation && (
@@ -1225,7 +1256,15 @@ const WordLists: React.FC = () => {
             ))
           )}
         </div>
-      </div>
+        </div>
+        {practiceTarget && (
+          <PronunciationPractice
+            text={practiceTarget.text}
+            language={practiceTarget.language}
+            onClose={() => setPracticeTarget(null)}
+          />
+        )}
+      </>
     );
   }
 

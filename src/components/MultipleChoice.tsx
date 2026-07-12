@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { RefreshCw, Volume2 } from 'lucide-react';
+import { Mic, RefreshCw, Volume2 } from 'lucide-react';
 import { PartOfSpeech, QuizQuestion, Word } from '../types';
 import SelectableText from './SelectableText';
 import { useWordListStore } from '../stores/wordListStore';
@@ -13,6 +13,7 @@ import {
   type GermanExampleLevel,
 } from '../utils/exampleGeneration';
 import { speakText } from '../utils/speech';
+import PronunciationPractice from './PronunciationPractice';
 
 interface MultipleChoiceProps {
   question: QuizQuestion;
@@ -76,6 +77,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationText, setTranslationText] = useState<string | null>(null);
   const [translateError, setTranslateError] = useState<string | null>(null);
+  const [practiceTarget, setPracticeTarget] = useState<{ text: string; language: AppLanguageCode } | null>(null);
   const { addUnknownWord, wordLists, activeLanguage } = useWordListStore();
   const studyLanguage = activeLanguage || DEFAULT_STUDY_LANGUAGE;
   const languageConfig = getStudyLanguageConfig(studyLanguage);
@@ -88,6 +90,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
     setIsModalOpen(false);
     setTranslateError(null);
     setTranslationText(null);
+    setPracticeTarget(null);
   }, [question.id]);
 
   const handleOptionClick = (option: string) => {
@@ -128,6 +131,11 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
   const speakCurrent = () => {
     const text = isEnglishToTurkish ? question.word.english : question.word.turkish;
     speakText(text, isEnglishToTurkish ? studyLanguage : 'tr');
+  };
+
+  const practiceCurrent = () => {
+    const text = isEnglishToTurkish ? question.word.english : question.word.turkish;
+    setPracticeTarget({ text, language: isEnglishToTurkish ? studyLanguage : 'tr' });
   };
 
   const speakExample = () => {
@@ -214,6 +222,15 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
         >
           <Volume2 size={18} aria-hidden="true" />
         </button>
+        <button
+          type="button"
+          className="question-speak-btn"
+          onClick={practiceCurrent}
+          title="Telaffuz çalış"
+          aria-label="Sorunun telaffuzunu çalış"
+        >
+          <Mic size={18} aria-hidden="true" />
+        </button>
       </div>
       <p className="question-hint">
         {isSynonymMode
@@ -230,15 +247,29 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
             </div>
             <div className="example-actions">
               {example?.sentence && (
-                <button
-                  type="button"
-                  className="example-speak-btn"
-                  onClick={speakExample}
-                  title="Örnek cümleyi seslendir"
-                  aria-label="Örnek cümleyi seslendir"
-                >
-                  <Volume2 size={17} aria-hidden="true" />
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="example-speak-btn"
+                    onClick={speakExample}
+                    title="Örnek cümleyi seslendir"
+                    aria-label="Örnek cümleyi seslendir"
+                  >
+                    <Volume2 size={17} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className="example-speak-btn"
+                    onClick={() => setPracticeTarget({
+                      text: example.sentence || '',
+                      language: example.lang || studyLanguage,
+                    })}
+                    title="Örnek cümlenin telaffuzunu çalış"
+                    aria-label="Örnek cümlenin telaffuzunu çalış"
+                  >
+                    <Mic size={17} aria-hidden="true" />
+                  </button>
+                </>
               )}
               <button
                 type="button"
@@ -359,6 +390,13 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({
             </div>
           </div>
         </div>
+      )}
+      {practiceTarget && (
+        <PronunciationPractice
+          text={practiceTarget.text}
+          language={practiceTarget.language}
+          onClose={() => setPracticeTarget(null)}
+        />
       )}
     </div>
   );

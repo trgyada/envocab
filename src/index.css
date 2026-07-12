@@ -2766,3 +2766,239 @@ a {
 .wordlist-grid {
   contain: layout style;
 }
+
+.pronunciation-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(3, 8, 11, 0.76);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.pronunciation-dialog {
+  width: min(100%, 540px);
+  max-height: min(760px, calc(100dvh - 36px));
+  overflow-y: auto;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-strong);
+}
+
+.pronunciation-header,
+.pronunciation-reference,
+.pronunciation-result-header,
+.pronunciation-transcript {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.pronunciation-header h2 {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+  font-size: 1.35rem;
+  line-height: 1.3;
+}
+
+.pronunciation-eyebrow,
+.pronunciation-reference > span,
+.pronunciation-transcript > span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.pronunciation-eyebrow {
+  text-transform: uppercase;
+}
+
+.pronunciation-icon-btn {
+  width: 38px;
+  height: 38px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-alt);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.pronunciation-reference {
+  margin-top: 18px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+}
+
+.pronunciation-reference-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.pronunciation-recorder {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-alt);
+}
+
+.pronunciation-meter {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--bg);
+}
+
+.pronunciation-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary-light);
+  transition: width 80ms linear;
+}
+
+.pronunciation-recorder.is-recording .pronunciation-meter span {
+  background: var(--accent-light);
+}
+
+.pronunciation-record-btn {
+  min-width: 168px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pronunciation-record-btn.stop {
+  background: var(--accent);
+}
+
+.pronunciation-mode,
+.pronunciation-privacy {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.pronunciation-result {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+}
+
+.pronunciation-result-header span {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.pronunciation-audio {
+  width: 100%;
+  height: 42px;
+}
+
+.pronunciation-feedback {
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.pronunciation-feedback.success {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.1);
+  color: #86efac;
+}
+
+.pronunciation-feedback.warning {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.1);
+  color: #fcd34d;
+}
+
+.pronunciation-feedback.danger {
+  border-color: rgba(239, 68, 68, 0.42);
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+}
+
+.pronunciation-transcript {
+  align-items: flex-start;
+  padding-top: 2px;
+}
+
+.pronunciation-transcript strong {
+  max-width: 72%;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.pronunciation-reset {
+  justify-self: end;
+}
+
+.pronunciation-privacy {
+  margin: 12px 2px 0;
+  line-height: 1.45;
+}
+
+@media (max-width: 520px) {
+  .pronunciation-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .pronunciation-dialog {
+    max-height: 92dvh;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  .pronunciation-reference {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pronunciation-reference-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pronunciation-reference-actions .btn {
+    min-width: 0;
+  }
+}
